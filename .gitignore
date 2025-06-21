@@ -55,28 +55,6 @@ out/
 ### JTE ###
 /jte-classes/
 **/node_modules/
-/lucene-index/_4.cfe
-/lucene-index/_4.cfs
-/lucene-index/_4.si
-/lucene-index/_b.fdm
-/lucene-index/_b.fdt
-/lucene-index/_b.fdx
-/lucene-index/_b.fnm
-/lucene-index/_b.kdd
-/lucene-index/_b.kdi
-/lucene-index/_b.kdm
-/lucene-index/_b.nvd
-/lucene-index/_b.nvm
-/lucene-index/_b.si
-/lucene-index/_b_Lucene84_0.doc
-/lucene-index/_b_Lucene84_0.pos
-/lucene-index/_b_Lucene84_0.tim
-/lucene-index/_b_Lucene84_0.tip
-/lucene-index/_b_Lucene84_0.tmd
-/lucene-index/_c.cfe
-/lucene-index/_c.cfs
-/lucene-index/_c.si
-/lucene-index/_d.cfe
-/lucene-index/_d.cfs
-/lucene-index/_d.si
-/lucene-index/write.lock
+
+## LUCENE
+/lucene-index/

@@ -4,7 +4,6 @@ import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,45 +23,6 @@ public class LogRepository {
      * Constructor that initializes the repository with dummy data.
      */
     public LogRepository() {
-        initializeDummyData();
-    }
-
-    /**
-     * Initialize the repository with dummy data.
-     * This is for demonstration purposes only.
-     */
-    private void initializeDummyData() {
-        // Create dummy log entries with "test" in the message
-        createDummyLogEntry("ERROR", "Failed to connect to test database", "app-server-1");
-        createDummyLogEntry("WARNING", "High memory usage detected in test environment", "app-server-2");
-        createDummyLogEntry("INFO", "User logged in successfully to test account", "auth-service");
-        createDummyLogEntry("DEBUG", "Processing test request payload", "api-gateway");
-        createDummyLogEntry("ERROR", "Test API rate limit exceeded", "rate-limiter");
-    }
-
-    /**
-     * Helper method to create a dummy log entry.
-     *
-     * @param level The log level
-     * @param message The log message
-     * @param source The log source
-     */
-    private void createDummyLogEntry(String level, String message, String source) {
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("dummy", "true");
-        metadata.put("environment", "test");
-
-        LogEntry logEntry = new LogEntry(
-                UUID.randomUUID().toString(),
-                System.currentTimeMillis(),
-                level,
-                message,
-                source,
-                metadata,
-                level + " [" + source + "] " + message
-        );
-
-        save(logEntry);
     }
 
     /**
@@ -72,10 +32,7 @@ public class LogRepository {
      * @return The saved log entry with a generated ID
      */
     public LogEntry save(LogEntry logEntry) {
-        if (logEntry.getId() == null || logEntry.getId().isEmpty()) {
-            logEntry.setId(UUID.randomUUID().toString());
-        }
-        logs.put(logEntry.getId(), logEntry);
+        logs.put(logEntry.id(), logEntry);
         return logEntry;
     }
 
@@ -117,7 +74,7 @@ public class LogRepository {
      */
     public List<LogEntry> findByLevel(String level) {
         return logs.values().stream()
-                .filter(log -> level.equalsIgnoreCase(log.getLevel()))
+                .filter(log -> level.equalsIgnoreCase(log.level()))
                 .collect(Collectors.toList());
     }
 
@@ -129,7 +86,7 @@ public class LogRepository {
      */
     public List<LogEntry> findBySource(String source) {
         return logs.values().stream()
-                .filter(log -> source.equals(log.getSource()))
+                .filter(log -> source.equals(log.source()))
                 .collect(Collectors.toList());
     }
 
@@ -142,7 +99,7 @@ public class LogRepository {
      */
     public List<LogEntry> findByTimeRange(long startTime, long endTime) {
         return logs.values().stream()
-                .filter(log -> log.getTimestamp() >= startTime && log.getTimestamp() <= endTime)
+                .filter(log -> log.timestamp() >= startTime && log.timestamp() <= endTime)
                 .collect(Collectors.toList());
     }
 
@@ -166,7 +123,7 @@ public class LogRepository {
                     // Filter by time range if provided
                     if (startTime != null && endTime != null) {
                         // Use record time if available, otherwise use entry time
-                        long timeToCheck = log.getRecordTime() != null ? log.getRecordTime() : log.getTimestamp();
+                        long timeToCheck = log.recordTime() != null ? log.recordTime() : log.timestamp();
                         if (timeToCheck < startTime || timeToCheck > endTime) {
                             return false;
                         }
@@ -178,19 +135,19 @@ public class LogRepository {
                     }
 
                     // Check if message matches the query
-                    if (log.getMessage() == null) {
+                    if (log.message() == null) {
                         return false;
                     }
 
                     if (isRegex) {
                         try {
-                            return log.getMessage().matches(query);
+                            return log.message().matches(query);
                         } catch (Exception e) {
                             // If regex is invalid, fall back to simple contains
-                            return log.getMessage().toLowerCase().contains(query.toLowerCase());
+                            return log.message().toLowerCase().contains(query.toLowerCase());
                         }
                     } else {
-                        return log.getMessage().toLowerCase().contains(query.toLowerCase());
+                        return log.message().toLowerCase().contains(query.toLowerCase());
                     }
                 })
                 .collect(Collectors.toList());

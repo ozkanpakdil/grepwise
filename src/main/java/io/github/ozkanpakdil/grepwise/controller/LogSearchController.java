@@ -2,9 +2,11 @@ package io.github.ozkanpakdil.grepwise.controller;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogRepository;
+import io.github.ozkanpakdil.grepwise.service.LuceneService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -19,9 +21,11 @@ import java.util.stream.Collectors;
 public class LogSearchController {
 
     private final LogRepository logRepository;
+    private final LuceneService luceneService;
 
-    public LogSearchController(LogRepository logRepository) {
+    public LogSearchController(LogRepository logRepository, LuceneService luceneService) {
         this.logRepository = logRepository;
+        this.luceneService = luceneService;
     }
 
     /**
@@ -71,8 +75,12 @@ public class LogSearchController {
             }
         }
 
-        List<LogEntry> logs = logRepository.search(query, isRegex, startTime, endTime);
-        return ResponseEntity.ok(logs);
+        try {
+            List<LogEntry> logs = luceneService.search(query, isRegex, startTime, endTime);
+            return ResponseEntity.ok(logs);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -83,11 +91,15 @@ public class LogSearchController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<LogEntry> getLogById(@PathVariable String id) {
-        LogEntry log = logRepository.findById(id);
-        if (log == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            LogEntry log = luceneService.findById(id);
+            if (log == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(log);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.ok(log);
     }
 
     /**
@@ -97,7 +109,12 @@ public class LogSearchController {
      */
     @GetMapping
     public ResponseEntity<List<LogEntry>> getAllLogs() {
-        return ResponseEntity.ok(logRepository.findAll());
+        try {
+            // Pass null for query and time range to get all logs
+            return ResponseEntity.ok(luceneService.search(null, false, null, null));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -108,7 +125,11 @@ public class LogSearchController {
      */
     @GetMapping("/level/{level}")
     public ResponseEntity<List<LogEntry>> getLogsByLevel(@PathVariable String level) {
-        return ResponseEntity.ok(logRepository.findByLevel(level));
+        try {
+            return ResponseEntity.ok(luceneService.findByLevel(level));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -119,7 +140,11 @@ public class LogSearchController {
      */
     @GetMapping("/source/{source}")
     public ResponseEntity<List<LogEntry>> getLogsBySource(@PathVariable String source) {
-        return ResponseEntity.ok(logRepository.findBySource(source));
+        try {
+            return ResponseEntity.ok(luceneService.findBySource(source));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -133,7 +158,12 @@ public class LogSearchController {
     public ResponseEntity<List<LogEntry>> getLogsByTimeRange(
             @RequestParam long startTime,
             @RequestParam long endTime) {
-        return ResponseEntity.ok(logRepository.findByTimeRange(startTime, endTime));
+        try {
+            // Use search with null query and specified time range
+            return ResponseEntity.ok(luceneService.search(null, false, startTime, endTime));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -143,11 +173,15 @@ public class LogSearchController {
      */
     @GetMapping("/levels")
     public ResponseEntity<List<String>> getLogLevels() {
-        List<String> levels = logRepository.findAll().stream()
-                .map(LogEntry::getLevel)
-                .distinct()
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(levels);
+        try {
+            List<String> levels = luceneService.search(null, false, null, null).stream()
+                    .map(LogEntry::level)
+                    .distinct()
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(levels);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -157,11 +191,15 @@ public class LogSearchController {
      */
     @GetMapping("/sources")
     public ResponseEntity<List<String>> getLogSources() {
-        List<String> sources = logRepository.findAll().stream()
-                .map(LogEntry::getSource)
-                .distinct()
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(sources);
+        try {
+            List<String> sources = luceneService.search(null, false, null, null).stream()
+                    .map(LogEntry::source)
+                    .distinct()
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(sources);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -220,7 +258,12 @@ public class LogSearchController {
         }
 
         // Get logs matching the query and time range
-        List<LogEntry> logs = logRepository.search(query, isRegex, startTime, endTime);
+        List<LogEntry> logs;
+        try {
+            logs = luceneService.search(query, isRegex, startTime, endTime);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
 
         // Calculate the size of each time slot
         long timeRangeMs = endTime - startTime;
@@ -236,7 +279,7 @@ public class LogSearchController {
         // Count logs in each time slot
         for (LogEntry log : logs) {
             // Use record time if available, otherwise use entry time
-            long timeToCheck = log.getRecordTime() != null ? log.getRecordTime() : log.getTimestamp();
+            long timeToCheck = log.recordTime() != null ? log.recordTime() : log.timestamp();
 
             // Find which slot this log belongs to
             int slotIndex = (int) ((timeToCheck - startTime) / slotSizeMs);

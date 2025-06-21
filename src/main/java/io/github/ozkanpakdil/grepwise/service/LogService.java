@@ -72,8 +72,8 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
         // Apply query filter if provided
         if (request.getQuery() != null && !request.getQuery().isEmpty()) {
             logs = logs.stream()
-                    .filter(log -> log.getMessage() != null && 
-                            log.getMessage().toLowerCase().contains(request.getQuery().toLowerCase()))
+                    .filter(log -> log.message() != null &&
+                            log.message().toLowerCase().contains(request.getQuery().toLowerCase()))
                     .collect(Collectors.toList());
         }
         
@@ -137,15 +137,15 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
         // Apply query filter if provided
         if (request.getQuery() != null && !request.getQuery().isEmpty()) {
             logs = logs.stream()
-                    .filter(log -> log.getMessage() != null && 
-                            log.getMessage().toLowerCase().contains(request.getQuery().toLowerCase()))
+                    .filter(log -> log.message() != null &&
+                            log.message().toLowerCase().contains(request.getQuery().toLowerCase()))
                     .collect(Collectors.toList());
         }
         
         // Delete the filtered logs
         int deletedCount = 0;
         for (LogEntry log : logs) {
-            if (logRepository.deleteById(log.getId())) {
+            if (logRepository.deleteById(log.id())) {
                 deletedCount++;
             }
         }
@@ -188,15 +188,15 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
      */
     private io.github.ozkanpakdil.grepwise.grpc.LogEntry convertToGrpcLogEntry(LogEntry modelLogEntry) {
         io.github.ozkanpakdil.grepwise.grpc.LogEntry.Builder builder = io.github.ozkanpakdil.grepwise.grpc.LogEntry.newBuilder()
-                .setId(modelLogEntry.getId())
-                .setTimestamp(modelLogEntry.getTimestamp())
-                .setLevel(modelLogEntry.getLevel())
-                .setMessage(modelLogEntry.getMessage())
-                .setSource(modelLogEntry.getSource())
-                .setRawContent(modelLogEntry.getRawContent());
+                .setId(modelLogEntry.id())
+                .setTimestamp(modelLogEntry.timestamp())
+                .setLevel(modelLogEntry.level())
+                .setMessage(modelLogEntry.message())
+                .setSource(modelLogEntry.source())
+                .setRawContent(modelLogEntry.rawContent());
         
-        if (modelLogEntry.getMetadata() != null) {
-            builder.putAllMetadata(modelLogEntry.getMetadata());
+        if (modelLogEntry.metadata() != null) {
+            builder.putAllMetadata(modelLogEntry.metadata());
         }
         
         return builder.build();
@@ -216,16 +216,16 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
                     int result;
                     switch (sortField) {
                         case "timestamp":
-                            result = Long.compare(log1.getTimestamp(), log2.getTimestamp());
+                            result = Long.compare(log1.timestamp(), log2.timestamp());
                             break;
                         case "level":
-                            result = log1.getLevel().compareTo(log2.getLevel());
+                            result = log1.level().compareTo(log2.level());
                             break;
                         case "message":
-                            result = log1.getMessage().compareTo(log2.getMessage());
+                            result = log1.message().compareTo(log2.message());
                             break;
                         case "source":
-                            result = log1.getSource().compareTo(log2.getSource());
+                            result = log1.source().compareTo(log2.source());
                             break;
                         default:
                             result = 0;

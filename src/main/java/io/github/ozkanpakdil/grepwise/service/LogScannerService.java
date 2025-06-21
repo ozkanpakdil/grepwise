@@ -3,7 +3,6 @@ package io.github.ozkanpakdil.grepwise.service;
 import io.github.ozkanpakdil.grepwise.model.LogDirectoryConfig;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogDirectoryConfigRepository;
-import io.github.ozkanpakdil.grepwise.repository.LogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,10 +12,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -36,21 +32,22 @@ public class LogScannerService {
     private static final Logger logger = LoggerFactory.getLogger(LogScannerService.class);
 
     // Common log patterns
-    private static final Pattern LOG4J_PATTERN = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3})\\s+(\\w+)\\s+\\[([^\\]]+)\\]\\s+(.*)");
-    private static final Pattern SIMPLE_PATTERN = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2})\\s+(\\w+)\\s+(.*)");
+    private static final Pattern LOG4J_PATTERN = Pattern.compile(
+            "(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3})\\s+(\\w+)\\s+\\[([^\\]]+)\\]\\s+(.*)");
+    private static final Pattern SIMPLE_PATTERN = Pattern.compile(
+            "(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2})\\s+(\\w+)\\s+(.*)");
 
-    private final LogRepository logRepository;
     private final LogDirectoryConfigRepository configRepository;
+    private final LuceneService luceneService;
 
-    public LogScannerService(LogRepository logRepository, LogDirectoryConfigRepository configRepository) {
-        this.logRepository = logRepository;
+    public LogScannerService(LogDirectoryConfigRepository configRepository, LuceneService luceneService) {
         this.configRepository = configRepository;
+        this.luceneService = luceneService;
         logger.info("LogScannerService initialized");
     }
 
     /**
-     * Scan all configured directories for log files.
-     * This method is scheduled to run periodically.
+     * Scan all configured directories for log files. This method is scheduled to run periodically.
      */
     @Scheduled(fixedDelay = 60000) // Run every minute
     public void scanAllDirectories() {
@@ -82,9 +79,6 @@ public class LogScannerService {
      */
     public int scanDirectory(LogDirectoryConfig config) {
         String directoryPath = config.getDirectoryPath();
-        String filePattern = config.getFilePattern();
-
-        logger.info("Scanning directory: {} with pattern: {}", directoryPath, filePattern);
 
         Path dir = Paths.get(directoryPath);
         if (!Files.exists(dir) || !Files.isDirectory(dir)) {
@@ -92,18 +86,11 @@ public class LogScannerService {
             return 0;
         }
 
-        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + filePattern);
-
         List<Path> logFiles;
         try (Stream<Path> stream = Files.list(dir)) {
             logFiles = stream
                     .filter(Files::isRegularFile)
-                    .filter(path -> {
-                        boolean matches = matcher.matches(path.getFileName());
-                        logger.debug("File: {}, matches pattern: {}", path.getFileName(), matches);
-                        return matches;
-                    })
-                    .collect(Collectors.toList());
+                    .toList();
 
             logger.info("Found {} log files matching pattern in directory: {}", logFiles.size(), directoryPath);
         } catch (IOException e) {
@@ -149,34 +136,16 @@ public class LogScannerService {
 
                 if (newEntry != null) {
                     matchedLines++;
-                    logger.debug("Line {} matched a log pattern: {}", lineCount, line.substring(0, Math.min(line.length(), 100)));
+                    logger.trace("Line {} matched a log pattern: {}", lineCount,
+                            line.substring(0, Math.min(line.length(), 100)));
 
-                    // If we have a previous entry, save it
-                    if (currentLogEntry != null) {
-                        currentLogEntry.setRawContent(currentEntry.toString());
-                        logEntries.add(currentLogEntry);
-                    }
-
-                    // Start a new entry
                     currentLogEntry = newEntry;
-                    currentEntry = new StringBuilder(line);
-                } else if (currentLogEntry != null) {
-                    // This is a continuation of the current entry
-                    currentEntry.append("\n").append(line);
-
-                    // Update the message to include this line
-                    String currentMessage = currentLogEntry.getMessage();
-                    currentLogEntry.setMessage(currentMessage + "\n" + line);
                 } else {
-                    logger.debug("Line {} did not match any log pattern: {}", lineCount, line.substring(0, Math.min(line.length(), 100)));
+                    currentEntry.append(line).append(System.lineSeparator());
                 }
             }
 
-            // Don't forget the last entry
-            if (currentLogEntry != null) {
-                currentLogEntry.setRawContent(currentEntry.toString());
-                logEntries.add(currentLogEntry);
-            }
+            logEntries.add(currentLogEntry);
 
             logger.debug("Processed {} lines in file, matched {} log entries", lineCount, matchedLines);
         } catch (IOException e) {
@@ -184,10 +153,15 @@ public class LogScannerService {
             return 0;
         }
 
-        // Save all log entries to the repository
-        int savedCount = logRepository.saveAll(logEntries);
-        logger.info("Saved {} log entries from file: {}", savedCount, file.getName());
-        return savedCount;
+        // Index all log entries in Lucene
+        try {
+            int savedCount = luceneService.indexLogEntries(logEntries);
+            logger.info("Indexed {} log entries from file: {}", savedCount, file.getName());
+            return savedCount;
+        } catch (IOException e) {
+            logger.error("Error indexing log entries: {}", e.getMessage(), e);
+            return 0;
+        }
     }
 
     /**
@@ -206,7 +180,7 @@ public class LogScannerService {
             String thread = log4jMatcher.group(3);
             String message = log4jMatcher.group(4);
 
-            logger.debug("Matched LOG4J pattern: timestamp={}, level={}, thread={}, message={}", 
+            logger.debug("Matched LOG4J pattern: timestamp={}, level={}, thread={}, message={}",
                     timestamp, level, thread, message.substring(0, Math.min(message.length(), 50)));
 
             Map<String, String> metadata = new HashMap<>();
@@ -231,7 +205,7 @@ public class LogScannerService {
             String level = simpleMatcher.group(2);
             String message = simpleMatcher.group(3);
 
-            logger.debug("Matched SIMPLE pattern: timestamp={}, level={}, message={}", 
+            logger.debug("Matched SIMPLE pattern: timestamp={}, level={}, message={}",
                     timestamp, level, message.substring(0, Math.min(message.length(), 50)));
 
             long recordTime = parseTimestamp(timestamp);
@@ -249,7 +223,33 @@ public class LogScannerService {
 
         // If we get here, the line didn't match any pattern
         logger.trace("Line did not match any pattern: {}", line.substring(0, Math.min(line.length(), 100)));
-        return null;
+
+        String LOGLEVEL = switch (line) {
+            case String s when s.contains("ERROR") -> "ERROR";
+            case String s when s.contains("WARN") -> "WARN";
+            case String s when s.contains("INFO") -> "INFO";
+            case String s when s.contains("DEBUG") -> "DEBUG";
+            case String s when s.contains("TRACE") -> "TRACE";
+            case String s when s.contains("FATAL") -> "FATAL";
+            case String s when s.contains("SEVERE") -> "SEVERE";
+            case String s when s.contains("WARNING") -> "WARNING";
+            case String s when s.contains("NOTICE") -> "NOTICE";
+            case String s when s.contains("ALERT") -> "ALERT";
+            case String s when s.contains("CRITICAL") -> "CRITICAL";
+            case String s when s.contains("EMERGENCY") -> "EMERGENCY";
+            default -> "UNKNOWN";
+        };
+        Long RECORDTIME = DateTimeRegexPatterns.extractDateTimeToTimestamp(DateTimeRegexPatterns.extractFirstDateTime(line));
+        return new LogEntry(
+                UUID.randomUUID().toString(),
+                System.currentTimeMillis(), // Entry time (when the log was scanned)
+                RECORDTIME, // Record time (not parsed)
+                LOGLEVEL, // Level (not parsed)
+                line, // Message is the whole line
+                source, // Source is the filename
+                new HashMap<>(), // No metadata
+                line // Raw content is the whole line
+        );
     }
 
     /**
@@ -268,8 +268,8 @@ public class LogScannerService {
                 String millisPart = parts[1];
 
                 java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(
-                    datePart.replace(" ", "T"), 
-                    java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                        datePart.replace(" ", "T"),
+                        java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
                 );
 
                 long millis = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -280,8 +280,8 @@ public class LogScannerService {
             } else if (timestamp.matches("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}")) {
                 // Format: 2023-01-01 12:34:56
                 java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(
-                    timestamp.replace(" ", "T"), 
-                    java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                        timestamp.replace(" ", "T"),
+                        java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
                 );
 
                 long millis = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -339,8 +339,8 @@ public class LogScannerService {
     }
 
     /**
-     * Manually trigger a scan of all directories.
-     * This is useful for testing and for users who want to scan directories immediately.
+     * Manually trigger a scan of all directories. This is useful for testing and for users who want to scan directories
+     * immediately.
      *
      * @return The number of directories scanned
      */

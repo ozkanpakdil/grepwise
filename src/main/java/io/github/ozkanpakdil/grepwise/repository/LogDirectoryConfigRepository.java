@@ -52,30 +52,6 @@ public class LogDirectoryConfigRepository {
             logger.info("Default log directory already exists: {}", defaultLogDir);
         }
 
-        // Create a sample log file for testing if the directory exists
-        try {
-            File sampleLogFile = new File(defaultLogDir, "sample.log");
-            if (!sampleLogFile.exists()) {
-                boolean created = sampleLogFile.createNewFile();
-                if (created) {
-                    logger.info("Created sample log file: {}", sampleLogFile.getAbsolutePath());
-                    // Write some sample log lines
-                    java.io.FileWriter writer = new java.io.FileWriter(sampleLogFile);
-                    writer.write("2023-06-07 12:34:56 INFO Sample log message 1\n");
-                    writer.write("2023-06-07 12:35:56 ERROR Sample error message\n");
-                    writer.write("2023-06-07 12:36:56 WARNING Sample warning message\n");
-                    writer.close();
-                    logger.info("Wrote sample log entries to file");
-                } else {
-                    logger.warn("Failed to create sample log file: {}", sampleLogFile.getAbsolutePath());
-                }
-            } else {
-                logger.info("Sample log file already exists: {}", sampleLogFile.getAbsolutePath());
-            }
-        } catch (Exception e) {
-            logger.error("Error creating sample log file", e);
-        }
-
         LogDirectoryConfig defaultConfig = new LogDirectoryConfig();
         defaultConfig.setDirectoryPath(defaultLogDir);
         defaultConfig.setEnabled(true);

@@ -1,0 +1,141 @@
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8080/api/logs';
+
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  recordTime?: number;
+  level: string;
+  message: string;
+  source: string;
+  metadata: Record<string, string>;
+  rawContent: string;
+}
+
+export interface SearchParams {
+  query?: string;
+  isRegex?: boolean;
+  timeRange?: '1h' | '3h' | '12h' | '24h' | 'custom';
+  startTime?: number;
+  endTime?: number;
+}
+
+export const searchLogs = async (params?: SearchParams | string): Promise<LogEntry[]> => {
+  // Handle backward compatibility with just a query string
+  if (typeof params === 'string') {
+    params = { query: params };
+  }
+
+  // Build the URL with query parameters
+  let url = `${API_URL}/search`;
+  const queryParams: string[] = [];
+
+  if (params) {
+    if (params.query) {
+      queryParams.push(`query=${encodeURIComponent(params.query)}`);
+    }
+    if (params.isRegex) {
+      queryParams.push(`isRegex=true`);
+    }
+    if (params.timeRange) {
+      queryParams.push(`timeRange=${params.timeRange}`);
+    }
+    if (params.startTime) {
+      queryParams.push(`startTime=${params.startTime}`);
+    }
+    if (params.endTime) {
+      queryParams.push(`endTime=${params.endTime}`);
+    }
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+
+  const response = await axios.get<LogEntry[]>(url);
+  return response.data;
+};
+
+export const getLogById = async (id: string): Promise<LogEntry> => {
+  const response = await axios.get<LogEntry>(`${API_URL}/${id}`);
+  return response.data;
+};
+
+export const getAllLogs = async (): Promise<LogEntry[]> => {
+  const response = await axios.get<LogEntry[]>(API_URL);
+  return response.data;
+};
+
+export const getLogsByLevel = async (level: string): Promise<LogEntry[]> => {
+  const response = await axios.get<LogEntry[]>(`${API_URL}/level/${level}`);
+  return response.data;
+};
+
+export const getLogsBySource = async (source: string): Promise<LogEntry[]> => {
+  const response = await axios.get<LogEntry[]>(`${API_URL}/source/${source}`);
+  return response.data;
+};
+
+export const getLogsByTimeRange = async (startTime: number, endTime: number): Promise<LogEntry[]> => {
+  const response = await axios.get<LogEntry[]>(`${API_URL}/time-range?startTime=${startTime}&endTime=${endTime}`);
+  return response.data;
+};
+
+export const getLogLevels = async (): Promise<string[]> => {
+  const response = await axios.get<string[]>(`${API_URL}/levels`);
+  return response.data;
+};
+
+export const getLogSources = async (): Promise<string[]> => {
+  const response = await axios.get<string[]>(`${API_URL}/sources`);
+  return response.data;
+};
+
+export interface TimeAggregationParams extends SearchParams {
+  slots?: number;
+}
+
+export interface TimeSlot {
+  time: number;
+  count: number;
+}
+
+export const getTimeAggregation = async (params?: TimeAggregationParams): Promise<TimeSlot[]> => {
+  // Build the URL with query parameters
+  let url = `${API_URL}/time-aggregation`;
+  const queryParams: string[] = [];
+
+  if (params) {
+    if (params.query) {
+      queryParams.push(`query=${encodeURIComponent(params.query)}`);
+    }
+    if (params.isRegex) {
+      queryParams.push(`isRegex=true`);
+    }
+    if (params.timeRange) {
+      queryParams.push(`timeRange=${params.timeRange}`);
+    }
+    if (params.startTime) {
+      queryParams.push(`startTime=${params.startTime}`);
+    }
+    if (params.endTime) {
+      queryParams.push(`endTime=${params.endTime}`);
+    }
+    if (params.slots) {
+      queryParams.push(`slots=${params.slots}`);
+    }
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+
+  const response = await axios.get<Record<string, number>>(url);
+
+  // Convert the response data to an array of TimeSlot objects
+  return Object.entries(response.data).map(([time, count]) => ({
+    time: parseInt(time),
+    count
+  }));
+};

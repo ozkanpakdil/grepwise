@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.github.ozkanpakdil.grepwise.grpc";
+option java_outer_classname = "AlarmServiceProto";
+
+package alarmservice;
+
+// Service for handling alarm operations
+service AlarmService {
+  // Create a new alarm
+  rpc CreateAlarm(CreateAlarmRequest) returns (Alarm);
+  
+  // Get all alarms
+  rpc GetAlarms(GetAlarmsRequest) returns (GetAlarmsResponse);
+  
+  // Get a specific alarm by ID
+  rpc GetAlarmById(AlarmIdRequest) returns (Alarm);
+  
+  // Update an existing alarm
+  rpc UpdateAlarm(UpdateAlarmRequest) returns (Alarm);
+  
+  // Delete an alarm
+  rpc DeleteAlarm(AlarmIdRequest) returns (DeleteAlarmResponse);
+  
+  // Test an alarm against current data
+  rpc TestAlarm(TestAlarmRequest) returns (TestAlarmResponse);
+}
+
+// An alarm definition
+message Alarm {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string query = 4;
+  string condition = 5;
+  int32 threshold = 6;
+  int32 time_window_minutes = 7;
+  repeated NotificationChannel notification_channels = 8;
+  bool enabled = 9;
+  int64 created_at = 10;
+  int64 updated_at = 11;
+  string created_by = 12;
+}
+
+// Notification channel for alarms
+message NotificationChannel {
+  string id = 1;
+  string type = 2; // EMAIL, WEBHOOK, SLACK, etc.
+  string destination = 3; // email address, webhook URL, etc.
+  map<string, string> config = 4; // Additional configuration
+}
+
+// Request to create a new alarm
+message CreateAlarmRequest {
+  string name = 1;
+  string description = 2;
+  string query = 3;
+  string condition = 4;
+  int32 threshold = 5;
+  int32 time_window_minutes = 6;
+  repeated NotificationChannel notification_channels = 7;
+  bool enabled = 8;
+}
+
+// Request to get all alarms
+message GetAlarmsRequest {
+  int32 page = 1;
+  int32 size = 2;
+  string sort_field = 3;
+  bool sort_ascending = 4;
+}
+
+// Response for getting alarms
+message GetAlarmsResponse {
+  repeated Alarm alarms = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int64 total_results = 4;
+}
+
+// Request to get or delete an alarm by ID
+message AlarmIdRequest {
+  string id = 1;
+}
+
+// Request to update an alarm
+message UpdateAlarmRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string query = 4;
+  string condition = 5;
+  int32 threshold = 6;
+  int32 time_window_minutes = 7;
+  repeated NotificationChannel notification_channels = 8;
+  bool enabled = 9;
+}
+
+// Response after deleting an alarm
+message DeleteAlarmResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request to test an alarm
+message TestAlarmRequest {
+  string id = 1;
+  // If id is not provided, use these fields to test
+  string query = 2;
+  string condition = 3;
+  int32 threshold = 4;
+  int32 time_window_minutes = 5;
+}
+
+// Response after testing an alarm
+message TestAlarmResponse {
+  bool would_trigger = 1;
+  int32 current_value = 2;
+  string message = 3;
+}

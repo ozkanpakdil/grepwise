@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.github.ozkanpakdil.grepwise.grpc";
+option java_outer_classname = "AuthServiceProto";
+
+package authservice;
+
+// Service for handling authentication operations
+service AuthService {
+  // Register a new user
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  
+  // Login with username and password
+  rpc Login(LoginRequest) returns (AuthResponse);
+  
+  // Validate a token
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  
+  // Refresh an access token using a refresh token
+  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+  
+  // Logout and invalidate tokens
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  
+  // Get current user information
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (User);
+  
+  // Update user information
+  rpc UpdateUser(UpdateUserRequest) returns (User);
+  
+  // Change password
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+}
+
+// User information
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string first_name = 4;
+  string last_name = 5;
+  repeated string roles = 6;
+  int64 created_at = 7;
+  int64 updated_at = 8;
+  bool enabled = 9;
+}
+
+// Request to register a new user
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string first_name = 4;
+  string last_name = 5;
+}
+
+// Request to login
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Response for authentication operations
+message AuthResponse {
+  bool success = 1;
+  string message = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+  int64 expires_at = 5;
+  User user = 6;
+}
+
+// Request to validate a token
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+// Response for token validation
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+  int64 expires_at = 4;
+}
+
+// Request to refresh a token
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+// Request to logout
+message LogoutRequest {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+// Response for logout
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request to get current user
+message GetCurrentUserRequest {
+  string access_token = 1;
+}
+
+// Request to update user information
+message UpdateUserRequest {
+  string access_token = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+}
+
+// Request to change password
+message ChangePasswordRequest {
+  string access_token = 1;
+  string current_password = 2;
+  string new_password = 3;
+}
+
+// Response for password change
+message ChangePasswordResponse {
+  bool success = 1;
+  string message = 2;
+}

@@ -31,11 +31,7 @@ import java.util.stream.Stream;
 public class LogScannerService {
     private static final Logger logger = LoggerFactory.getLogger(LogScannerService.class);
 
-    // Common log patterns
-    private static final Pattern LOG4J_PATTERN = Pattern.compile(
-            "(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3})\\s+(\\w+)\\s+\\[([^\\]]+)\\]\\s+(.*)");
-    private static final Pattern SIMPLE_PATTERN = Pattern.compile(
-            "(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2})\\s+(\\w+)\\s+(.*)");
+    // No log patterns - we'll index the entire line without parsing
 
     private final LogDirectoryConfigRepository configRepository;
     private final LuceneService luceneService;
@@ -124,30 +120,19 @@ public class LogScannerService {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-            StringBuilder currentEntry = new StringBuilder();
-            LogEntry currentLogEntry = null;
             int lineCount = 0;
-            int matchedLines = 0;
 
             while ((line = reader.readLine()) != null) {
                 lineCount++;
-                // Check if this line starts a new log entry
-                LogEntry newEntry = parseLogLine(line, file.getName());
+                // Create a log entry for each line
+                LogEntry entry = parseLogLine(line, file.getName());
+                logEntries.add(entry);
 
-                if (newEntry != null) {
-                    matchedLines++;
-                    logger.trace("Line {} matched a log pattern: {}", lineCount,
-                            line.substring(0, Math.min(line.length(), 100)));
-
-                    currentLogEntry = newEntry;
-                } else {
-                    currentEntry.append(line).append(System.lineSeparator());
-                }
+                logger.trace("Processed line {}: {}", lineCount,
+                        line.substring(0, Math.min(line.length(), 100)));
             }
 
-            logEntries.add(currentLogEntry);
-
-            logger.debug("Processed {} lines in file, matched {} log entries", lineCount, matchedLines);
+            logger.debug("Processed {} lines in file", lineCount);
         } catch (IOException e) {
             logger.error("Error reading log file: {}", file, e);
             return 0;
@@ -169,61 +154,10 @@ public class LogScannerService {
      *
      * @param line The log line to parse
      * @param source The source of the log (filename)
-     * @return A LogEntry if the line is the start of a log entry, null otherwise
+     * @return A LogEntry with the entire line as the message
      */
     private LogEntry parseLogLine(String line, String source) {
-        // Try different log patterns
-        Matcher log4jMatcher = LOG4J_PATTERN.matcher(line);
-        if (log4jMatcher.matches()) {
-            String timestamp = log4jMatcher.group(1);
-            String level = log4jMatcher.group(2);
-            String thread = log4jMatcher.group(3);
-            String message = log4jMatcher.group(4);
-
-            logger.debug("Matched LOG4J pattern: timestamp={}, level={}, thread={}, message={}",
-                    timestamp, level, thread, message.substring(0, Math.min(message.length(), 50)));
-
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put("thread", thread);
-
-            long recordTime = parseTimestamp(timestamp);
-            return new LogEntry(
-                    UUID.randomUUID().toString(),
-                    System.currentTimeMillis(), // Entry time (when the log was scanned)
-                    recordTime, // Record time (from the log line)
-                    level,
-                    message,
-                    source,
-                    metadata,
-                    line
-            );
-        }
-
-        Matcher simpleMatcher = SIMPLE_PATTERN.matcher(line);
-        if (simpleMatcher.matches()) {
-            String timestamp = simpleMatcher.group(1);
-            String level = simpleMatcher.group(2);
-            String message = simpleMatcher.group(3);
-
-            logger.debug("Matched SIMPLE pattern: timestamp={}, level={}, message={}",
-                    timestamp, level, message.substring(0, Math.min(message.length(), 50)));
-
-            long recordTime = parseTimestamp(timestamp);
-            return new LogEntry(
-                    UUID.randomUUID().toString(),
-                    System.currentTimeMillis(), // Entry time (when the log was scanned)
-                    recordTime, // Record time (from the log line)
-                    level,
-                    message,
-                    source,
-                    new HashMap<>(),
-                    line
-            );
-        }
-
-        // If we get here, the line didn't match any pattern
-        logger.trace("Line did not match any pattern: {}", line.substring(0, Math.min(line.length(), 100)));
-
+        // Extract log level if possible
         String LOGLEVEL = switch (line) {
             case String s when s.contains("ERROR") -> "ERROR";
             case String s when s.contains("WARN") -> "WARN";
@@ -239,12 +173,16 @@ public class LogScannerService {
             case String s when s.contains("EMERGENCY") -> "EMERGENCY";
             default -> "UNKNOWN";
         };
+
+        // Try to extract timestamp if possible
         Long RECORDTIME = DateTimeRegexPatterns.extractDateTimeToTimestamp(DateTimeRegexPatterns.extractFirstDateTime(line));
+
+        // Create a log entry with the entire line as the message and raw content
         return new LogEntry(
                 UUID.randomUUID().toString(),
                 System.currentTimeMillis(), // Entry time (when the log was scanned)
-                RECORDTIME, // Record time (not parsed)
-                LOGLEVEL, // Level (not parsed)
+                RECORDTIME, // Record time (extracted if possible)
+                LOGLEVEL, // Level (extracted if possible)
                 line, // Message is the whole line
                 source, // Source is the filename
                 new HashMap<>(), // No metadata

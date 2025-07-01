@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Date;
 import java.text.ParseException;
 import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.lang.NonNull;
 
 public class DateTimeRegexPatterns {
 
@@ -150,6 +151,9 @@ public class DateTimeRegexPatterns {
 
     // Utility method to try all patterns and return first match
     public static String extractFirstDateTime(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
         for (String pattern : DATE_TIME_PATTERNS) {
             Pattern compiledPattern = Pattern.compile(pattern);
             Matcher matcher = compiledPattern.matcher(text);

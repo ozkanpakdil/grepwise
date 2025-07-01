@@ -22,6 +22,7 @@ import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.slf4j.Logger;
@@ -32,7 +33,6 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Service for indexing and searching logs using Lucene.
@@ -181,14 +180,6 @@ public class LuceneService {
     }
 
     /**
-     * Index a single log entry.
-     */
-    public void indexLogEntry(LogEntry logEntry) throws IOException {
-        Document doc = logEntryToDocument(logEntry);
-        indexWriter.addDocument(doc);
-    }
-
-    /**
      * Index multiple log entries.
      */
     public int indexLogEntries(List<LogEntry> logEntries) throws IOException {
@@ -219,8 +210,8 @@ public class LuceneService {
                 // Use RegexpQuery for regex searches
                 textQuery = new RegexpQuery(new Term("message", queryStr));
             } else {
-                // Use TermQuery for exact matches
-                textQuery = new TermQuery(new Term("message", queryStr.toLowerCase()));
+                // Use WildcardQuery for more flexible matching
+                textQuery = new WildcardQuery(new Term("message", "*" + queryStr.toLowerCase() + "*"));
             }
             queryBuilder.add(textQuery, BooleanClause.Occur.MUST);
         }
@@ -239,7 +230,7 @@ public class LuceneService {
             // Convert results to LogEntry objects
             List<LogEntry> results = new ArrayList<>();
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-                Document doc = searcher.doc(scoreDoc.doc);
+                Document doc = searcher.storedFields().document(scoreDoc.doc);
                 results.add(documentToLogEntry(doc));
             }
 
@@ -258,7 +249,7 @@ public class LuceneService {
 
             List<LogEntry> results = new ArrayList<>();
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-                Document doc = searcher.doc(scoreDoc.doc);
+                Document doc = searcher.storedFields().document(scoreDoc.doc);
                 results.add(documentToLogEntry(doc));
             }
 
@@ -277,7 +268,7 @@ public class LuceneService {
 
             List<LogEntry> results = new ArrayList<>();
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-                Document doc = searcher.doc(scoreDoc.doc);
+                Document doc = searcher.storedFields().document(scoreDoc.doc);
                 results.add(documentToLogEntry(doc));
             }
 
@@ -295,7 +286,7 @@ public class LuceneService {
             TopDocs topDocs = searcher.search(query, 1);
 
             if (topDocs.scoreDocs.length > 0) {
-                Document doc = searcher.doc(topDocs.scoreDocs[0].doc);
+                Document doc = searcher.storedFields().document(topDocs.scoreDocs[0].doc);
                 return documentToLogEntry(doc);
             }
 
@@ -303,21 +294,4 @@ public class LuceneService {
         }
     }
 
-    /**
-     * Delete a log entry by ID.
-     */
-    public boolean deleteById(String id) throws IOException {
-        indexWriter.deleteDocuments(new Term("id", id));
-        indexWriter.commit();
-        return true;
-    }
-
-    /**
-     * Delete all log entries.
-     */
-    public int deleteAll() throws IOException {
-        indexWriter.deleteAll();
-        indexWriter.commit();
-        return 1; // Can't know exact count
-    }
 }

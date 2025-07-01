@@ -1,13 +1,13 @@
 package io.github.ozkanpakdil.grepwise.service;
 
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Date;
-import java.text.ParseException;
 import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.lang.NonNull;
+
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DateTimeRegexPatterns {
 
@@ -111,8 +111,7 @@ public class DateTimeRegexPatterns {
         List<String> allDates = extractAllDateTimes(testText);
         List<Long> allTimestamps = extractAllDateTimesToTimestamps(testText);
 
-        for (int i = 0; i < allDates.size(); i++) {
-            String dateStr = allDates.get(i);
+        for (String dateStr : allDates) {
             long timestamp = convertToTimestamp(dateStr);
             System.out.printf("Date: %-20s -> Timestamp: %-13s -> Back: %s%n",
                     dateStr,

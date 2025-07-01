@@ -53,7 +53,6 @@ public class LuceneService {
     private String indexDirPath;
 
     private Directory indexDirectory;
-    private StandardAnalyzer analyzer;
     private IndexWriter indexWriter;
 
     /**
@@ -71,7 +70,7 @@ public class LuceneService {
 
         // Initialize Lucene components
         indexDirectory = FSDirectory.open(indexPath);
-        analyzer = new StandardAnalyzer();
+        StandardAnalyzer analyzer = new StandardAnalyzer();
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
         indexWriter = new IndexWriter(indexDirectory, config);

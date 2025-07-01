@@ -20,11 +20,9 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*") // Allow requests from any origin for development
 public class LogSearchController {
 
-    private final LogRepository logRepository;
     private final LuceneService luceneService;
 
     public LogSearchController(LogRepository logRepository, LuceneService luceneService) {
-        this.logRepository = logRepository;
         this.luceneService = luceneService;
     }
 

@@ -58,3 +58,6 @@ out/
 
 ## LUCENE
 /lucene-index/
+/*.log
+/frontend/dist/*
+/logs/*.gz

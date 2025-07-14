@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
-import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon } from 'lucide-react';
+import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Layout() {
@@ -34,6 +34,17 @@ export default function Layout() {
               >
                 <SearchIcon className="h-4 w-4" />
                 Search
+              </Link>
+              <Link
+                to="/dashboards"
+                className={`flex items-center gap-2 ${
+                  isActive('/dashboards')
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground'
+                } transition-colors hover:text-foreground`}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboards
               </Link>
               <Link
                 to="/alarms"
@@ -107,6 +118,17 @@ export default function Layout() {
           >
             <SearchIcon className="h-5 w-5" />
             <span className="text-xs">Search</span>
+          </Link>
+          <Link
+            to="/dashboards"
+            className={`flex flex-col items-center gap-1 px-4 py-2 ${
+              isActive('/dashboards')
+                ? 'text-foreground font-medium'
+                : 'text-muted-foreground'
+            } transition-colors hover:text-foreground`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span className="text-xs">Dashboards</span>
           </Link>
           <Link
             to="/alarms"

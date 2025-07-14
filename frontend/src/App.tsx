@@ -6,6 +6,7 @@ import LoginPage from '@/pages/login';
 import SearchPage from '@/pages/search';
 import AlarmsPage from '@/pages/alarms';
 import SettingsPage from '@/pages/settings';
+import DashboardsPage from '@/pages/dashboards';
 import NotFoundPage from '@/pages/not-found';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={isAuthenticated ? <SearchPage /> : <Navigate to="/login" replace />} />
           <Route path="/search" element={isAuthenticated ? <SearchPage /> : <Navigate to="/login" replace />} />
+          <Route path="/dashboards" element={isAuthenticated ? <DashboardsPage /> : <Navigate to="/login" replace />} />
           <Route path="/alarms" element={isAuthenticated ? <AlarmsPage /> : <Navigate to="/login" replace />} />
           <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />} />
         </Route>

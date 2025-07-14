@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.controller;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogRepository;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
+import io.github.ozkanpakdil.grepwise.service.SplQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,9 +22,11 @@ import java.util.stream.Collectors;
 public class LogSearchController {
 
     private final LuceneService luceneService;
+    private final SplQueryService splQueryService;
 
-    public LogSearchController(LogRepository logRepository, LuceneService luceneService) {
+    public LogSearchController(LogRepository logRepository, LuceneService luceneService, SplQueryService splQueryService) {
         this.luceneService = luceneService;
+        this.splQueryService = splQueryService;
     }
 
     /**
@@ -78,6 +81,29 @@ public class LogSearchController {
             return ResponseEntity.ok(logs);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Execute SPL (Splunk Processing Language) query.
+     *
+     * @param splQuery The SPL query string (e.g., "search error | stats count by level")
+     * @return Query results (either log entries or statistics)
+     */
+    @PostMapping("/spl")
+    public ResponseEntity<?> executeSplQuery(@RequestBody String splQuery) {
+        try {
+            SplQueryService.SplQueryResult result = splQueryService.executeSplQuery(splQuery);
+
+            return switch (result.getResultType()) {
+                case LOG_ENTRIES -> ResponseEntity.ok(result.getLogEntries());
+                case STATISTICS -> ResponseEntity.ok(result.getStatistics());
+                default -> ResponseEntity.badRequest().body("Unknown result type");
+            };
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Error executing SPL query: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid SPL query: " + e.getMessage());
         }
     }
 

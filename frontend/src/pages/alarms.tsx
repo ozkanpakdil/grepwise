@@ -1,60 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-
-// Mock data for alarms
-const mockAlarms = [
-  {
-    id: '1',
-    name: 'Database Connection Failures',
-    description: 'Alert when database connection errors occur',
-    query: 'level:ERROR AND message:"Failed to connect to database"',
-    condition: 'count > 5',
-    threshold: 5,
-    timeWindowMinutes: 15,
-    enabled: true,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
-    notificationChannels: [
-      { type: 'EMAIL', destination: 'admin@example.com' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'High Memory Usage',
-    description: 'Alert when memory usage is consistently high',
-    query: 'level:WARNING AND message:"High memory usage"',
-    condition: 'count > 3',
-    threshold: 3,
-    timeWindowMinutes: 10,
-    enabled: true,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
-    notificationChannels: [
-      { type: 'EMAIL', destination: 'admin@example.com' },
-      { type: 'SLACK', destination: '#alerts' }
-    ]
-  },
-  {
-    id: '3',
-    name: 'API Rate Limit Alerts',
-    description: 'Alert when API rate limits are exceeded',
-    query: 'message:"rate limit exceeded"',
-    condition: 'count > 10',
-    threshold: 10,
-    timeWindowMinutes: 5,
-    enabled: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
-    notificationChannels: [
-      { type: 'WEBHOOK', destination: 'https://example.com/webhook' }
-    ]
-  }
-];
+import { alarmApi, Alarm, AlarmRequest } from '@/api/alarm';
 
 export default function AlarmsPage() {
-  const [alarms, setAlarms] = useState(mockAlarms);
+  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreatingAlarm, setIsCreatingAlarm] = useState(false);
-  const [selectedAlarm, setSelectedAlarm] = useState<(typeof mockAlarms)[0] | null>(null);
+  const [selectedAlarm, setSelectedAlarm] = useState<Alarm | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+
+  // Load alarms on component mount
+  useEffect(() => {
+    loadAlarms();
+  }, []);
+
+  const loadAlarms = async () => {
+    try {
+      setLoading(true);
+      const data = await alarmApi.getAllAlarms();
+      setAlarms(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load alarms',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state for creating/editing alarms
   const [formData, setFormData] = useState({
@@ -87,17 +63,17 @@ export default function AlarmsPage() {
     resetForm();
   };
 
-  const handleEditAlarm = (alarm: (typeof mockAlarms)[0]) => {
+  const handleEditAlarm = (alarm: Alarm) => {
     setSelectedAlarm(alarm);
     setIsEditing(true);
     setIsCreatingAlarm(true);
-    
+
     // Populate form with alarm data
     setFormData({
       name: alarm.name,
-      description: alarm.description,
+      description: alarm.description || '',
       query: alarm.query,
-      condition: `count > ${alarm.threshold}`,
+      condition: alarm.condition,
       threshold: alarm.threshold,
       timeWindowMinutes: alarm.timeWindowMinutes,
       enabled: alarm.enabled,
@@ -105,33 +81,43 @@ export default function AlarmsPage() {
     });
   };
 
-  const handleDeleteAlarm = (id: string) => {
-    // In a real app, this would be an API call to delete the alarm
-    const updatedAlarms = alarms.filter(alarm => alarm.id !== id);
-    setAlarms(updatedAlarms);
-    
-    toast({
-      title: 'Alarm deleted',
-      description: 'The alarm has been deleted successfully',
-    });
+  const handleDeleteAlarm = async (id: string) => {
+    try {
+      await alarmApi.deleteAlarm(id);
+      await loadAlarms(); // Reload alarms after deletion
+      toast({
+        title: 'Alarm deleted',
+        description: 'The alarm has been deleted successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete alarm',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleToggleAlarm = (id: string, enabled: boolean) => {
-    // In a real app, this would be an API call to update the alarm
-    const updatedAlarms = alarms.map(alarm => 
-      alarm.id === id ? { ...alarm, enabled } : alarm
-    );
-    setAlarms(updatedAlarms);
-    
-    toast({
-      title: enabled ? 'Alarm enabled' : 'Alarm disabled',
-      description: `The alarm has been ${enabled ? 'enabled' : 'disabled'} successfully`,
-    });
+  const handleToggleAlarm = async (id: string, enabled: boolean) => {
+    try {
+      await alarmApi.toggleAlarm(id);
+      await loadAlarms(); // Reload alarms after toggle
+      toast({
+        title: enabled ? 'Alarm enabled' : 'Alarm disabled',
+        description: `The alarm has been ${enabled ? 'enabled' : 'disabled'} successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to toggle alarm',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.query) {
       toast({
         title: 'Error',
@@ -140,68 +126,64 @@ export default function AlarmsPage() {
       });
       return;
     }
-    
-    // In a real app, this would be an API call to create/update the alarm
-    if (isEditing && selectedAlarm) {
-      // Update existing alarm
-      const updatedAlarms = alarms.map(alarm => 
-        alarm.id === selectedAlarm.id 
-          ? {
-              ...alarm,
-              name: formData.name,
-              description: formData.description,
-              query: formData.query,
-              threshold: formData.threshold,
-              timeWindowMinutes: formData.timeWindowMinutes,
-              enabled: formData.enabled,
-              notificationChannels: [
-                { type: 'EMAIL', destination: formData.notificationEmail }
-              ]
-            } 
-          : alarm
-      );
-      
-      setAlarms(updatedAlarms);
-      
-      toast({
-        title: 'Alarm updated',
-        description: 'The alarm has been updated successfully',
-      });
-    } else {
-      // Create new alarm
-      const newAlarm = {
-        id: `${Date.now()}`, // Generate a unique ID
+
+    try {
+      const alarmRequest: AlarmRequest = {
         name: formData.name,
         description: formData.description,
         query: formData.query,
-        condition: `count > ${formData.threshold}`,
+        condition: formData.condition,
         threshold: formData.threshold,
         timeWindowMinutes: formData.timeWindowMinutes,
         enabled: formData.enabled,
-        createdAt: Date.now(),
-        notificationChannels: [
+        notificationEmail: formData.notificationEmail,
+        notificationChannels: formData.notificationEmail ? [
           { type: 'EMAIL', destination: formData.notificationEmail }
-        ]
+        ] : []
       };
-      
-      setAlarms([...alarms, newAlarm]);
-      
+
+      if (isEditing && selectedAlarm) {
+        // Update existing alarm
+        await alarmApi.updateAlarm(selectedAlarm.id, alarmRequest);
+        toast({
+          title: 'Alarm updated',
+          description: 'The alarm has been updated successfully',
+        });
+      } else {
+        // Create new alarm
+        await alarmApi.createAlarm(alarmRequest);
+        toast({
+          title: 'Alarm created',
+          description: 'The alarm has been created successfully',
+        });
+      }
+
+      // Reload alarms and reset form
+      await loadAlarms();
+      resetForm();
+      setIsCreatingAlarm(false);
+      setIsEditing(false);
+      setSelectedAlarm(null);
+    } catch (error) {
       toast({
-        title: 'Alarm created',
-        description: 'The alarm has been created successfully',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save alarm',
+        variant: 'destructive',
       });
     }
-    
-    // Reset form and close modal
-    resetForm();
-    setIsCreatingAlarm(false);
-    setIsEditing(false);
-    setSelectedAlarm(null);
   };
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading alarms...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -216,7 +198,7 @@ export default function AlarmsPage() {
           Create Alarm
         </Button>
       </div>
-      
+
       {alarms.length > 0 ? (
         <div className="rounded-md border">
           <div className="overflow-x-auto">
@@ -292,14 +274,14 @@ export default function AlarmsPage() {
           </Button>
         </div>
       )}
-      
+
       {isCreatingAlarm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-background p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">
               {isEditing ? 'Edit Alarm' : 'Create Alarm'}
             </h2>
-            
+
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium">
@@ -315,7 +297,7 @@ export default function AlarmsPage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="description" className="block text-sm font-medium">
                   Description
@@ -329,7 +311,7 @@ export default function AlarmsPage() {
                   rows={2}
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="query" className="block text-sm font-medium">
                   Search Query *
@@ -344,7 +326,7 @@ export default function AlarmsPage() {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="threshold" className="block text-sm font-medium">
@@ -359,7 +341,7 @@ export default function AlarmsPage() {
                     className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="timeWindow" className="block text-sm font-medium">
                     Time Window (minutes)
@@ -374,7 +356,7 @@ export default function AlarmsPage() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium">
                   Notification Email
@@ -388,7 +370,7 @@ export default function AlarmsPage() {
                   placeholder="admin@example.com"
                 />
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   id="enabled"
@@ -401,7 +383,7 @@ export default function AlarmsPage() {
                   Enable alarm
                 </label>
               </div>
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   type="button"

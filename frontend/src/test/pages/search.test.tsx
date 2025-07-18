@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SearchPage from '@/pages/search';
 import { searchLogs, getTimeAggregation } from '@/api/logSearch';
@@ -239,6 +239,243 @@ describe('SearchPage', () => {
       expect(screen.getByText('Log Details')).toBeInTheDocument();
       expect(screen.getByText('ID')).toBeInTheDocument();
       expect(screen.getByText('1')).toBeInTheDocument();
+    });
+  });
+
+  // Tests for sorting functionality
+  describe('Sorting functionality', () => {
+    const setupSearchResults = async () => {
+      const user = userEvent.setup();
+      render(<SearchPage />);
+
+      // Type in the Monaco Editor
+      const editorTextarea = screen.getByTestId('monaco-editor-textarea');
+      await user.type(editorTextarea, 'test');
+
+      // Submit the form
+      const searchButton = screen.getByText('Search');
+      await user.click(searchButton);
+
+      // Wait for results to load
+      await waitFor(() => {
+        expect(screen.getByText('Test error message')).toBeInTheDocument();
+        expect(screen.getByText('Test info message')).toBeInTheDocument();
+      });
+
+      return user;
+    };
+
+    it('sorts by level in ascending order when Level header is clicked', async () => {
+      const user = await setupSearchResults();
+
+      // Find and click the Level header
+      const levelHeader = screen.getByText('Level').closest('th');
+      await user.click(levelHeader!);
+
+      // Check that the results are sorted by level in ascending order (ERROR before INFO)
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(within(rows[0]).getByText('ERROR')).toBeInTheDocument();
+      expect(within(rows[1]).getByText('INFO')).toBeInTheDocument();
+
+      // Check that the sort indicator is shown
+      expect(levelHeader!.textContent).toContain('↑');
+    });
+
+    it('toggles sort direction when clicking the same header twice', async () => {
+      const user = await setupSearchResults();
+
+      // Find the Level header
+      const levelHeader = screen.getByText('Level').closest('th');
+      
+      // Click once for ascending
+      await user.click(levelHeader!);
+      
+      // Click again for descending
+      await user.click(levelHeader!);
+
+      // Check that the results are sorted by level in descending order (INFO before ERROR)
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(within(rows[0]).getByText('INFO')).toBeInTheDocument();
+      expect(within(rows[1]).getByText('ERROR')).toBeInTheDocument();
+
+      // Check that the sort indicator is shown
+      expect(levelHeader!.textContent).toContain('↓');
+    });
+
+    it('sorts by timestamp in descending order by default when Timestamp header is clicked', async () => {
+      const user = await setupSearchResults();
+
+      // Find and click the Timestamp header
+      const timestampHeader = screen.getByText('Timestamp').closest('th');
+      await user.click(timestampHeader!);
+
+      // Check that the results are sorted by timestamp in descending order (newer first)
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      
+      // The second log has a newer timestamp
+      expect(within(rows[0]).getByText('Test info message')).toBeInTheDocument();
+      expect(within(rows[1]).getByText('Test error message')).toBeInTheDocument();
+
+      // Check that the sort indicator is shown
+      expect(timestampHeader!.textContent).toContain('↓');
+    });
+
+    it('changes sort column when clicking a different header', async () => {
+      const user = await setupSearchResults();
+
+      // First sort by Level
+      const levelHeader = screen.getByText('Level').closest('th');
+      await user.click(levelHeader!);
+      
+      // Then sort by Message
+      const messageHeader = screen.getByText('Message').closest('th');
+      await user.click(messageHeader!);
+
+      // Check that the Level header no longer has a sort indicator
+      expect(levelHeader!.textContent).not.toContain('↑');
+      expect(levelHeader!.textContent).not.toContain('↓');
+      
+      // Check that the Message header has a sort indicator
+      expect(messageHeader!.textContent).toContain('↑');
+      
+      // Check that the results are sorted by message in ascending order
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(within(rows[0]).getByText('Test error message')).toBeInTheDocument();
+      expect(within(rows[1]).getByText('Test info message')).toBeInTheDocument();
+    });
+  });
+
+  // Tests for filtering functionality
+  describe('Filtering functionality', () => {
+    const setupSearchResults = async () => {
+      const user = userEvent.setup();
+      render(<SearchPage />);
+
+      // Type in the Monaco Editor
+      const editorTextarea = screen.getByTestId('monaco-editor-textarea');
+      await user.type(editorTextarea, 'test');
+
+      // Submit the form
+      const searchButton = screen.getByText('Search');
+      await user.click(searchButton);
+
+      // Wait for results to load
+      await waitFor(() => {
+        expect(screen.getByText('Test error message')).toBeInTheDocument();
+        expect(screen.getByText('Test info message')).toBeInTheDocument();
+      });
+
+      return user;
+    };
+
+    it('shows filter controls when Show Filters button is clicked', async () => {
+      const user = await setupSearchResults();
+
+      // Initially, filter inputs should not be visible
+      expect(screen.queryByLabelText('Filter by Level')).not.toBeInTheDocument();
+
+      // Click the Show Filters button
+      const showFiltersButton = screen.getByText('Show Filters');
+      await user.click(showFiltersButton);
+
+      // Check that filter inputs are now visible
+      expect(screen.getByLabelText('Filter by Level')).toBeInTheDocument();
+      expect(screen.getByLabelText('Filter by Message')).toBeInTheDocument();
+      expect(screen.getByLabelText('Filter by Source')).toBeInTheDocument();
+    });
+
+    it('filters results by level when level filter is used', async () => {
+      const user = await setupSearchResults();
+
+      // Show filters
+      await user.click(screen.getByText('Show Filters'));
+
+      // Enter a filter value for level
+      const levelFilter = screen.getByLabelText('Filter by Level');
+      await user.type(levelFilter, 'ERROR');
+
+      // Check that only ERROR logs are shown
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(rows.length).toBe(1);
+      expect(within(rows[0]).getByText('ERROR')).toBeInTheDocument();
+      expect(screen.queryByText('INFO')).not.toBeInTheDocument();
+
+      // Check that the results count is updated
+      expect(screen.getByText('Showing 1 of 2 logs')).toBeInTheDocument();
+    });
+
+    it('filters results by message when message filter is used', async () => {
+      const user = await setupSearchResults();
+
+      // Show filters
+      await user.click(screen.getByText('Show Filters'));
+
+      // Enter a filter value for message
+      const messageFilter = screen.getByLabelText('Filter by Message');
+      await user.type(messageFilter, 'info');
+
+      // Check that only logs with 'info' in the message are shown
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(rows.length).toBe(1);
+      expect(within(rows[0]).getByText('Test info message')).toBeInTheDocument();
+      expect(screen.queryByText('Test error message')).not.toBeInTheDocument();
+    });
+
+    it('combines multiple filters when more than one filter is used', async () => {
+      const user = await setupSearchResults();
+
+      // Show filters
+      await user.click(screen.getByText('Show Filters'));
+
+      // Enter filter values for level and source
+      const levelFilter = screen.getByLabelText('Filter by Level');
+      await user.type(levelFilter, 'INFO');
+      
+      const sourceFilter = screen.getByLabelText('Filter by Source');
+      await user.type(sourceFilter, 'app.log');
+
+      // Check that only logs matching both filters are shown
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(rows.length).toBe(1);
+      expect(within(rows[0]).getByText('INFO')).toBeInTheDocument();
+      expect(within(rows[0]).getByText('app.log')).toBeInTheDocument();
+    });
+
+    it('hides filter controls when Hide Filters button is clicked', async () => {
+      const user = await setupSearchResults();
+
+      // Show filters
+      await user.click(screen.getByText('Show Filters'));
+      
+      // Check that filter inputs are visible
+      expect(screen.getByLabelText('Filter by Level')).toBeInTheDocument();
+      
+      // Hide filters
+      await user.click(screen.getByText('Hide Filters'));
+      
+      // Check that filter inputs are no longer visible
+      expect(screen.queryByLabelText('Filter by Level')).not.toBeInTheDocument();
+    });
+
+    it('combines sorting and filtering when both are used', async () => {
+      const user = await setupSearchResults();
+
+      // Show filters
+      await user.click(screen.getByText('Show Filters'));
+
+      // Enter a filter value for level
+      const levelFilter = screen.getByLabelText('Filter by Level');
+      await user.type(levelFilter, 'E'); // This will match ERROR but not INFO
+
+      // Sort by timestamp
+      const timestampHeader = screen.getByText('Timestamp').closest('th');
+      await user.click(timestampHeader!);
+
+      // Check that only ERROR logs are shown and they're sorted by timestamp
+      const rows = screen.getAllByRole('row').slice(1); // Skip header row
+      expect(rows.length).toBe(1);
+      expect(within(rows[0]).getByText('ERROR')).toBeInTheDocument();
+      expect(screen.queryByText('INFO')).not.toBeInTheDocument();
     });
   });
 });

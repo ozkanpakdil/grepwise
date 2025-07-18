@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { 
@@ -21,6 +21,15 @@ import LogBarChart from '@/components/LogBarChart';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
+// Type definitions for sorting and filtering
+type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
+type SortDirection = 'asc' | 'desc';
+type FilterValues = {
+  level: string;
+  source: string;
+  message: string;
+};
+
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [isRegex, setIsRegex] = useState(false);
@@ -32,6 +41,19 @@ export default function SearchPage() {
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
+  
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
+  // Filtering state
+  const [filterValues, setFilterValues] = useState<FilterValues>({
+    level: '',
+    source: '',
+    message: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { toast } = useToast();
   
@@ -158,6 +180,96 @@ export default function SearchPage() {
         return '';
     }
   };
+
+  // Handle sorting when a column header is clicked
+  const handleSortClick = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to descending for timestamp, ascending for others
+      setSortColumn(column);
+      setSortDirection(column === 'timestamp' ? 'desc' : 'asc');
+    }
+  };
+
+  // Handle filter value changes
+  const handleFilterChange = (field: keyof FilterValues, value: string) => {
+    setFilterValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Toggle filter visibility
+  const toggleFilters = () => {
+    setShowFilters(prev => !prev);
+  };
+
+  // Apply sorting and filtering to search results
+  const processedResults = useMemo(() => {
+    let results = [...searchResults];
+    
+    // Apply filters
+    if (filterValues.level) {
+      results = results.filter(log => 
+        log.level.toLowerCase().includes(filterValues.level.toLowerCase())
+      );
+    }
+    
+    if (filterValues.source) {
+      results = results.filter(log => 
+        log.source.toLowerCase().includes(filterValues.source.toLowerCase())
+      );
+    }
+    
+    if (filterValues.message) {
+      results = results.filter(log => 
+        log.message.toLowerCase().includes(filterValues.message.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    if (sortColumn) {
+      results.sort((a, b) => {
+        let valueA: any;
+        let valueB: any;
+        
+        // Extract values based on sort column
+        switch (sortColumn) {
+          case 'timestamp':
+            valueA = a.timestamp;
+            valueB = b.timestamp;
+            break;
+          case 'level':
+            valueA = a.level.toLowerCase();
+            valueB = b.level.toLowerCase();
+            break;
+          case 'message':
+            valueA = a.message.toLowerCase();
+            valueB = b.message.toLowerCase();
+            break;
+          case 'source':
+            valueA = a.source.toLowerCase();
+            valueB = b.source.toLowerCase();
+            break;
+          default:
+            return 0;
+        }
+        
+        // Compare values based on sort direction
+        if (valueA < valueB) {
+          return sortDirection === 'asc' ? -1 : 1;
+        }
+        if (valueA > valueB) {
+          return sortDirection === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
+    return results;
+  }, [searchResults, sortColumn, sortDirection, filterValues]);
 
   const handleLogClick = (log: LogEntry) => {
     setSelectedLog(log);
@@ -335,36 +447,132 @@ export default function SearchPage() {
       )}
 
       {searchResults.length > 0 && (
-        <div className="rounded-md border">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-2 text-left font-medium">Timestamp</th>
-                  <th className="px-4 py-2 text-left font-medium">Level</th>
-                  <th className="px-4 py-2 text-left font-medium">Message</th>
-                  <th className="px-4 py-2 text-left font-medium">Source</th>
-                </tr>
-              </thead>
-              <tbody>
-                {searchResults.map((log) => (
-                  <tr 
-                    key={log.id} 
-                    className="border-b hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleLogClick(log)}
-                  >
-                    <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
-                    <td className="px-4 py-2 text-sm">
-                      <span className={getLevelClass(log.level)}>
-                        {log.level}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-sm">{log.message}</td>
-                    <td className="px-4 py-2 text-sm">{log.source}</td>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-sm text-muted-foreground">
+                Showing {processedResults.length} of {searchResults.length} logs
+              </span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleFilters}
+              className="flex items-center gap-1"
+            >
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          </div>
+          
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border">
+              <div>
+                <Label htmlFor="levelFilter" className="text-sm">Filter by Level</Label>
+                <input
+                  id="levelFilter"
+                  type="text"
+                  value={filterValues.level}
+                  onChange={(e) => handleFilterChange('level', e.target.value)}
+                  placeholder="Filter by level..."
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="messageFilter" className="text-sm">Filter by Message</Label>
+                <input
+                  id="messageFilter"
+                  type="text"
+                  value={filterValues.message}
+                  onChange={(e) => handleFilterChange('message', e.target.value)}
+                  placeholder="Filter by message..."
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="sourceFilter" className="text-sm">Filter by Source</Label>
+                <input
+                  id="sourceFilter"
+                  type="text"
+                  value={filterValues.source}
+                  onChange={(e) => handleFilterChange('source', e.target.value)}
+                  placeholder="Filter by source..."
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="rounded-md border">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th 
+                      className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
+                      onClick={() => handleSortClick('timestamp')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Timestamp
+                        {sortColumn === 'timestamp' && (
+                          <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
+                      onClick={() => handleSortClick('level')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Level
+                        {sortColumn === 'level' && (
+                          <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
+                      onClick={() => handleSortClick('message')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Message
+                        {sortColumn === 'message' && (
+                          <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
+                      onClick={() => handleSortClick('source')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Source
+                        {sortColumn === 'source' && (
+                          <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {processedResults.map((log) => (
+                    <tr 
+                      key={log.id} 
+                      className="border-b hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleLogClick(log)}
+                    >
+                      <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
+                      <td className="px-4 py-2 text-sm">
+                        <span className={getLevelClass(log.level)}>
+                          {log.level}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-sm">{log.message}</td>
+                      <td className="px-4 py-2 text-sm">{log.source}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

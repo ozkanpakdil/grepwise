@@ -293,4 +293,46 @@ public class LuceneService {
         }
     }
 
+    /**
+     * Delete logs older than the specified timestamp.
+     * 
+     * @param timestamp Logs older than this timestamp will be deleted
+     * @return The number of logs deleted
+     */
+    public long deleteLogsOlderThan(long timestamp) throws IOException {
+        logger.info("Deleting logs older than timestamp: {}", timestamp);
+        
+        // Create a query for logs older than the timestamp
+        Query query = LongPoint.newRangeQuery("timestamp", 0, timestamp);
+        
+        // Delete matching documents
+        long deleted = indexWriter.deleteDocuments(query);
+        indexWriter.commit();
+        
+        logger.info("Deleted {} logs older than timestamp: {}", deleted, timestamp);
+        return deleted;
+    }
+
+    /**
+     * Delete logs older than the specified timestamp for a specific source.
+     * 
+     * @param timestamp Logs older than this timestamp will be deleted
+     * @param source The source to filter by
+     * @return The number of logs deleted
+     */
+    public long deleteLogsOlderThanForSource(long timestamp, String source) throws IOException {
+        logger.info("Deleting logs older than timestamp: {} for source: {}", timestamp, source);
+        
+        // Create a boolean query combining timestamp and source
+        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+        queryBuilder.add(LongPoint.newRangeQuery("timestamp", 0, timestamp), BooleanClause.Occur.MUST);
+        queryBuilder.add(new TermQuery(new Term("source", source)), BooleanClause.Occur.MUST);
+        
+        // Delete matching documents
+        long deleted = indexWriter.deleteDocuments(queryBuilder.build());
+        indexWriter.commit();
+        
+        logger.info("Deleted {} logs older than timestamp: {} for source: {}", deleted, timestamp, source);
+        return deleted;
+    }
 }

@@ -12,6 +12,15 @@ import {
   scanAllLogDirectories,
   LogDirectoryConfig
 } from '@/api/logDirectoryConfig';
+import {
+  getRetentionPolicies,
+  createRetentionPolicy,
+  updateRetentionPolicy,
+  deleteRetentionPolicy,
+  applyRetentionPolicy,
+  applyAllRetentionPolicies,
+  RetentionPolicy
+} from '@/api/retentionPolicy';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -38,6 +47,9 @@ export default function SettingsPage() {
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isLoadingPolicies, setIsLoadingPolicies] = useState(false);
+  const [isSavingPolicy, setIsSavingPolicy] = useState(false);
+  const [isApplyingPolicy, setIsApplyingPolicy] = useState(false);
 
   // Log directory configurations
   const [logDirectoryConfigs, setLogDirectoryConfigs] = useState<LogDirectoryConfig[]>([]);
@@ -47,14 +59,36 @@ export default function SettingsPage() {
     filePattern: '*.log',
     scanIntervalSeconds: 60
   });
+  
+  // Retention policies
+  const [retentionPolicies, setRetentionPolicies] = useState<RetentionPolicy[]>([]);
+  const [newPolicy, setNewPolicy] = useState<RetentionPolicy>({
+    name: '',
+    maxAgeDays: 30,
+    enabled: true,
+    applyToSources: []
+  });
+  const [availableSources, setAvailableSources] = useState<string[]>([]);
 
-  // Load log directory configurations
+  // Load log directory configurations and retention policies
   useEffect(() => {
-    const fetchConfigs = async () => {
+    const fetchData = async () => {
       setIsLoadingConfigs(true);
+      setIsLoadingPolicies(true);
+      
       try {
+        // Fetch log directory configurations
         const configs = await getLogDirectoryConfigs();
         setLogDirectoryConfigs(configs);
+        
+        // Extract unique sources for retention policy source selection
+        const sources = configs.map(config => {
+          // Extract filename from path
+          const parts = config.directoryPath.split(/[\/\\]/);
+          return parts[parts.length - 1];
+        });
+        setAvailableSources([...new Set(sources)]);
+        
       } catch (error) {
         console.error('Error fetching log directory configs:', error);
         toast({
@@ -65,9 +99,24 @@ export default function SettingsPage() {
       } finally {
         setIsLoadingConfigs(false);
       }
+      
+      try {
+        // Fetch retention policies
+        const policies = await getRetentionPolicies();
+        setRetentionPolicies(policies);
+      } catch (error) {
+        console.error('Error fetching retention policies:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load retention policies',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingPolicies(false);
+      }
     };
 
-    fetchConfigs();
+    fetchData();
   }, []);
 
   // Handle creating a new log directory configuration
@@ -196,6 +245,135 @@ export default function SettingsPage() {
       });
     } finally {
       setIsScanning(false);
+    }
+  };
+  
+  // Handle creating a new retention policy
+  const handleCreatePolicy = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newPolicy.name) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a policy name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSavingPolicy(true);
+
+    try {
+      const createdPolicy = await createRetentionPolicy(newPolicy);
+      setRetentionPolicies([...retentionPolicies, createdPolicy]);
+      setNewPolicy({
+        name: '',
+        maxAgeDays: 30,
+        enabled: true,
+        applyToSources: []
+      });
+
+      toast({
+        title: 'Policy created',
+        description: 'Retention policy has been created successfully',
+      });
+    } catch (error) {
+      console.error('Error creating retention policy:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create retention policy',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingPolicy(false);
+    }
+  };
+
+  // Handle updating a retention policy
+  const handleUpdatePolicy = async (policy: RetentionPolicy) => {
+    if (!policy.id) return;
+
+    try {
+      const updatedPolicy = await updateRetentionPolicy(policy.id, policy);
+      setRetentionPolicies(retentionPolicies.map(p => p.id === policy.id ? updatedPolicy : p));
+
+      toast({
+        title: 'Policy updated',
+        description: 'Retention policy has been updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating retention policy:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update retention policy',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle deleting a retention policy
+  const handleDeletePolicy = async (id: string) => {
+    try {
+      await deleteRetentionPolicy(id);
+      setRetentionPolicies(retentionPolicies.filter(p => p.id !== id));
+
+      toast({
+        title: 'Policy deleted',
+        description: 'Retention policy has been deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting retention policy:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete retention policy',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle applying a retention policy
+  const handleApplyPolicy = async (id: string) => {
+    setIsApplyingPolicy(true);
+
+    try {
+      const deletedCount = await applyRetentionPolicy(id);
+
+      toast({
+        title: 'Policy applied',
+        description: `Deleted ${deletedCount} log entries`,
+      });
+    } catch (error) {
+      console.error('Error applying retention policy:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply retention policy',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplyingPolicy(false);
+    }
+  };
+
+  // Handle applying all retention policies
+  const handleApplyAllPolicies = async () => {
+    setIsApplyingPolicy(true);
+
+    try {
+      const deletedCount = await applyAllRetentionPolicies();
+
+      toast({
+        title: 'All policies applied',
+        description: `Deleted ${deletedCount} log entries`,
+      });
+    } catch (error) {
+      console.error('Error applying all retention policies:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply retention policies',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplyingPolicy(false);
     }
   };
 
@@ -599,6 +777,159 @@ export default function SettingsPage() {
                             variant="destructive" 
                             size="sm"
                             onClick={() => handleDeleteConfig(config.id!)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Retention Policy Configuration */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Log Retention Policy</h2>
+        <div className="border rounded-md p-4">
+          <div className="space-y-6">
+            {/* Add new retention policy */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Add New Retention Policy</h3>
+              <form onSubmit={handleCreatePolicy} className="space-y-4">
+                <div>
+                  <label htmlFor="policyName" className="block text-sm font-medium">
+                    Policy Name
+                  </label>
+                  <input
+                    id="policyName"
+                    type="text"
+                    value={newPolicy.name}
+                    onChange={(e) => setNewPolicy({...newPolicy, name: e.target.value})}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder="30-day retention"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxAgeDays" className="block text-sm font-medium">
+                    Maximum Age (days)
+                  </label>
+                  <input
+                    id="maxAgeDays"
+                    type="number"
+                    value={newPolicy.maxAgeDays}
+                    onChange={(e) => setNewPolicy({...newPolicy, maxAgeDays: parseInt(e.target.value)})}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    min="1"
+                    max="365"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="applySources" className="block text-sm font-medium">
+                    Apply to Sources (optional)
+                  </label>
+                  <select
+                    id="applySources"
+                    multiple
+                    value={newPolicy.applyToSources || []}
+                    onChange={(e) => {
+                      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                      setNewPolicy({...newPolicy, applyToSources: selectedOptions});
+                    }}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    size={3}
+                  >
+                    {availableSources.map((source) => (
+                      <option key={source} value={source}>
+                        {source}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Leave empty to apply to all sources. Hold Ctrl/Cmd to select multiple sources.
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="policyEnabled"
+                    type="checkbox"
+                    checked={newPolicy.enabled}
+                    onChange={(e) => setNewPolicy({...newPolicy, enabled: e.target.checked})}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="policyEnabled" className="ml-2 block text-sm font-medium">
+                    Enabled
+                  </label>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isSavingPolicy}>
+                    {isSavingPolicy ? 'Saving...' : 'Add Policy'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Existing retention policies */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Configured Retention Policies</h3>
+                <Button 
+                  onClick={handleApplyAllPolicies}
+                  disabled={isApplyingPolicy}
+                >
+                  {isApplyingPolicy ? 'Applying...' : 'Apply All Policies'}
+                </Button>
+              </div>
+              {isLoadingPolicies ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Loading retention policies...</p>
+                </div>
+              ) : retentionPolicies.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">No retention policies configured yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {retentionPolicies.map((policy) => (
+                    <div key={policy.id} className="border rounded-md p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{policy.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Max Age: {policy.maxAgeDays} days | 
+                            Status: {policy.enabled ? 'Enabled' : 'Disabled'} |
+                            Sources: {policy.applyToSources && policy.applyToSources.length > 0 
+                              ? policy.applyToSources.join(', ') 
+                              : 'All sources'}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleApplyPolicy(policy.id!)}
+                            disabled={isApplyingPolicy}
+                          >
+                            {isApplyingPolicy ? 'Applying...' : 'Apply Now'}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleUpdatePolicy({
+                              ...policy,
+                              enabled: !policy.enabled
+                            })}
+                          >
+                            {policy.enabled ? 'Disable' : 'Enable'}
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeletePolicy(policy.id!)}
                           >
                             Delete
                           </Button>

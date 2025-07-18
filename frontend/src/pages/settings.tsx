@@ -21,6 +21,10 @@ import {
   applyAllRetentionPolicies,
   RetentionPolicy
 } from '@/api/retentionPolicy';
+import {
+  fieldConfigurationApi,
+  FieldConfiguration
+} from '@/api/fieldConfiguration';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -50,6 +54,9 @@ export default function SettingsPage() {
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(false);
   const [isSavingPolicy, setIsSavingPolicy] = useState(false);
   const [isApplyingPolicy, setIsApplyingPolicy] = useState(false);
+  const [isLoadingFieldConfigs, setIsLoadingFieldConfigs] = useState(false);
+  const [isSavingFieldConfig, setIsSavingFieldConfig] = useState(false);
+  const [isTestingFieldConfig, setIsTestingFieldConfig] = useState(false);
 
   // Log directory configurations
   const [logDirectoryConfigs, setLogDirectoryConfigs] = useState<LogDirectoryConfig[]>([]);
@@ -69,12 +76,29 @@ export default function SettingsPage() {
     applyToSources: []
   });
   const [availableSources, setAvailableSources] = useState<string[]>([]);
+  
+  // Field configurations
+  const [fieldConfigurations, setFieldConfigurations] = useState<FieldConfiguration[]>([]);
+  const [newFieldConfig, setNewFieldConfig] = useState<FieldConfiguration>({
+    name: '',
+    description: '',
+    fieldType: 'STRING',
+    extractionPattern: null,
+    sourceField: 'message',
+    isStored: true,
+    isIndexed: true,
+    isTokenized: false,
+    enabled: true
+  });
+  const [testSampleString, setTestSampleString] = useState('');
+  const [testResult, setTestResult] = useState<string | null>(null);
 
-  // Load log directory configurations and retention policies
+  // Load log directory configurations, retention policies, and field configurations
   useEffect(() => {
     const fetchData = async () => {
       setIsLoadingConfigs(true);
       setIsLoadingPolicies(true);
+      setIsLoadingFieldConfigs(true);
       
       try {
         // Fetch log directory configurations
@@ -113,6 +137,21 @@ export default function SettingsPage() {
         });
       } finally {
         setIsLoadingPolicies(false);
+      }
+      
+      try {
+        // Fetch field configurations
+        const fieldConfigs = await fieldConfigurationApi.getFieldConfigurations();
+        setFieldConfigurations(fieldConfigs);
+      } catch (error) {
+        console.error('Error fetching field configurations:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load field configurations',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingFieldConfigs(false);
       }
     };
 
@@ -374,6 +413,136 @@ export default function SettingsPage() {
       });
     } finally {
       setIsApplyingPolicy(false);
+    }
+  };
+  
+  // Handle creating a new field configuration
+  const handleCreateFieldConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newFieldConfig.name) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a field name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!newFieldConfig.sourceField) {
+      toast({
+        title: 'Error',
+        description: 'Please select a source field',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSavingFieldConfig(true);
+
+    try {
+      const createdConfig = await fieldConfigurationApi.createFieldConfiguration(newFieldConfig);
+      setFieldConfigurations([...fieldConfigurations, createdConfig]);
+      setNewFieldConfig({
+        name: '',
+        description: '',
+        fieldType: 'STRING',
+        extractionPattern: null,
+        sourceField: 'message',
+        isStored: true,
+        isIndexed: true,
+        isTokenized: false,
+        enabled: true
+      });
+      setTestSampleString('');
+      setTestResult(null);
+
+      toast({
+        title: 'Field configuration created',
+        description: 'Field configuration has been created successfully',
+      });
+    } catch (error) {
+      console.error('Error creating field configuration:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create field configuration',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingFieldConfig(false);
+    }
+  };
+
+  // Handle updating a field configuration
+  const handleUpdateFieldConfig = async (config: FieldConfiguration) => {
+    if (!config.id) return;
+
+    try {
+      const updatedConfig = await fieldConfigurationApi.updateFieldConfiguration(config.id, config);
+      setFieldConfigurations(fieldConfigurations.map(c => c.id === config.id ? updatedConfig : c));
+
+      toast({
+        title: 'Field configuration updated',
+        description: 'Field configuration has been updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating field configuration:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update field configuration',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle deleting a field configuration
+  const handleDeleteFieldConfig = async (id: string) => {
+    try {
+      await fieldConfigurationApi.deleteFieldConfiguration(id);
+      setFieldConfigurations(fieldConfigurations.filter(c => c.id !== id));
+
+      toast({
+        title: 'Field configuration deleted',
+        description: 'Field configuration has been deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting field configuration:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete field configuration',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle testing a field configuration
+  const handleTestFieldConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!testSampleString) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a sample string',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsTestingFieldConfig(true);
+
+    try {
+      const result = await fieldConfigurationApi.testFieldConfiguration(newFieldConfig, testSampleString);
+      setTestResult(result);
+    } catch (error) {
+      console.error('Error testing field configuration:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to test field configuration',
+        variant: 'destructive',
+      });
+      setTestResult(null);
+    } finally {
+      setIsTestingFieldConfig(false);
     }
   };
 
@@ -930,6 +1099,261 @@ export default function SettingsPage() {
                             variant="destructive" 
                             size="sm"
                             onClick={() => handleDeletePolicy(policy.id!)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Field Configuration */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Field Configuration</h2>
+        <div className="border rounded-md p-4">
+          <div className="space-y-6">
+            {/* Add new field configuration */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Add New Field Configuration</h3>
+              <form onSubmit={handleCreateFieldConfig} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="fieldName" className="block text-sm font-medium">
+                      Field Name
+                    </label>
+                    <input
+                      id="fieldName"
+                      type="text"
+                      value={newFieldConfig.name}
+                      onChange={(e) => setNewFieldConfig({...newFieldConfig, name: e.target.value})}
+                      className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="ip_address"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="fieldType" className="block text-sm font-medium">
+                      Field Type
+                    </label>
+                    <select
+                      id="fieldType"
+                      value={newFieldConfig.fieldType}
+                      onChange={(e) => setNewFieldConfig({...newFieldConfig, fieldType: e.target.value as any})}
+                      className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="STRING">String</option>
+                      <option value="NUMBER">Number</option>
+                      <option value="DATE">Date</option>
+                      <option value="BOOLEAN">Boolean</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="fieldDescription" className="block text-sm font-medium">
+                    Description
+                  </label>
+                  <input
+                    id="fieldDescription"
+                    type="text"
+                    value={newFieldConfig.description}
+                    onChange={(e) => setNewFieldConfig({...newFieldConfig, description: e.target.value})}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder="IP address extracted from log message"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="sourceField" className="block text-sm font-medium">
+                    Source Field
+                  </label>
+                  <select
+                    id="sourceField"
+                    value={newFieldConfig.sourceField}
+                    onChange={(e) => setNewFieldConfig({...newFieldConfig, sourceField: e.target.value})}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="message">Message</option>
+                    <option value="level">Level</option>
+                    <option value="source">Source</option>
+                    <option value="rawContent">Raw Content</option>
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    The field from which to extract the value
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="extractionPattern" className="block text-sm font-medium">
+                    Extraction Pattern (Regular Expression)
+                  </label>
+                  <input
+                    id="extractionPattern"
+                    type="text"
+                    value={newFieldConfig.extractionPattern || ''}
+                    onChange={(e) => setNewFieldConfig({...newFieldConfig, extractionPattern: e.target.value || null})}
+                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder="\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Regular expression pattern to extract the field value. Leave empty to use the entire source field.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center">
+                    <input
+                      id="isStored"
+                      type="checkbox"
+                      checked={newFieldConfig.isStored}
+                      onChange={(e) => setNewFieldConfig({...newFieldConfig, isStored: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="isStored" className="ml-2 block text-sm font-medium">
+                      Stored
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="isIndexed"
+                      type="checkbox"
+                      checked={newFieldConfig.isIndexed}
+                      onChange={(e) => setNewFieldConfig({...newFieldConfig, isIndexed: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="isIndexed" className="ml-2 block text-sm font-medium">
+                      Indexed
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="isTokenized"
+                      type="checkbox"
+                      checked={newFieldConfig.isTokenized}
+                      onChange={(e) => setNewFieldConfig({...newFieldConfig, isTokenized: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="isTokenized" className="ml-2 block text-sm font-medium">
+                      Tokenized
+                    </label>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="fieldEnabled"
+                    type="checkbox"
+                    checked={newFieldConfig.enabled}
+                    onChange={(e) => setNewFieldConfig({...newFieldConfig, enabled: e.target.checked})}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="fieldEnabled" className="ml-2 block text-sm font-medium">
+                    Enabled
+                  </label>
+                </div>
+                
+                {/* Test field configuration */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-md font-medium mb-2">Test Extraction Pattern</h4>
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="testSampleString" className="block text-sm font-medium">
+                        Sample String
+                      </label>
+                      <textarea
+                        id="testSampleString"
+                        value={testSampleString}
+                        onChange={(e) => setTestSampleString(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="Enter a sample log message to test the extraction pattern"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleTestFieldConfig}
+                        disabled={isTestingFieldConfig || !testSampleString}
+                        className="mr-2"
+                      >
+                        {isTestingFieldConfig ? 'Testing...' : 'Test Pattern'}
+                      </Button>
+                    </div>
+                    {testResult !== null && (
+                      <div className="mt-2 p-2 border rounded-md">
+                        <p className="text-sm font-medium">Extraction Result:</p>
+                        <p className="text-sm">{testResult}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isSavingFieldConfig}>
+                    {isSavingFieldConfig ? 'Saving...' : 'Add Field Configuration'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Existing field configurations */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Configured Fields</h3>
+              {isLoadingFieldConfigs ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Loading field configurations...</p>
+                </div>
+              ) : fieldConfigurations.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">No field configurations configured yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {fieldConfigurations.map((config) => (
+                    <div key={config.id} className="border rounded-md p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{config.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Type: {config.fieldType} | 
+                            Source: {config.sourceField} | 
+                            Status: {config.enabled ? 'Enabled' : 'Disabled'}
+                          </p>
+                          {config.description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Description: {config.description}
+                            </p>
+                          )}
+                          {config.extractionPattern && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Pattern: {config.extractionPattern}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Properties: 
+                            {config.isStored ? ' Stored' : ''} 
+                            {config.isIndexed ? ' Indexed' : ''} 
+                            {config.isTokenized ? ' Tokenized' : ''}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleUpdateFieldConfig({
+                              ...config,
+                              enabled: !config.enabled
+                            })}
+                          >
+                            {config.enabled ? 'Disable' : 'Enable'}
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteFieldConfig(config.id!)}
                           >
                             Delete
                           </Button>

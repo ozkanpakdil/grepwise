@@ -1,10 +1,13 @@
 package io.github.ozkanpakdil.grepwise.service;
 
+import io.github.ozkanpakdil.grepwise.model.FieldConfiguration;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
+import io.github.ozkanpakdil.grepwise.service.FieldConfigurationService;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -27,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +58,9 @@ public class LuceneService {
 
     private Directory indexDirectory;
     private IndexWriter indexWriter;
+    
+    @Autowired
+    private FieldConfigurationService fieldConfigurationService;
 
     /**
      * Initialize the Lucene index.
@@ -144,6 +151,94 @@ public class LuceneService {
             }
         }
 
+        // Apply field configurations to extract and index custom fields
+        try {
+            List<FieldConfiguration> enabledConfigs = fieldConfigurationService.getAllEnabledFieldConfigurations();
+            for (FieldConfiguration config : enabledConfigs) {
+                // Get the source field value based on the configuration
+                String sourceValue = null;
+                switch (config.getSourceField()) {
+                    case "message":
+                        sourceValue = logEntry.message();
+                        break;
+                    case "level":
+                        sourceValue = logEntry.level();
+                        break;
+                    case "source":
+                        sourceValue = logEntry.source();
+                        break;
+                    case "rawContent":
+                        sourceValue = logEntry.rawContent();
+                        break;
+                    default:
+                        // Check if it's a metadata field
+                        if (config.getSourceField().startsWith("metadata_") && logEntry.metadata() != null) {
+                            String metadataKey = config.getSourceField().substring("metadata_".length());
+                            sourceValue = logEntry.metadata().get(metadataKey);
+                        }
+                        break;
+                }
+
+                // Skip if source value is null or empty
+                if (sourceValue == null || sourceValue.isEmpty()) {
+                    continue;
+                }
+
+                // Extract the field value using the configuration
+                String fieldValue = fieldConfigurationService.extractFieldValue(config, sourceValue);
+                if (fieldValue == null || fieldValue.isEmpty()) {
+                    continue;
+                }
+
+                // Add the field to the document based on its type and configuration
+                String fieldName = "custom_" + config.getName();
+                
+                switch (config.getFieldType()) {
+                    case STRING:
+                        if (config.isTokenized()) {
+                            doc.add(new TextField(fieldName, fieldValue, config.isStored() ? Field.Store.YES : Field.Store.NO));
+                        } else {
+                            doc.add(new StringField(fieldName, fieldValue, config.isStored() ? Field.Store.YES : Field.Store.NO));
+                        }
+                        break;
+                    case NUMBER:
+                        try {
+                            long numValue = Long.parseLong(fieldValue);
+                            if (config.isIndexed()) {
+                                doc.add(new LongPoint(fieldName, numValue));
+                                doc.add(new NumericDocValuesField(fieldName + "_sort", numValue));
+                            }
+                            if (config.isStored()) {
+                                doc.add(new StoredField(fieldName + "_stored", numValue));
+                            }
+                        } catch (NumberFormatException e) {
+                            logger.warn("Failed to parse number field value: {}", fieldValue, e);
+                        }
+                        break;
+                    case DATE:
+                        try {
+                            long dateValue = Long.parseLong(fieldValue);
+                            if (config.isIndexed()) {
+                                doc.add(new LongPoint(fieldName, dateValue));
+                                doc.add(new NumericDocValuesField(fieldName + "_sort", dateValue));
+                            }
+                            if (config.isStored()) {
+                                doc.add(new StoredField(fieldName + "_stored", dateValue));
+                            }
+                        } catch (NumberFormatException e) {
+                            logger.warn("Failed to parse date field value: {}", fieldValue, e);
+                        }
+                        break;
+                    case BOOLEAN:
+                        boolean boolValue = Boolean.parseBoolean(fieldValue);
+                        doc.add(new StringField(fieldName, Boolean.toString(boolValue), config.isStored() ? Field.Store.YES : Field.Store.NO));
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error applying field configurations", e);
+        }
+
         return doc;
     }
 
@@ -168,10 +263,28 @@ public class LuceneService {
         Map<String, String> metadata = new HashMap<>();
         for (IndexableField field : doc.getFields()) {
             String fieldName = field.name();
+            
+            // Handle standard metadata fields
             if (fieldName.startsWith("metadata_")) {
                 String key = fieldName.substring("metadata_".length());
                 String value = doc.get(fieldName);
                 metadata.put(key, value);
+            }
+            
+            // Handle custom fields
+            else if (fieldName.startsWith("custom_")) {
+                String key = fieldName.substring("custom_".length());
+                
+                // For numeric and date fields, we need to get the stored value
+                if (doc.get(fieldName + "_stored") != null) {
+                    String value = doc.get(fieldName + "_stored");
+                    metadata.put(key, value);
+                }
+                // For string and boolean fields, we can get the value directly
+                else if (doc.get(fieldName) != null) {
+                    String value = doc.get(fieldName);
+                    metadata.put(key, value);
+                }
             }
         }
 

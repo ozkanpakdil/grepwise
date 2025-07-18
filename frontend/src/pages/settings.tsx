@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,6 +25,9 @@ import {
   fieldConfigurationApi,
   FieldConfiguration
 } from '@/api/fieldConfiguration';
+import {
+  configBackupApi
+} from '@/api/configBackup';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -57,6 +60,19 @@ export default function SettingsPage() {
   const [isLoadingFieldConfigs, setIsLoadingFieldConfigs] = useState(false);
   const [isSavingFieldConfig, setIsSavingFieldConfig] = useState(false);
   const [isTestingFieldConfig, setIsTestingFieldConfig] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  
+  // Backup and restore
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [importSummary, setImportSummary] = useState<{
+    logDirectoryConfigsImported: number;
+    retentionPoliciesImported: number;
+    fieldConfigurationsImported: number;
+    totalImported: number;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Log directory configurations
   const [logDirectoryConfigs, setLogDirectoryConfigs] = useState<LogDirectoryConfig[]>([]);
@@ -648,6 +664,96 @@ export default function SettingsPage() {
       setIsChangingPassword(false);
     }
   };
+  
+  // Handle exporting configurations
+  const handleExportConfigurations = async () => {
+    setIsExporting(true);
+    
+    try {
+      await configBackupApi.exportConfigurations();
+      
+      toast({
+        title: 'Export initiated',
+        description: 'Your configuration backup file should download shortly',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to export configurations',
+        variant: 'destructive',
+      });
+      console.error('Export error:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Handle file selection for import
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setImportFile(e.target.files[0]);
+      setImportSummary(null); // Reset summary when a new file is selected
+    }
+  };
+  
+  // Handle importing configurations
+  const handleImportConfigurations = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!importFile) {
+      toast({
+        title: 'Error',
+        description: 'Please select a configuration file to import',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsImporting(true);
+    
+    try {
+      const summary = await configBackupApi.importConfigurations(importFile, overwriteExisting);
+      setImportSummary(summary);
+      
+      toast({
+        title: 'Import successful',
+        description: `Imported ${summary.totalImported} configuration items`,
+      });
+      
+      // Refresh the configurations if any were imported
+      if (summary.totalImported > 0) {
+        if (summary.logDirectoryConfigsImported > 0) {
+          const configs = await getLogDirectoryConfigs();
+          setLogDirectoryConfigs(configs);
+        }
+        
+        if (summary.retentionPoliciesImported > 0) {
+          const policies = await getRetentionPolicies();
+          setRetentionPolicies(policies);
+        }
+        
+        if (summary.fieldConfigurationsImported > 0) {
+          const fieldConfigs = await fieldConfigurationApi.getFieldConfigurations();
+          setFieldConfigurations(fieldConfigs);
+        }
+      }
+      
+      // Reset file input
+      setImportFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to import configurations',
+        variant: 'destructive',
+      });
+      console.error('Import error:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -1113,6 +1219,90 @@ export default function SettingsPage() {
         </div>
       </div>
       
+      {/* Backup and Restore */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Backup and Restore</h2>
+        <div className="border rounded-md p-4">
+          <div className="space-y-6">
+            {/* Export configurations */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Export Configurations</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Export all your configurations (log directories, retention policies, field configurations) as a JSON file.
+                You can use this file to backup your settings or transfer them to another instance.
+              </p>
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleExportConfigurations}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Exporting...' : 'Export Configurations'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Import configurations */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">Import Configurations</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Import configurations from a previously exported JSON file.
+              </p>
+              <form onSubmit={handleImportConfigurations} className="space-y-4">
+                <div>
+                  <label htmlFor="configFile" className="block text-sm font-medium">
+                    Configuration File
+                  </label>
+                  <input
+                    id="configFile"
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                    className="mt-1 block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Select a JSON file containing GrepWise configurations.
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="overwriteExisting"
+                    type="checkbox"
+                    checked={overwriteExisting}
+                    onChange={(e) => setOverwriteExisting(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="overwriteExisting" className="ml-2 block text-sm font-medium">
+                    Overwrite existing configurations
+                  </label>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={isImporting || !importFile}
+                  >
+                    {isImporting ? 'Importing...' : 'Import Configurations'}
+                  </Button>
+                </div>
+                
+                {/* Import summary */}
+                {importSummary && (
+                  <div className="mt-4 p-4 border rounded-md bg-muted/50">
+                    <h4 className="text-md font-medium mb-2">Import Summary</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>Log Directory Configurations: {importSummary.logDirectoryConfigsImported}</li>
+                      <li>Retention Policies: {importSummary.retentionPoliciesImported}</li>
+                      <li>Field Configurations: {importSummary.fieldConfigurationsImported}</li>
+                      <li className="font-medium">Total Items Imported: {importSummary.totalImported}</li>
+                    </ul>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Field Configuration */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Field Configuration</h2>

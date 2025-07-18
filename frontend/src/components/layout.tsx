@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
-import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard } from 'lucide-react';
+import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard, UsersIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Layout() {
@@ -67,6 +67,17 @@ export default function Layout() {
               >
                 <SettingsIcon className="h-4 w-4" />
                 Settings
+              </Link>
+              <Link
+                to="/users"
+                className={`flex items-center gap-2 ${
+                  isActive('/users')
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground'
+                } transition-colors hover:text-foreground`}
+              >
+                <UsersIcon className="h-4 w-4" />
+                Users
               </Link>
             </nav>
           </div>
@@ -151,6 +162,17 @@ export default function Layout() {
           >
             <SettingsIcon className="h-5 w-5" />
             <span className="text-xs">Settings</span>
+          </Link>
+          <Link
+            to="/users"
+            className={`flex flex-col items-center gap-1 px-4 py-2 ${
+              isActive('/users')
+                ? 'text-foreground font-medium'
+                : 'text-muted-foreground'
+            } transition-colors hover:text-foreground`}
+          >
+            <UsersIcon className="h-5 w-5" />
+            <span className="text-xs">Users</span>
           </Link>
         </nav>
       </div>

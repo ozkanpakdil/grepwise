@@ -9,6 +9,7 @@ import AlarmMonitoringPage from '@/pages/alarm-monitoring';
 import SettingsPage from '@/pages/settings';
 import DashboardsPage from '@/pages/dashboards';
 import DashboardView from '@/pages/dashboard-view';
+import UsersPage from '@/pages/users';
 import NotFoundPage from '@/pages/not-found';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path="/alarms" element={isAuthenticated ? <AlarmsPage /> : <Navigate to="/login" replace />} />
           <Route path="/alarm-monitoring" element={isAuthenticated ? <AlarmMonitoringPage /> : <Navigate to="/login" replace />} />
           <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />} />
+          <Route path="/users" element={isAuthenticated ? <UsersPage /> : <Navigate to="/login" replace />} />
         </Route>
 
         {/* 404 route */}

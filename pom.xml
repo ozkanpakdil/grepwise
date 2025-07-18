@@ -161,6 +161,13 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.17.0</version>
         </dependency>
+        
+        <!-- Apache Commons Compress for log archiving -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.1</version>
+        </dependency>
 
         <!-- SpringDoc OpenAPI for Swagger UI -->
         <dependency>

@@ -2,6 +2,7 @@ package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.FieldConfiguration;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
+import io.github.ozkanpakdil.grepwise.service.ArchiveService;
 import io.github.ozkanpakdil.grepwise.service.FieldConfigurationService;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -61,6 +62,9 @@ public class LuceneService {
     
     @Autowired
     private FieldConfigurationService fieldConfigurationService;
+    
+    @Autowired
+    private ArchiveService archiveService;
 
     /**
      * Initialize the Lucene index.
@@ -407,6 +411,28 @@ public class LuceneService {
     }
 
     /**
+     * Find logs matching a query.
+     * 
+     * @param query The query to match logs against
+     * @return A list of matching logs
+     */
+    private List<LogEntry> findLogsByQuery(Query query) throws IOException {
+        try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
+            IndexSearcher searcher = new IndexSearcher(reader);
+            // Use a higher limit to retrieve more logs for archiving
+            TopDocs topDocs = searcher.search(query, 10000);
+            
+            List<LogEntry> results = new ArrayList<>();
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+                Document doc = searcher.storedFields().document(scoreDoc.doc);
+                results.add(documentToLogEntry(doc));
+            }
+            
+            return results;
+        }
+    }
+    
+    /**
      * Delete logs older than the specified timestamp.
      * 
      * @param timestamp Logs older than this timestamp will be deleted
@@ -417,6 +443,20 @@ public class LuceneService {
         
         // Create a query for logs older than the timestamp
         Query query = LongPoint.newRangeQuery("timestamp", 0, timestamp);
+        
+        // Find logs to archive before deletion
+        List<LogEntry> logsToDelete = findLogsByQuery(query);
+        logger.info("Found {} logs to delete older than timestamp: {}", logsToDelete.size(), timestamp);
+        
+        // Archive logs before deletion if there are any
+        if (!logsToDelete.isEmpty()) {
+            boolean archived = archiveService.archiveLogsBeforeDeletion(logsToDelete);
+            if (!archived) {
+                logger.warn("Failed to archive logs before deletion. Proceeding with deletion anyway.");
+            } else {
+                logger.info("Successfully archived {} logs before deletion", logsToDelete.size());
+            }
+        }
         
         // Delete matching documents
         long deleted = indexWriter.deleteDocuments(query);
@@ -440,9 +480,25 @@ public class LuceneService {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         queryBuilder.add(LongPoint.newRangeQuery("timestamp", 0, timestamp), BooleanClause.Occur.MUST);
         queryBuilder.add(new TermQuery(new Term("source", source)), BooleanClause.Occur.MUST);
+        Query query = queryBuilder.build();
+        
+        // Find logs to archive before deletion
+        List<LogEntry> logsToDelete = findLogsByQuery(query);
+        logger.info("Found {} logs to delete older than timestamp: {} for source: {}", 
+                   logsToDelete.size(), timestamp, source);
+        
+        // Archive logs before deletion if there are any
+        if (!logsToDelete.isEmpty()) {
+            boolean archived = archiveService.archiveLogsBeforeDeletion(logsToDelete);
+            if (!archived) {
+                logger.warn("Failed to archive logs before deletion. Proceeding with deletion anyway.");
+            } else {
+                logger.info("Successfully archived {} logs before deletion", logsToDelete.size());
+            }
+        }
         
         // Delete matching documents
-        long deleted = indexWriter.deleteDocuments(queryBuilder.build());
+        long deleted = indexWriter.deleteDocuments(query);
         indexWriter.commit();
         
         logger.info("Deleted {} logs older than timestamp: {} for source: {}", deleted, timestamp, source);

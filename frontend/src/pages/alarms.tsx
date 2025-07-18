@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { alarmApi, Alarm, AlarmRequest } from '@/api/alarm';
 
 export default function AlarmsPage() {
+  const navigate = useNavigate();
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreatingAlarm, setIsCreatingAlarm] = useState(false);
@@ -194,9 +196,17 @@ export default function AlarmsPage() {
             Create and manage alerts for important log events
           </p>
         </div>
-        <Button onClick={handleCreateAlarm}>
-          Create Alarm
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/alarm-monitoring')}
+          >
+            Monitoring Dashboard
+          </Button>
+          <Button onClick={handleCreateAlarm}>
+            Create Alarm
+          </Button>
+        </div>
       </div>
 
       {alarms.length > 0 ? (

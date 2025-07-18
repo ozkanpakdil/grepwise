@@ -45,7 +45,22 @@ export interface AlarmStatistics {
   recentlyTriggered: number;
 }
 
+export interface AlarmEvent {
+  id: string;
+  alarmId: string;
+  alarmName: string;
+  timestamp: number;
+  status: 'TRIGGERED' | 'ACKNOWLEDGED' | 'RESOLVED';
+  acknowledgedBy?: string;
+  acknowledgedAt?: number;
+  resolvedBy?: string;
+  resolvedAt?: number;
+  matchCount: number;
+  details?: string;
+}
+
 const API_BASE_URL = 'http://localhost:8080/api/alarms';
+const API_EVENTS_URL = 'http://localhost:8080/api/alarm-events';
 
 // Alarm API functions
 export const alarmApi = {
@@ -148,6 +163,57 @@ export const alarmApi = {
     const response = await fetch(`${API_BASE_URL}/statistics`);
     if (!response.ok) {
       throw new Error('Failed to fetch alarm statistics');
+    }
+    return response.json();
+  },
+
+  // Get all alarm events
+  getAlarmEvents: async (): Promise<AlarmEvent[]> => {
+    const response = await fetch(API_EVENTS_URL);
+    if (!response.ok) {
+      throw new Error('Failed to fetch alarm events');
+    }
+    return response.json();
+  },
+
+  // Get alarm events by status
+  getAlarmEventsByStatus: async (status: AlarmEvent['status']): Promise<AlarmEvent[]> => {
+    const response = await fetch(`${API_EVENTS_URL}/status/${status}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch alarm events by status');
+    }
+    return response.json();
+  },
+
+  // Get alarm events for a specific alarm
+  getAlarmEventsForAlarm: async (alarmId: string): Promise<AlarmEvent[]> => {
+    const response = await fetch(`${API_EVENTS_URL}/alarm/${alarmId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch alarm events for alarm');
+    }
+    return response.json();
+  },
+
+  // Acknowledge an alarm event
+  acknowledgeAlarm: async (eventId: string): Promise<AlarmEvent> => {
+    const response = await fetch(`${API_EVENTS_URL}/${eventId}/acknowledge`, {
+      method: 'PUT',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to acknowledge alarm');
+    }
+    return response.json();
+  },
+
+  // Resolve an alarm event
+  resolveAlarm: async (eventId: string): Promise<AlarmEvent> => {
+    const response = await fetch(`${API_EVENTS_URL}/${eventId}/resolve`, {
+      method: 'PUT',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to resolve alarm');
     }
     return response.json();
   },

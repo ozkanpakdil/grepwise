@@ -5,6 +5,7 @@ import Layout from '@/components/layout';
 import LoginPage from '@/pages/login';
 import SearchPage from '@/pages/search';
 import AlarmsPage from '@/pages/alarms';
+import AlarmMonitoringPage from '@/pages/alarm-monitoring';
 import SettingsPage from '@/pages/settings';
 import DashboardsPage from '@/pages/dashboards';
 import DashboardView from '@/pages/dashboard-view';
@@ -26,6 +27,7 @@ function App() {
           <Route path="/dashboards" element={isAuthenticated ? <DashboardsPage /> : <Navigate to="/login" replace />} />
           <Route path="/dashboards/:id" element={isAuthenticated ? <DashboardView /> : <Navigate to="/login" replace />} />
           <Route path="/alarms" element={isAuthenticated ? <AlarmsPage /> : <Navigate to="/login" replace />} />
+          <Route path="/alarm-monitoring" element={isAuthenticated ? <AlarmMonitoringPage /> : <Navigate to="/login" replace />} />
           <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />} />
         </Route>
 

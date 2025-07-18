@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { 
@@ -18,6 +18,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import LogBarChart from '@/components/LogBarChart';
+import Editor, { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -30,7 +32,49 @@ export default function SearchPage() {
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { toast } = useToast();
+  
+  // Function to configure Monaco Editor with SPL syntax highlighting
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    editorRef.current = editor;
+    
+    // Register a new language
+    monaco.languages.register({ id: 'spl' });
+    
+    // Define the token rules for syntax highlighting
+    monaco.languages.setMonarchTokensProvider('spl', {
+      tokenizer: {
+        root: [
+          // Commands
+          [/\b(search|where|stats|sort|head|tail|eval)\b/, 'keyword'],
+          
+          // Pipes
+          [/\|/, 'operator'],
+          
+          // Field names and operators
+          [/\b([a-zA-Z0-9_]+)(=)/, ['variable', 'operator']],
+          
+          // Operators
+          [/[=<>!]/, 'operator'],
+          [/-/, 'operator'],
+          
+          // Strings
+          [/".*?"/, 'string'],
+          [/'.*?'/, 'string'],
+          
+          // Numbers
+          [/\b\d+\b/, 'number'],
+          
+          // Comments
+          [/#.*$/, 'comment'],
+        ]
+      }
+    });
+    
+    // Set the language for the editor
+    monaco.editor.setModelLanguage(editor.getModel()!, 'spl');
+  };
 
   // We don't load initial data on component mount anymore
   // This prevents the infinite API requests
@@ -183,25 +227,40 @@ export default function SearchPage() {
       </div>
 
       <form onSubmit={handleSearch} className="space-y-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search query (e.g., error, warning)"
-            className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
-          <Button type="submit" disabled={isSearching}>
-            {isSearching ? 'Searching...' : 'Search'}
-          </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleSearch} 
-            disabled={isSearching}
-          >
-            Refresh
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex-1 h-[150px]">
+            <Editor
+              height="100%"
+              defaultLanguage="spl"
+              defaultValue={query}
+              onChange={(value) => setQuery(value || '')}
+              onMount={handleEditorDidMount}
+              options={{
+                minimap: { enabled: false },
+                lineNumbers: 'off',
+                folding: false,
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                automaticLayout: true,
+                suggestOnTriggerCharacters: true,
+                fontSize: 14,
+                tabSize: 2,
+              }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isSearching}>
+              {isSearching ? 'Searching...' : 'Search'}
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleSearch} 
+              disabled={isSearching}
+            >
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-6">

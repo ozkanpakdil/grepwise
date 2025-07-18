@@ -108,8 +108,8 @@ The project has achieved a **functional log analysis platform** with:
 - [x] Implement search page with query input and results display
 - [x] Create log visualization with bar charts (LogBarChart component)
 - [x] Add basic search functionality with time range filtering
-- [ ] Implement the Monaco Editor for advanced search queries
-- [ ] Develop syntax highlighting for the query language
+- [x] Implement the Monaco Editor for advanced search queries
+- [x] Develop syntax highlighting for the query language
 - [ ] Enhance results table with sorting and filtering
 - [ ] Add more visualization options for search results
 

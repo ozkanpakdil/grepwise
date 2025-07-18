@@ -48,6 +48,33 @@ vi.mock('@/components/widgets/MetricWidget', () => ({
   ),
 }));
 
+vi.mock('@/components/widgets/LineChartWidget', () => ({
+  default: ({ data, widget }: { data: any; widget: any }) => (
+    <div data-testid="line-chart-widget">
+      <div>Line Chart: {widget.title}</div>
+      <div>Data: {JSON.stringify(data)}</div>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/widgets/AreaChartWidget', () => ({
+  default: ({ data, widget }: { data: any; widget: any }) => (
+    <div data-testid="area-chart-widget">
+      <div>Area Chart: {widget.title}</div>
+      <div>Data: {JSON.stringify(data)}</div>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/widgets/ScatterPlotWidget', () => ({
+  default: ({ data, widget }: { data: any; widget: any }) => (
+    <div data-testid="scatter-plot-widget">
+      <div>Scatter Plot: {widget.title}</div>
+      <div>Data: {JSON.stringify(data)}</div>
+    </div>
+  ),
+}));
+
 describe('WidgetRenderer', () => {
   const mockSearchResponse = {
     results: [
@@ -146,6 +173,36 @@ describe('WidgetRenderer', () => {
     await waitFor(() => {
       expect(screen.getByTestId('metric-widget')).toBeInTheDocument();
       expect(screen.getByText('Metric: Test Widget')).toBeInTheDocument();
+    });
+  });
+
+  it('renders line chart widget when type is line', async () => {
+    const lineWidget = { ...baseWidget, type: 'line' };
+    render(<WidgetRenderer widget={lineWidget} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart-widget')).toBeInTheDocument();
+      expect(screen.getByText('Line Chart: Test Widget')).toBeInTheDocument();
+    });
+  });
+
+  it('renders area chart widget when type is area', async () => {
+    const areaWidget = { ...baseWidget, type: 'area' };
+    render(<WidgetRenderer widget={areaWidget} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('area-chart-widget')).toBeInTheDocument();
+      expect(screen.getByText('Area Chart: Test Widget')).toBeInTheDocument();
+    });
+  });
+
+  it('renders scatter plot widget when type is scatter', async () => {
+    const scatterWidget = { ...baseWidget, type: 'scatter' };
+    render(<WidgetRenderer widget={scatterWidget} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scatter-plot-widget')).toBeInTheDocument();
+      expect(screen.getByText('Scatter Plot: Test Widget')).toBeInTheDocument();
     });
   });
 

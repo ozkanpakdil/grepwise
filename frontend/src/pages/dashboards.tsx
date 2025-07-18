@@ -359,7 +359,10 @@ const DashboardsPage: React.FC = () => {
                   onChange={(e) => setNewWidget({ ...newWidget, type: e.target.value })}
                 >
                   <option value="chart">Bar Chart</option>
+                  <option value="line">Line Chart</option>
+                  <option value="area">Area Chart</option>
                   <option value="pie">Pie Chart</option>
+                  <option value="scatter">Scatter Plot</option>
                   <option value="table">Table</option>
                   <option value="metric">Metric</option>
                 </select>

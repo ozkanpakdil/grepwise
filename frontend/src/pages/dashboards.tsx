@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Share2, Edit, Trash2, BarChart3, PieChart, Table, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Share2, Trash2, BarChart3, PieChart, Table, Activity, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { dashboardApi, Dashboard, DashboardRequest, WidgetRequest } from '@/api/dashboard';
 
 const DashboardsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -262,17 +264,27 @@ const DashboardsPage: React.FC = () => {
                   {dashboard.isShared ? 'Shared' : 'Private'} • 
                   Created {new Date(dashboard.createdAt).toLocaleDateString()}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDashboard(dashboard);
-                    setShowWidgetModal(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Widget
-                </Button>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/dashboards/${dashboard.id}`)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDashboard(dashboard);
+                      setShowWidgetModal(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Widget
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

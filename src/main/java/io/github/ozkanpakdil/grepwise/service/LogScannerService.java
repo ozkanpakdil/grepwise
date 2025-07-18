@@ -5,6 +5,7 @@ import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogDirectoryConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +33,17 @@ public class LogScannerService {
 
     private final LogDirectoryConfigRepository configRepository;
     private final LuceneService luceneService;
+    private final LogBufferService logBufferService;
+    
+    @Value("${grepwise.log-scanner.use-buffer:true}")
+    private boolean useBuffer;
 
-    public LogScannerService(LogDirectoryConfigRepository configRepository, LuceneService luceneService) {
+    public LogScannerService(LogDirectoryConfigRepository configRepository, 
+                            LuceneService luceneService,
+                            LogBufferService logBufferService) {
         this.configRepository = configRepository;
         this.luceneService = luceneService;
+        this.logBufferService = logBufferService;
         logger.info("LogScannerService initialized");
     }
 
@@ -113,6 +121,49 @@ public class LogScannerService {
      */
     private int processLogFile(File file) {
         logger.debug("Processing log file: {}", file.getAbsolutePath());
+        
+        // If buffering is disabled, use the original approach
+        if (!useBuffer) {
+            return processLogFileDirectIndexing(file);
+        }
+        
+        // Use buffering approach
+        int processedCount = 0;
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineCount = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineCount++;
+                // Create a log entry for each line
+                LogEntry entry = parseLogLine(line, file.getName());
+                
+                // Add to buffer instead of collecting in memory
+                logBufferService.addToBuffer(entry);
+                processedCount++;
+
+                logger.trace("Processed line {}: {}", lineCount,
+                        line.substring(0, Math.min(line.length(), 100)));
+            }
+
+            logger.debug("Processed {} lines in file using buffer", lineCount);
+            return processedCount;
+        } catch (IOException e) {
+            logger.error("Error reading log file: {}", file, e);
+            return 0;
+        }
+    }
+    
+    /**
+     * Process a log file using direct indexing (no buffering).
+     * This is the original implementation before buffering was added.
+     *
+     * @param file The log file to process
+     * @return The number of log entries processed
+     */
+    private int processLogFileDirectIndexing(File file) {
+        logger.debug("Processing log file with direct indexing: {}", file.getAbsolutePath());
         List<LogEntry> logEntries = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {

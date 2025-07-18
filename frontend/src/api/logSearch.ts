@@ -139,3 +139,24 @@ export const getTimeAggregation = async (params?: TimeAggregationParams): Promis
     count
   }));
 };
+
+// API object for dashboard widgets
+export const logSearchApi = {
+  search: async (params: { query: string; timeRange?: string; maxResults?: number }) => {
+    const searchParams: SearchParams = {
+      query: params.query,
+      timeRange: params.timeRange as any || '24h'
+    };
+    
+    const [results, timeSlots] = await Promise.all([
+      searchLogs(searchParams),
+      getTimeAggregation(searchParams)
+    ]);
+    
+    return {
+      results: params.maxResults ? results.slice(0, params.maxResults) : results,
+      timeSlots,
+      total: results.length
+    };
+  }
+};

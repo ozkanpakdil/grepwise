@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class NginxLogIntegrationTest {
+public class ApacheLogIntegrationTest {
 
     @Mock(lenient = true)
     private LogDirectoryConfigRepository configRepository;
@@ -41,8 +41,8 @@ public class NginxLogIntegrationTest {
     private ApacheLogParser apacheLogParser;
     private LogScannerService logScannerService;
     private Path tempDir;
-    private File nginxAccessLogFile;
-    private File nginxErrorLogFile;
+    private File apacheAccessLogFile;
+    private File apacheErrorLogFile;
 
     @Captor
     private ArgumentCaptor<LogEntry> logEntryCaptor;
@@ -57,23 +57,23 @@ public class NginxLogIntegrationTest {
         logScannerService = new LogScannerService(configRepository, luceneService, logBufferService, nginxLogParser, apacheLogParser);
 
         // Create temporary directory for test log files
-        tempDir = Files.createTempDirectory("nginx-test-logs");
+        tempDir = Files.createTempDirectory("apache-test-logs");
         
-        // Create test nginx access log file
-        nginxAccessLogFile = new File(tempDir.toFile(), "nginx-access.log");
-        try (FileWriter writer = new FileWriter(nginxAccessLogFile)) {
-            // Write sample nginx access logs in combined format
-            writer.write("192.168.1.1 - john [10/Oct/2023:13:55:36 +0000] \"GET /api/users HTTP/1.1\" 200 2326 \"http://example.com/page\" \"Mozilla/5.0\"\n");
-            writer.write("192.168.1.2 - jane [10/Oct/2023:13:56:12 +0000] \"POST /api/login HTTP/1.1\" 401 1234 \"http://example.com/login\" \"Mozilla/5.0\"\n");
-            writer.write("192.168.1.3 - bob [10/Oct/2023:13:57:45 +0000] \"GET /api/products HTTP/1.1\" 404 567 \"http://example.com/shop\" \"Mozilla/5.0\"\n");
+        // Create test apache access log file
+        apacheAccessLogFile = new File(tempDir.toFile(), "apache-access.log");
+        try (FileWriter writer = new FileWriter(apacheAccessLogFile)) {
+            // Write sample apache access logs in combined format
+            writer.write("127.0.0.1 - john [10/Oct/2023:13:55:36 -0700] \"GET /api/users HTTP/1.1\" 200 2326 \"http://example.com/page\" \"Mozilla/5.0\"\n");
+            writer.write("127.0.0.1 - jane [10/Oct/2023:13:56:12 -0700] \"POST /api/login HTTP/1.1\" 401 1234 \"http://example.com/login\" \"Mozilla/5.0\"\n");
+            writer.write("127.0.0.1 - bob [10/Oct/2023:13:57:45 -0700] \"GET /api/products HTTP/1.1\" 404 567 \"http://example.com/shop\" \"Mozilla/5.0\"\n");
         }
 
-        // Create test nginx error log file
-        nginxErrorLogFile = new File(tempDir.toFile(), "nginx-error.log");
-        try (FileWriter writer = new FileWriter(nginxErrorLogFile)) {
-            // Write sample nginx error logs
-            writer.write("2023/10/10 13:55:36 [error] 12345#0: *67890 open() failed: No such file or directory, client: 192.168.1.1, server: example.com, request: \"GET /missing.html HTTP/1.1\"\n");
-            writer.write("2023/10/10 13:56:42 [warn] 12345#0: *67891 rewrite or internal redirection cycle while internally redirecting, client: 192.168.1.2, server: example.com\n");
+        // Create test apache error log file
+        apacheErrorLogFile = new File(tempDir.toFile(), "apache-error.log");
+        try (FileWriter writer = new FileWriter(apacheErrorLogFile)) {
+            // Write sample apache error logs
+            writer.write("[Wed Oct 11 14:32:52 2023] [error] [pid 12345] [client 127.0.0.1] File does not exist: /path/to/file\n");
+            writer.write("[Wed Oct 11 14:33:42 2023] [warn] [pid 12345] [client 127.0.0.1] Rewrite or internal redirection cycle detected\n");
         }
 
         // Configure mock repository to return our test directory
@@ -91,13 +91,13 @@ public class NginxLogIntegrationTest {
     @AfterEach
     void tearDown() throws IOException {
         // Clean up temporary files
-        Files.deleteIfExists(nginxAccessLogFile.toPath());
-        Files.deleteIfExists(nginxErrorLogFile.toPath());
+        Files.deleteIfExists(apacheAccessLogFile.toPath());
+        Files.deleteIfExists(apacheErrorLogFile.toPath());
         Files.deleteIfExists(tempDir);
     }
 
     @Test
-    void testNginxAccessLogParsing() throws IOException {
+    void testApacheAccessLogParsing() throws IOException {
         // Configure LogScannerService to use direct indexing (no buffer)
         // This makes testing easier as we can capture the log entries directly
         ReflectionTestUtils.setField(logScannerService, "useBuffer", false);
@@ -116,7 +116,7 @@ public class NginxLogIntegrationTest {
     }
 
     @Test
-    void testNginxErrorLogParsing() throws IOException {
+    void testApacheErrorLogParsing() throws IOException {
         // Configure LogScannerService to use buffering
         ReflectionTestUtils.setField(logScannerService, "useBuffer", true);
 
@@ -132,12 +132,12 @@ public class NginxLogIntegrationTest {
         // Get all captured log entries
         List<LogEntry> capturedEntries = logEntryCaptor.getAllValues();
 
-        // Verify that at least one entry has nginx_error format
-        boolean hasNginxErrorFormat = capturedEntries.stream()
+        // Verify that at least one entry has apache_error format
+        boolean hasApacheErrorFormat = capturedEntries.stream()
                 .anyMatch(entry -> entry.metadata().containsKey("log_format") && 
-                        entry.metadata().get("log_format").equals("nginx_error"));
+                        entry.metadata().get("log_format").equals("apache_error"));
 
-        assertTrue(hasNginxErrorFormat, "Should have at least one nginx_error format log entry");
+        assertTrue(hasApacheErrorFormat, "Should have at least one apache_error format log entry");
     }
 
     @Test

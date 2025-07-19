@@ -35,6 +35,7 @@ public class LogScannerService {
     private final LuceneService luceneService;
     private final LogBufferService logBufferService;
     private final NginxLogParser nginxLogParser;
+    private final ApacheLogParser apacheLogParser;
     
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
@@ -42,11 +43,13 @@ public class LogScannerService {
     public LogScannerService(LogDirectoryConfigRepository configRepository, 
                             LuceneService luceneService,
                             LogBufferService logBufferService,
-                            NginxLogParser nginxLogParser) {
+                            NginxLogParser nginxLogParser,
+                            ApacheLogParser apacheLogParser) {
         this.configRepository = configRepository;
         this.luceneService = luceneService;
         this.logBufferService = logBufferService;
         this.nginxLogParser = nginxLogParser;
+        this.apacheLogParser = apacheLogParser;
         logger.info("LogScannerService initialized");
     }
 
@@ -217,7 +220,16 @@ public class LogScannerService {
             }
         }
         
-        // If not an Nginx log or parsing failed, fall back to generic parsing
+        // Next, check if this is an Apache log format
+        if (apacheLogParser.isApacheLogFormat(line)) {
+            logger.debug("Detected Apache log format: {}", line);
+            LogEntry apacheLogEntry = apacheLogParser.parseApacheLogLine(line, source);
+            if (apacheLogEntry != null) {
+                return apacheLogEntry;
+            }
+        }
+        
+        // If not a recognized log format or parsing failed, fall back to generic parsing
         
         // Extract log level if possible
         String LOGLEVEL = switch (line) {

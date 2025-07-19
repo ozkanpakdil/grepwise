@@ -6,7 +6,9 @@ import {
   getTimeAggregation, 
   LogEntry, 
   SearchParams, 
-  TimeSlot 
+  TimeSlot,
+  exportLogsAsCsv,
+  exportLogsAsJson
 } from '@/api/logSearch';
 import { 
   Select, 
@@ -454,14 +456,66 @@ export default function SearchPage() {
                 Showing {processedResults.length} of {searchResults.length} logs
               </span>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={toggleFilters}
-              className="flex items-center gap-1"
-            >
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // Create search params from current state
+                  const params: SearchParams = {
+                    query: query,
+                    isRegex: isRegex,
+                    timeRange: timeRange
+                  };
+                  
+                  // Add custom time range if selected
+                  if (timeRange === 'custom') {
+                    params.startTime = customStartTime;
+                    params.endTime = customEndTime;
+                  }
+                  
+                  // Generate export URL and open in new tab
+                  const exportUrl = exportLogsAsCsv(params);
+                  window.open(exportUrl, '_blank');
+                }}
+                className="flex items-center gap-1"
+              >
+                Export CSV
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // Create search params from current state
+                  const params: SearchParams = {
+                    query: query,
+                    isRegex: isRegex,
+                    timeRange: timeRange
+                  };
+                  
+                  // Add custom time range if selected
+                  if (timeRange === 'custom') {
+                    params.startTime = customStartTime;
+                    params.endTime = customEndTime;
+                  }
+                  
+                  // Generate export URL and open in new tab
+                  const exportUrl = exportLogsAsJson(params);
+                  window.open(exportUrl, '_blank');
+                }}
+                className="flex items-center gap-1"
+              >
+                Export JSON
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleFilters}
+                className="flex items-center gap-1"
+              >
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </Button>
+            </div>
           </div>
           
           {showFilters && (

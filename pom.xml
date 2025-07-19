@@ -169,6 +169,13 @@
             <artifactId>commons-compress</artifactId>
             <version>1.26.1</version>
         </dependency>
+        
+        <!-- Apache Commons CSV for export functionality -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.10.0</version>
+        </dependency>
 
         <!-- SpringDoc OpenAPI for Swagger UI -->
         <dependency>

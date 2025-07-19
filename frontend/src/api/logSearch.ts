@@ -141,6 +141,66 @@ export const getTimeAggregation = async (params?: TimeAggregationParams): Promis
 };
 
 // API object for dashboard widgets
+export const exportLogsAsCsv = (params: SearchParams): string => {
+  // Build the URL with query parameters
+  let url = `${API_URL}/export/csv`;
+  const queryParams: string[] = [];
+
+  if (params) {
+    if (params.query) {
+      queryParams.push(`query=${encodeURIComponent(params.query)}`);
+    }
+    if (params.isRegex) {
+      queryParams.push(`isRegex=true`);
+    }
+    if (params.timeRange) {
+      queryParams.push(`timeRange=${params.timeRange}`);
+    }
+    if (params.startTime) {
+      queryParams.push(`startTime=${params.startTime}`);
+    }
+    if (params.endTime) {
+      queryParams.push(`endTime=${params.endTime}`);
+    }
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+
+  return url;
+};
+
+export const exportLogsAsJson = (params: SearchParams): string => {
+  // Build the URL with query parameters
+  let url = `${API_URL}/export/json`;
+  const queryParams: string[] = [];
+
+  if (params) {
+    if (params.query) {
+      queryParams.push(`query=${encodeURIComponent(params.query)}`);
+    }
+    if (params.isRegex) {
+      queryParams.push(`isRegex=true`);
+    }
+    if (params.timeRange) {
+      queryParams.push(`timeRange=${params.timeRange}`);
+    }
+    if (params.startTime) {
+      queryParams.push(`startTime=${params.startTime}`);
+    }
+    if (params.endTime) {
+      queryParams.push(`endTime=${params.endTime}`);
+    }
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+
+  return url;
+};
+
 export const logSearchApi = {
   search: async (params: { query: string; timeRange?: string; maxResults?: number }) => {
     const searchParams: SearchParams = {

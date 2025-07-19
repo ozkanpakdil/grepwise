@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.StringJoiner;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * REST controller for searching logs.
@@ -508,4 +514,174 @@ public class LogSearchController {
         
         return ResponseEntity.ok(searchCacheService.getCacheStats());
     }
+    
+    /**
+     * Export logs as CSV.
+     * This endpoint exports logs matching the search criteria in CSV format.
+     *
+     * @param query The search query
+     * @param isRegex Whether the query is a regular expression
+     * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
+     * @param startTime Custom start time (epoch milliseconds)
+     * @param endTime Custom end time (epoch milliseconds)
+     * @return CSV file containing the logs
+     */
+    @Operation(
+        summary = "Export logs as CSV",
+        description = "Exports logs matching the search criteria in CSV format"
+    )
+    @ApiResponse(
+        responseCode = "200", 
+        description = "Logs exported successfully",
+        content = @Content(mediaType = "text/csv")
+    )
+    @GetMapping(value = "/export/csv", produces = "text/csv")
+    public ResponseEntity<String> exportLogsAsCsv(
+            @Parameter(description = "Search query") 
+            @RequestParam(required = false, defaultValue = "") String query,
+            
+            @Parameter(description = "Whether the query is a regular expression") 
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+            @RequestParam(required = false) String timeRange,
+            
+            @Parameter(description = "Custom start time (epoch milliseconds)") 
+            @RequestParam(required = false) Long startTime,
+            
+            @Parameter(description = "Custom end time (epoch milliseconds)") 
+            @RequestParam(required = false) Long endTime) {
+        
+        try {
+            // Use the existing searchLogs method to get the logs
+            ResponseEntity<List<LogEntry>> searchResponse = searchLogs(query, isRegex, timeRange, startTime, endTime);
+            
+            if (searchResponse.getStatusCode().isError() || searchResponse.getBody() == null) {
+                return ResponseEntity.internalServerError().build();
+            }
+            
+            List<LogEntry> logs = searchResponse.getBody();
+            
+            // Convert logs to CSV
+            StringBuilder csvBuilder = new StringBuilder();
+            
+            // Add CSV header
+            csvBuilder.append("ID,Timestamp,DateTime,Level,Source,Message,RawContent\n");
+            
+            // Format for timestamp conversion
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.systemDefault());
+            
+            // Add each log as a CSV row
+            for (LogEntry log : logs) {
+                String timestamp = formatter.format(Instant.ofEpochMilli(log.timestamp()));
+                
+                // Escape fields that might contain commas or quotes
+                String message = escapeCSV(log.message());
+                String source = escapeCSV(log.source());
+                String rawContent = escapeCSV(log.rawContent());
+                
+                csvBuilder.append(log.id()).append(",")
+                    .append(log.timestamp()).append(",")
+                    .append(timestamp).append(",")
+                    .append(log.level()).append(",")
+                    .append(source).append(",")
+                    .append(message).append(",")
+                    .append(rawContent).append("\n");
+            }
+            
+            // Set headers for file download
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv"));
+            headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".csv");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBuilder.toString());
+                
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Export logs as JSON.
+     * This endpoint exports logs matching the search criteria in JSON format.
+     *
+     * @param query The search query
+     * @param isRegex Whether the query is a regular expression
+     * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
+     * @param startTime Custom start time (epoch milliseconds)
+     * @param endTime Custom end time (epoch milliseconds)
+     * @return JSON file containing the logs
+     */
+    @Operation(
+        summary = "Export logs as JSON",
+        description = "Exports logs matching the search criteria in JSON format"
+    )
+    @ApiResponse(
+        responseCode = "200", 
+        description = "Logs exported successfully",
+        content = @Content(mediaType = "application/json")
+    )
+    @GetMapping(value = "/export/json", produces = "application/json")
+    public ResponseEntity<List<LogEntry>> exportLogsAsJson(
+            @Parameter(description = "Search query") 
+            @RequestParam(required = false, defaultValue = "") String query,
+            
+            @Parameter(description = "Whether the query is a regular expression") 
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+            @RequestParam(required = false) String timeRange,
+            
+            @Parameter(description = "Custom start time (epoch milliseconds)") 
+            @RequestParam(required = false) Long startTime,
+            
+            @Parameter(description = "Custom end time (epoch milliseconds)") 
+            @RequestParam(required = false) Long endTime) {
+        
+        try {
+            // Use the existing searchLogs method to get the logs
+            ResponseEntity<List<LogEntry>> searchResponse = searchLogs(query, isRegex, timeRange, startTime, endTime);
+            
+            if (searchResponse.getStatusCode().isError() || searchResponse.getBody() == null) {
+                return ResponseEntity.internalServerError().build();
+            }
+            
+            List<LogEntry> logs = searchResponse.getBody();
+            
+            // Set headers for file download
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".json");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(logs);
+                
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Helper method to escape special characters in CSV fields.
+     * 
+     * @param field The field to escape
+     * @return The escaped field
+     */
+    private String escapeCSV(String field) {
+        if (field == null) {
+            return "";
+        }
+        
+        // If the field contains commas, quotes, or newlines, wrap it in quotes and escape any quotes
+        if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
+            return "\"" + field.replace("\"", "\"\"") + "\"";
+        }
+        
+        return field;
+    }
+    
 }

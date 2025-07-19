@@ -34,16 +34,19 @@ public class LogScannerService {
     private final LogDirectoryConfigRepository configRepository;
     private final LuceneService luceneService;
     private final LogBufferService logBufferService;
+    private final NginxLogParser nginxLogParser;
     
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
 
     public LogScannerService(LogDirectoryConfigRepository configRepository, 
                             LuceneService luceneService,
-                            LogBufferService logBufferService) {
+                            LogBufferService logBufferService,
+                            NginxLogParser nginxLogParser) {
         this.configRepository = configRepository;
         this.luceneService = luceneService;
         this.logBufferService = logBufferService;
+        this.nginxLogParser = nginxLogParser;
         logger.info("LogScannerService initialized");
     }
 
@@ -205,6 +208,17 @@ public class LogScannerService {
      * @return A LogEntry with the entire line as the message
      */
     private LogEntry parseLogLine(String line, String source) {
+        // First, check if this is an Nginx log format
+        if (nginxLogParser.isNginxLogFormat(line)) {
+            logger.debug("Detected Nginx log format: {}", line);
+            LogEntry nginxLogEntry = nginxLogParser.parseNginxLogLine(line, source);
+            if (nginxLogEntry != null) {
+                return nginxLogEntry;
+            }
+        }
+        
+        // If not an Nginx log or parsing failed, fall back to generic parsing
+        
         // Extract log level if possible
         String LOGLEVEL = switch (line) {
             case String s when s.contains("ERROR") -> "ERROR";

@@ -37,7 +37,7 @@ The project has achieved a **functional log analysis platform** with:
 #### Medium Priority (Next 1-2 months)
 1. **User Management** - Implement role-based access control and user administration
 2. **Data Retention** - Add configurable retention policies and archiving
-3. **External Integrations** - Support for common log sources (nginx, Apache, syslog)
+3. **External Integrations** - ✅ **PARTIALLY COMPLETED** - Added support for nginx logs, more sources (Apache, etc.) to be added
 4. **API Documentation** - ✅ **COMPLETED** - Added comprehensive Swagger/OpenAPI documentation for REST APIs
 
 #### Low Priority (Future releases)

@@ -1,6 +1,8 @@
 package io.github.ozkanpakdil.grepwise.controller;
 
+import io.github.ozkanpakdil.grepwise.model.Role;
 import io.github.ozkanpakdil.grepwise.model.User;
+import io.github.ozkanpakdil.grepwise.repository.RoleRepository;
 import io.github.ozkanpakdil.grepwise.repository.UserRepository;
 import io.github.ozkanpakdil.grepwise.service.AuthService;
 import org.slf4j.Logger;
@@ -11,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for user management.
@@ -28,6 +32,9 @@ public class UserController {
     private UserRepository userRepository;
 
     @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
     private AuthService authService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -38,12 +45,13 @@ public class UserController {
      * @return List of all users
      */
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         try {
             List<User> users = userRepository.findAll();
-            // Remove password from response
-            users.forEach(user -> user.setPassword(null));
-            return ResponseEntity.ok(users);
+            List<UserResponse> userResponses = users.stream()
+                    .map(this::convertToUserResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(userResponses);
         } catch (Exception e) {
             logger.error("Error retrieving users: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -57,13 +65,11 @@ public class UserController {
      * @return The user
      */
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         try {
             User user = userRepository.findById(id);
             if (user != null) {
-                // Remove password from response
-                user.setPassword(null);
-                return ResponseEntity.ok(user);
+                return ResponseEntity.ok(convertToUserResponse(user));
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -98,15 +104,28 @@ public class UserController {
             user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
             user.setFirstName(userRequest.getFirstName());
             user.setLastName(userRequest.getLastName());
-            user.setRoles(userRequest.getRoles());
+            
+            // Add roles if provided
+            if (userRequest.getRoleIds() != null && !userRequest.getRoleIds().isEmpty()) {
+                for (String roleId : userRequest.getRoleIds()) {
+                    Role role = roleRepository.findById(roleId);
+                    if (role != null) {
+                        user.addRole(role);
+                    }
+                }
+            } else {
+                // Add default USER role if no roles provided
+                Role userRole = roleRepository.findByName("USER");
+                if (userRole != null) {
+                    user.addRole(userRole);
+                }
+            }
+            
             user.setEnabled(userRequest.getEnabled() != null ? userRequest.getEnabled() : true);
             
             User createdUser = userRepository.save(user);
             
-            // Remove password from response
-            createdUser.setPassword(null);
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+            return ResponseEntity.status(HttpStatus.CREATED).body(convertToUserResponse(createdUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user creation request: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -164,8 +183,18 @@ public class UserController {
                 existingUser.setLastName(userRequest.getLastName());
             }
             
-            if (userRequest.getRoles() != null) {
-                existingUser.setRoles(userRequest.getRoles());
+            // Update roles if provided
+            if (userRequest.getRoleIds() != null) {
+                // Clear existing roles
+                existingUser.getRoles().clear();
+                
+                // Add new roles
+                for (String roleId : userRequest.getRoleIds()) {
+                    Role role = roleRepository.findById(roleId);
+                    if (role != null) {
+                        existingUser.addRole(role);
+                    }
+                }
             }
             
             if (userRequest.getEnabled() != null) {
@@ -174,10 +203,7 @@ public class UserController {
             
             User updatedUser = userRepository.save(existingUser);
             
-            // Remove password from response
-            updatedUser.setPassword(null);
-            
-            return ResponseEntity.ok(updatedUser);
+            return ResponseEntity.ok(convertToUserResponse(updatedUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user update request for {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -213,20 +239,62 @@ public class UserController {
     /**
      * Get users by role.
      *
-     * @param role The role to filter by
+     * @param roleName The role to filter by
      * @return List of users with the specified role
      */
-    @GetMapping("/role/{role}")
-    public ResponseEntity<List<User>> getUsersByRole(@PathVariable String role) {
+    @GetMapping("/role/{roleName}")
+    public ResponseEntity<List<UserResponse>> getUsersByRole(@PathVariable String roleName) {
         try {
-            List<User> users = userRepository.findByRole(role);
-            // Remove password from response
-            users.forEach(user -> user.setPassword(null));
-            return ResponseEntity.ok(users);
+            List<User> users = userRepository.findByRole(roleName);
+            List<UserResponse> userResponses = users.stream()
+                    .map(this::convertToUserResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(userResponses);
         } catch (Exception e) {
-            logger.error("Error retrieving users by role {}: {}", role, e.getMessage());
+            logger.error("Error retrieving users by role {}: {}", roleName, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+    
+    /**
+     * Get users by permission.
+     *
+     * @param permissionName The permission to filter by
+     * @return List of users with the specified permission
+     */
+    @GetMapping("/permission/{permissionName}")
+    public ResponseEntity<List<UserResponse>> getUsersByPermission(@PathVariable String permissionName) {
+        try {
+            List<User> users = userRepository.findByPermission(permissionName);
+            List<UserResponse> userResponses = users.stream()
+                    .map(this::convertToUserResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(userResponses);
+        } catch (Exception e) {
+            logger.error("Error retrieving users by permission {}: {}", permissionName, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Convert a User entity to a UserResponse DTO.
+     *
+     * @param user The User entity to convert
+     * @return The UserResponse DTO
+     */
+    private UserResponse convertToUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setRoleIds(user.getRoles().stream().map(Role::getId).collect(Collectors.toList()));
+        response.setRoleNames(user.getRoleNames());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        response.setEnabled(user.isEnabled());
+        return response;
     }
 
     /**
@@ -238,7 +306,7 @@ public class UserController {
         private String password;
         private String firstName;
         private String lastName;
-        private List<String> roles;
+        private List<String> roleIds;
         private Boolean enabled;
 
         // Getters and setters
@@ -257,10 +325,57 @@ public class UserController {
         public String getLastName() { return lastName; }
         public void setLastName(String lastName) { this.lastName = lastName; }
 
-        public List<String> getRoles() { return roles; }
-        public void setRoles(List<String> roles) { this.roles = roles; }
+        public List<String> getRoleIds() { return roleIds; }
+        public void setRoleIds(List<String> roleIds) { this.roleIds = roleIds; }
 
         public Boolean getEnabled() { return enabled; }
         public void setEnabled(Boolean enabled) { this.enabled = enabled; }
+    }
+    
+    /**
+     * Response DTO for user data.
+     */
+    public static class UserResponse {
+        private String id;
+        private String username;
+        private String email;
+        private String firstName;
+        private String lastName;
+        private List<String> roleIds;
+        private List<String> roleNames;
+        private long createdAt;
+        private long updatedAt;
+        private boolean enabled;
+
+        // Getters and setters
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+
+        public String getLastName() { return lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+
+        public List<String> getRoleIds() { return roleIds; }
+        public void setRoleIds(List<String> roleIds) { this.roleIds = roleIds; }
+
+        public List<String> getRoleNames() { return roleNames; }
+        public void setRoleNames(List<String> roleNames) { this.roleNames = roleNames; }
+
+        public long getCreatedAt() { return createdAt; }
+        public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
+        public long getUpdatedAt() { return updatedAt; }
+        public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
     }
 }

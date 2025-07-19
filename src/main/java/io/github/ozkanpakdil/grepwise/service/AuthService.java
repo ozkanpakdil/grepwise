@@ -1,7 +1,9 @@
 package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.grpc.*;
+import io.github.ozkanpakdil.grepwise.model.Role;
 import io.github.ozkanpakdil.grepwise.model.User;
+import io.github.ozkanpakdil.grepwise.repository.RoleRepository;
 import io.github.ozkanpakdil.grepwise.repository.UserRepository;
 import io.grpc.stub.StreamObserver;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,13 +20,18 @@ import java.util.UUID;
 public class AuthService extends AuthServiceGrpc.AuthServiceImplBase {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final TokenService tokenService;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository, TokenService tokenService) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, TokenService tokenService) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.tokenService = tokenService;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        
+        // Initialize default roles
+        roleRepository.initializeDefaultRoles();
         
         // Create a default admin user if no users exist
         if (userRepository.count() == 0) {
@@ -34,7 +41,13 @@ public class AuthService extends AuthServiceGrpc.AuthServiceImplBase {
             admin.setPassword(passwordEncoder.encode("admin"));
             admin.setFirstName("Admin");
             admin.setLastName("User");
-            admin.getRoles().add("ADMIN");
+            
+            // Add ADMIN role
+            Role adminRole = roleRepository.findByName("ADMIN");
+            if (adminRole != null) {
+                admin.addRole(adminRole);
+            }
+            
             userRepository.save(admin);
         }
     }
@@ -67,7 +80,12 @@ public class AuthService extends AuthServiceGrpc.AuthServiceImplBase {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.getRoles().add("USER");
+        
+        // Add USER role
+        Role userRole = roleRepository.findByName("USER");
+        if (userRole != null) {
+            user.addRole(userRole);
+        }
         
         user = userRepository.save(user);
         
@@ -348,7 +366,7 @@ public class AuthService extends AuthServiceGrpc.AuthServiceImplBase {
                 .setEmail(modelUser.getEmail())
                 .setFirstName(modelUser.getFirstName())
                 .setLastName(modelUser.getLastName())
-                .addAllRoles(modelUser.getRoles())
+                .addAllRoles(modelUser.getRoleNames())
                 .setCreatedAt(modelUser.getCreatedAt())
                 .setUpdatedAt(modelUser.getUpdatedAt())
                 .setEnabled(modelUser.isEnabled())

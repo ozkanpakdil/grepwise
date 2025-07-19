@@ -87,14 +87,26 @@ public class UserRepository {
     }
 
     /**
-     * Find users by role.
+     * Find users by role name.
      *
-     * @param role The role to filter by
+     * @param roleName The name of the role to filter by
      * @return A list of users with the specified role
      */
-    public List<User> findByRole(String role) {
+    public List<User> findByRole(String roleName) {
         return users.values().stream()
-                .filter(user -> user.getRoles().contains(role))
+                .filter(user -> user.hasRole(roleName))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Find users by permission.
+     *
+     * @param permissionName The name of the permission to filter by
+     * @return A list of users with the specified permission
+     */
+    public List<User> findByPermission(String permissionName) {
+        return users.values().stream()
+                .filter(user -> user.hasPermission(permissionName))
                 .collect(Collectors.toList());
     }
 

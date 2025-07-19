@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Represents a user in the system.
@@ -14,7 +15,7 @@ public class User {
     private String password;
     private String firstName;
     private String lastName;
-    private List<String> roles;
+    private List<Role> roles;
     private long createdAt;
     private long updatedAt;
     private boolean enabled;
@@ -24,7 +25,7 @@ public class User {
         this.enabled = true;
     }
 
-    public User(String id, String username, String email, String password, String firstName, String lastName, List<String> roles, long createdAt, long updatedAt, boolean enabled) {
+    public User(String id, String username, String email, String password, String firstName, String lastName, List<Role> roles, long createdAt, long updatedAt, boolean enabled) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -85,12 +86,69 @@ public class User {
         this.lastName = lastName;
     }
 
-    public List<String> getRoles() {
+    public List<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<String> roles) {
+    public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+    
+    /**
+     * Get the role names for this user.
+     * This is used for backward compatibility with code that expects role names.
+     *
+     * @return A list of role names
+     */
+    public List<String> getRoleNames() {
+        return roles.stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Add a role to this user if they don't already have it.
+     *
+     * @param role The role to add
+     * @return true if the role was added, false if they already had it
+     */
+    public boolean addRole(Role role) {
+        if (hasRole(role.getName())) {
+            return false;
+        }
+        return roles.add(role);
+    }
+    
+    /**
+     * Remove a role from this user.
+     *
+     * @param roleName The name of the role to remove
+     * @return true if the role was removed, false if they didn't have it
+     */
+    public boolean removeRole(String roleName) {
+        return roles.removeIf(role -> role.getName().equals(roleName));
+    }
+    
+    /**
+     * Check if this user has a specific role.
+     *
+     * @param roleName The name of the role to check
+     * @return true if the user has the role, false otherwise
+     */
+    public boolean hasRole(String roleName) {
+        return roles.stream()
+                .anyMatch(role -> role.getName().equals(roleName));
+    }
+    
+    /**
+     * Check if this user has a specific permission through any of their roles.
+     *
+     * @param permissionName The name of the permission to check
+     * @return true if the user has the permission, false otherwise
+     */
+    public boolean hasPermission(String permissionName) {
+        return roles.stream()
+                .anyMatch(role -> role.hasPermission(permissionName));
     }
 
     public long getCreatedAt() {

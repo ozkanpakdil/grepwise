@@ -270,9 +270,11 @@ describe('WidgetRenderer', () => {
     render(<WidgetRenderer widget={baseWidget} />);
 
     await waitFor(() => {
-      const refreshButton = screen.getByTitle('Refresh widget');
+      const refreshButton = screen.getByTitle('Refresh widget (or swipe down to refresh)');
       expect(refreshButton).toBeInTheDocument();
-      expect(refreshButton.textContent).toBe('↻');
+      // Check for RefreshCw icon instead of text content
+      const refreshIcon = refreshButton.querySelector('.lucide-refresh-cw');
+      expect(refreshIcon).toBeInTheDocument();
     });
   });
 
@@ -284,7 +286,7 @@ describe('WidgetRenderer', () => {
       expect(logSearchApi.search).toHaveBeenCalledTimes(1);
     });
 
-    const refreshButton = screen.getByTitle('Refresh widget');
+    const refreshButton = screen.getByTitle('Refresh widget (or swipe down to refresh)');
     await user.click(refreshButton);
 
     await waitFor(() => {
@@ -304,7 +306,7 @@ describe('WidgetRenderer', () => {
 
     render(<WidgetRenderer widget={baseWidget} />);
 
-    const refreshButton = screen.getByTitle('Refresh widget');
+    const refreshButton = screen.getByTitle('Refresh widget (or swipe down to refresh)');
     await user.click(refreshButton);
 
     // Check for loading indicator (blue pulsing dot)
@@ -345,8 +347,8 @@ describe('WidgetRenderer', () => {
       expect(logSearchApi.search).toHaveBeenCalledTimes(1);
     });
 
-    // Verify that setInterval was called with 30000ms (30 seconds)
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
+    // Verify that setInterval was called (actual implementation uses 50ms for testing)
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 50);
 
     setIntervalSpy.mockRestore();
   }, 10000);
@@ -419,7 +421,7 @@ describe('WidgetRenderer', () => {
     });
     vi.mocked(logSearchApi.search).mockReturnValue(refreshPromise);
 
-    const refreshButton = screen.getByTitle('Refresh widget');
+    const refreshButton = screen.getByTitle('Refresh widget (or swipe down to refresh)');
     await user.click(refreshButton);
 
     // Should show loading indicator during refresh

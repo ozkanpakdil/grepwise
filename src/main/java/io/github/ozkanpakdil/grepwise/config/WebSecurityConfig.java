@@ -7,10 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Security configuration for the application.
@@ -32,6 +36,27 @@ public class WebSecurityConfig {
     
     @Autowired
     private RateLimitingFilter rateLimitingFilter;
+    
+    @Autowired(required = false)
+    private LdapConfig ldapConfig;
+    
+    @Autowired(required = false)
+    private LdapAuthenticationProvider ldapAuthenticationProvider;
+
+    /**
+     * Creates an authentication manager that includes the LDAP authentication provider if LDAP is enabled.
+     *
+     * @return The authentication manager
+     */
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        if (ldapConfig != null && ldapConfig.isLdapEnabled() && ldapAuthenticationProvider != null) {
+            return new ProviderManager(Collections.singletonList(ldapAuthenticationProvider));
+        }
+        // Return an empty ProviderManager if LDAP is not enabled
+        // The JWT filter will handle authentication in this case
+        return new ProviderManager(Collections.emptyList());
+    }
 
     /**
      * Configure security for the application.
@@ -42,6 +67,11 @@ public class WebSecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Set the authentication manager if LDAP is enabled
+        if (ldapConfig != null && ldapConfig.isLdapEnabled()) {
+            http.authenticationManager(authenticationManager());
+        }
+        
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
@@ -50,6 +80,9 @@ public class WebSecurityConfig {
             .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(authorize -> authorize
+                // Add LDAP login endpoint if LDAP is enabled
+                .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ? 
+                    "/api/auth/ldap/login" : "/api/auth/non-existent-path").permitAll()
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/logs/search").permitAll()

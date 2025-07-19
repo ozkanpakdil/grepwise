@@ -196,6 +196,21 @@
             <version>3.1.8</version>
         </dependency>
         
+        <!-- LDAP Dependencies -->
+        <dependency>
+            <groupId>org.springframework.ldap</groupId>
+            <artifactId>spring-ldap-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-ldap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.unboundid</groupId>
+            <artifactId>unboundid-ldapsdk</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
         <!-- AWS SDK Dependencies -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

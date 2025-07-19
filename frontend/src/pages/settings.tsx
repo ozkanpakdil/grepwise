@@ -32,6 +32,10 @@ import {
   profileApi,
   ProfileUpdateRequest
 } from '@/api/profile';
+import {
+  ldapSettingsApi,
+  LdapSettings
+} from '@/api/ldapSettings';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -66,6 +70,9 @@ export default function SettingsPage() {
   const [isTestingFieldConfig, setIsTestingFieldConfig] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isLoadingLdapSettings, setIsLoadingLdapSettings] = useState(false);
+  const [isSavingLdapSettings, setIsSavingLdapSettings] = useState(false);
+  const [isTestingLdapConnection, setIsTestingLdapConnection] = useState(false);
   
   // Backup and restore
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -97,6 +104,76 @@ export default function SettingsPage() {
   });
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   
+  // LDAP settings
+  const [ldapSettings, setLdapSettings] = useState<LdapSettings>({
+    enabled: false,
+    url: 'ldap://localhost:389',
+    baseDn: 'dc=example,dc=com',
+    userDnPattern: 'uid={0},ou=people',
+    managerDn: '',
+    managerPassword: '',
+    userSearchBase: 'ou=people',
+    userSearchFilter: '(uid={0})',
+    groupSearchBase: 'ou=groups',
+    groupSearchFilter: '(member={0})',
+    groupRoleAttribute: 'cn'
+  });
+  
+  // Functions for LDAP settings
+  const loadLdapSettings = async () => {
+    try {
+      setIsLoadingLdapSettings(true);
+      const settings = await ldapSettingsApi.getLdapSettings();
+      setLdapSettings(settings);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to load LDAP settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingLdapSettings(false);
+    }
+  };
+
+  const saveLdapSettings = async () => {
+    try {
+      setIsSavingLdapSettings(true);
+      await ldapSettingsApi.updateLdapSettings(ldapSettings);
+      toast({
+        title: 'Success',
+        description: 'LDAP settings saved successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to save LDAP settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingLdapSettings(false);
+    }
+  };
+
+  const testLdapConnection = async () => {
+    try {
+      setIsTestingLdapConnection(true);
+      await ldapSettingsApi.testLdapConnection();
+      toast({
+        title: 'Success',
+        description: 'LDAP connection test successful',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `LDAP connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTestingLdapConnection(false);
+    }
+  };
+
   // Field configurations
   const [fieldConfigurations, setFieldConfigurations] = useState<FieldConfiguration[]>([]);
   const [newFieldConfig, setNewFieldConfig] = useState<FieldConfiguration>({
@@ -215,6 +292,31 @@ export default function SettingsPage() {
     
     fetchProfileData();
   }, [user, updateUser]);
+  
+  // Load LDAP settings
+  useEffect(() => {
+    const fetchLdapSettings = async () => {
+      if (!user || !user.roles.includes('ADMIN')) return; // Skip if user is not admin
+      
+      setIsLoadingLdapSettings(true);
+      
+      try {
+        const settings = await ldapSettingsApi.getLdapSettings();
+        setLdapSettings(settings);
+      } catch (error) {
+        console.error('Error fetching LDAP settings:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load LDAP settings',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingLdapSettings(false);
+      }
+    };
+    
+    fetchLdapSettings();
+  }, [user]);
 
   // Handle creating a new log directory configuration
   const handleCreateConfig = async (e: React.FormEvent) => {
@@ -1264,6 +1366,211 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* LDAP Authentication Settings */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">LDAP Authentication</h2>
+        <div className="border rounded-md p-4">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium mb-4">LDAP Configuration</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure LDAP authentication for user login. This allows users to log in using their LDAP credentials.
+                LDAP roles will be mapped to GrepWise roles automatically.
+              </p>
+              
+              {isLoadingLdapSettings ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Loading LDAP settings...</p>
+                </div>
+              ) : (
+                <form onSubmit={(e) => { e.preventDefault(); saveLdapSettings(); }} className="space-y-4">
+                  <div className="flex items-center mb-4">
+                    <input
+                      id="ldapEnabled"
+                      type="checkbox"
+                      checked={ldapSettings.enabled}
+                      onChange={(e) => setLdapSettings({...ldapSettings, enabled: e.target.checked})}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="ldapEnabled" className="ml-2 block text-sm font-medium">
+                      Enable LDAP Authentication
+                    </label>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="ldapUrl" className="block text-sm font-medium">
+                      LDAP Server URL
+                    </label>
+                    <input
+                      id="ldapUrl"
+                      type="text"
+                      value={ldapSettings.url}
+                      onChange={(e) => setLdapSettings({...ldapSettings, url: e.target.value})}
+                      className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="ldap://localhost:389"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="ldapBaseDn" className="block text-sm font-medium">
+                      Base DN
+                    </label>
+                    <input
+                      id="ldapBaseDn"
+                      type="text"
+                      value={ldapSettings.baseDn}
+                      onChange={(e) => setLdapSettings({...ldapSettings, baseDn: e.target.value})}
+                      className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="dc=example,dc=com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="ldapUserDnPattern" className="block text-sm font-medium">
+                      User DN Pattern
+                    </label>
+                    <input
+                      id="ldapUserDnPattern"
+                      type="text"
+                      value={ldapSettings.userDnPattern}
+                      onChange={(e) => setLdapSettings({...ldapSettings, userDnPattern: e.target.value})}
+                      className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="uid={0},ou=people"
+                    />
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-2">Manager Authentication (Optional)</h4>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      If your LDAP server requires authentication to search for users, provide manager credentials.
+                    </p>
+                    
+                    <div>
+                      <label htmlFor="ldapManagerDn" className="block text-sm font-medium">
+                        Manager DN
+                      </label>
+                      <input
+                        id="ldapManagerDn"
+                        type="text"
+                        value={ldapSettings.managerDn}
+                        onChange={(e) => setLdapSettings({...ldapSettings, managerDn: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="cn=admin,dc=example,dc=com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="ldapManagerPassword" className="block text-sm font-medium">
+                        Manager Password
+                      </label>
+                      <input
+                        id="ldapManagerPassword"
+                        type="password"
+                        value={ldapSettings.managerPassword}
+                        onChange={(e) => setLdapSettings({...ldapSettings, managerPassword: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-2">Advanced Settings</h4>
+                    
+                    <div>
+                      <label htmlFor="ldapUserSearchBase" className="block text-sm font-medium">
+                        User Search Base
+                      </label>
+                      <input
+                        id="ldapUserSearchBase"
+                        type="text"
+                        value={ldapSettings.userSearchBase}
+                        onChange={(e) => setLdapSettings({...ldapSettings, userSearchBase: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="ou=people"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="ldapUserSearchFilter" className="block text-sm font-medium">
+                        User Search Filter
+                      </label>
+                      <input
+                        id="ldapUserSearchFilter"
+                        type="text"
+                        value={ldapSettings.userSearchFilter}
+                        onChange={(e) => setLdapSettings({...ldapSettings, userSearchFilter: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="(uid={0})"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="ldapGroupSearchBase" className="block text-sm font-medium">
+                        Group Search Base
+                      </label>
+                      <input
+                        id="ldapGroupSearchBase"
+                        type="text"
+                        value={ldapSettings.groupSearchBase}
+                        onChange={(e) => setLdapSettings({...ldapSettings, groupSearchBase: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="ou=groups"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="ldapGroupSearchFilter" className="block text-sm font-medium">
+                        Group Search Filter
+                      </label>
+                      <input
+                        id="ldapGroupSearchFilter"
+                        type="text"
+                        value={ldapSettings.groupSearchFilter}
+                        onChange={(e) => setLdapSettings({...ldapSettings, groupSearchFilter: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="(member={0})"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="ldapGroupRoleAttribute" className="block text-sm font-medium">
+                        Group Role Attribute
+                      </label>
+                      <input
+                        id="ldapGroupRoleAttribute"
+                        type="text"
+                        value={ldapSettings.groupRoleAttribute}
+                        onChange={(e) => setLdapSettings({...ldapSettings, groupRoleAttribute: e.target.value})}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="cn"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={testLdapConnection}
+                      disabled={isTestingLdapConnection || !ldapSettings.enabled}
+                    >
+                      {isTestingLdapConnection ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isSavingLdapSettings}
+                    >
+                      {isSavingLdapSettings ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                  </div>
+                </form>
               )}
             </div>
           </div>

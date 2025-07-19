@@ -176,7 +176,7 @@ The project has achieved a **functional log analysis platform** with:
 - [x] Complete alarm management REST API (ready for frontend integration)
 - [x] Connect alarm UI to backend alarm API
 - [ ] Implement gRPC-Web for enhanced performance (optional)
-- [ ] Add real-time updates using WebSockets or Server-Sent Events
+- [x] Add real-time updates using WebSockets or Server-Sent Events
 
 ### 2. External System Integration
 

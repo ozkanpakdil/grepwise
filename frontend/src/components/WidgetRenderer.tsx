@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 import { logSearchApi } from '@/api/logSearch';
 import { BarChart3, PieChart, Table, Activity, AlertCircle, LineChart, TrendingUp, ScatterChart } from 'lucide-react';
+import { getWidgetUpdateClient } from '@/utils/sseClient';
 
 // Widget-specific components
 import BarChartWidget from './widgets/BarChartWidget';
@@ -29,14 +30,53 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
     data: null,
   });
 
+  // Reference to the SSE client
+  const sseClientRef = useRef<any>(null);
+
   useEffect(() => {
+    // Initial data load
     loadWidgetData();
     
-    // Set up auto-refresh for real-time updates (every 30 seconds)
-    const interval = setInterval(loadWidgetData, 30000);
+    // Set up SSE for real-time updates
+    if (widget.dashboardId && widget.id) {
+      const sseClient = getWidgetUpdateClient(widget.dashboardId, widget.id);
+      sseClientRef.current = sseClient;
+      
+      // Listen for widget updates
+      sseClient.on('widgetUpdate', (data) => {
+        console.log(`Received real-time update for widget ${widget.id}`, data);
+        setWidgetData({
+          loading: false,
+          error: null,
+          data: data
+        });
+      });
+      
+      // Listen for initial data
+      sseClient.on('initialData', (data) => {
+        console.log(`Received initial data for widget ${widget.id}`, data);
+        setWidgetData({
+          loading: false,
+          error: null,
+          data: data
+        });
+      });
+      
+      // Connect to the SSE endpoint
+      sseClient.connect();
+      
+      console.log(`Established SSE connection for widget ${widget.id}`);
+    }
     
-    return () => clearInterval(interval);
-  }, [widget.query]);
+    // Clean up SSE connection when component unmounts
+    return () => {
+      if (sseClientRef.current) {
+        sseClientRef.current.close();
+        sseClientRef.current = null;
+        console.log(`Closed SSE connection for widget ${widget.id}`);
+      }
+    };
+  }, [widget.query, widget.id, widget.dashboardId]);
 
   const loadWidgetData = async () => {
     if (!widget.query.trim()) {

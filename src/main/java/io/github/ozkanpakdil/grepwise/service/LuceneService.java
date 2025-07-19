@@ -6,6 +6,7 @@ import io.github.ozkanpakdil.grepwise.model.PartitionConfiguration;
 import io.github.ozkanpakdil.grepwise.repository.PartitionConfigurationRepository;
 import io.github.ozkanpakdil.grepwise.service.ArchiveService;
 import io.github.ozkanpakdil.grepwise.service.FieldConfigurationService;
+import io.github.ozkanpakdil.grepwise.service.RealTimeUpdateService;
 import io.github.ozkanpakdil.grepwise.service.SearchCacheService;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -94,6 +95,9 @@ public class LuceneService {
     
     @Autowired
     private SearchCacheService searchCacheService;
+    
+    @Autowired
+    private RealTimeUpdateService realTimeUpdateService;
 
     /**
      * Initialize the Lucene index.
@@ -587,6 +591,13 @@ public class LuceneService {
             for (LogEntry logEntry : logEntries) {
                 Document doc = logEntryToDocument(logEntry);
                 indexWriter.addDocument(doc);
+                
+                // Broadcast log update for real-time notifications
+                try {
+                    realTimeUpdateService.broadcastLogUpdate(logEntry);
+                } catch (Exception e) {
+                    logger.warn("Failed to broadcast log update: {}", e.getMessage());
+                }
             }
             indexWriter.commit();
             return logEntries.size();
@@ -630,6 +641,13 @@ public class LuceneService {
                 for (LogEntry logEntry : partitionEntries) {
                     Document doc = logEntryToDocument(logEntry);
                     writer.addDocument(doc);
+                    
+                    // Broadcast log update for real-time notifications
+                    try {
+                        realTimeUpdateService.broadcastLogUpdate(logEntry);
+                    } catch (Exception e) {
+                        logger.warn("Failed to broadcast log update: {}", e.getMessage());
+                    }
                 }
                 writer.commit();
                 totalIndexed += partitionEntries.size();
@@ -642,6 +660,13 @@ public class LuceneService {
                 for (LogEntry logEntry : partitionEntries) {
                     Document doc = logEntryToDocument(logEntry);
                     indexWriter.addDocument(doc);
+                    
+                    // Broadcast log update for real-time notifications
+                    try {
+                        realTimeUpdateService.broadcastLogUpdate(logEntry);
+                    } catch (Exception e) {
+                        logger.warn("Failed to broadcast log update: {}", e.getMessage());
+                    }
                 }
                 indexWriter.commit();
                 totalIndexed += partitionEntries.size();

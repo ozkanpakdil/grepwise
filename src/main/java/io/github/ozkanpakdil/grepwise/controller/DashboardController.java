@@ -3,6 +3,13 @@ package io.github.ozkanpakdil.grepwise.controller;
 import io.github.ozkanpakdil.grepwise.model.Dashboard;
 import io.github.ozkanpakdil.grepwise.model.DashboardWidget;
 import io.github.ozkanpakdil.grepwise.service.DashboardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +23,7 @@ import java.util.Map;
 /**
  * REST controller for dashboard management.
  */
+@Tag(name = "Dashboards", description = "API endpoints for managing dashboards and widgets")
 @RestController
 @RequestMapping("/api/dashboards")
 @CrossOrigin(origins = "*")
@@ -33,8 +41,29 @@ public class DashboardController {
      * @param userId The user ID (in a real app, this would come from authentication)
      * @return List of accessible dashboards
      */
+    @Operation(
+        summary = "Get all dashboards",
+        description = "Retrieves all dashboards accessible by the specified user"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successfully retrieved dashboards",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Dashboard.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content
+        )
+    })
     @GetMapping
-    public ResponseEntity<List<Dashboard>> getDashboards(@RequestParam String userId) {
+    public ResponseEntity<List<Dashboard>> getDashboards(
+            @Parameter(description = "User ID for access control", required = true) 
+            @RequestParam String userId) {
         try {
             List<Dashboard> dashboards = dashboardService.getDashboardsForUser(userId);
             return ResponseEntity.ok(dashboards);
@@ -51,8 +80,37 @@ public class DashboardController {
      * @param userId The user ID (for access control)
      * @return The dashboard with widgets
      */
+    @Operation(
+        summary = "Get dashboard by ID",
+        description = "Retrieves a specific dashboard by its ID, including all its widgets"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successfully retrieved dashboard",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Dashboard.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Access denied or dashboard not found",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content
+        )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDashboardById(@PathVariable String id, @RequestParam String userId) {
+    public ResponseEntity<?> getDashboardById(
+            @Parameter(description = "Dashboard ID", required = true) 
+            @PathVariable String id, 
+            
+            @Parameter(description = "User ID for access control", required = true) 
+            @RequestParam String userId) {
         try {
             Dashboard dashboard = dashboardService.getDashboardById(id, userId);
             return ResponseEntity.ok(dashboard);
@@ -71,8 +129,38 @@ public class DashboardController {
      * @param dashboardRequest The dashboard creation request
      * @return The created dashboard
      */
+    @Operation(
+        summary = "Create a new dashboard",
+        description = "Creates a new dashboard with the specified name, description, and ownership"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "Dashboard created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Dashboard.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid dashboard creation request",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PostMapping
-    public ResponseEntity<?> createDashboard(@RequestBody DashboardRequest dashboardRequest) {
+    public ResponseEntity<?> createDashboard(
+            @Parameter(
+                description = "Dashboard creation request containing name, description, and owner information",
+                required = true,
+                schema = @Schema(implementation = DashboardRequest.class)
+            )
+            @RequestBody DashboardRequest dashboardRequest) {
         try {
             Dashboard dashboard = convertRequestToDashboard(dashboardRequest);
             Dashboard createdDashboard = dashboardService.createDashboard(dashboard);
@@ -94,8 +182,41 @@ public class DashboardController {
      * @param dashboardRequest The dashboard update request
      * @return The updated dashboard
      */
+    @Operation(
+        summary = "Update an existing dashboard",
+        description = "Updates an existing dashboard with the specified name, description, and sharing settings"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Dashboard updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Dashboard.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid dashboard update request",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateDashboard(@PathVariable String id, @RequestBody DashboardRequest dashboardRequest) {
+    public ResponseEntity<?> updateDashboard(
+            @Parameter(description = "Dashboard ID to update", required = true) 
+            @PathVariable String id, 
+            
+            @Parameter(
+                description = "Dashboard update request containing name, description, and sharing settings",
+                required = true,
+                schema = @Schema(implementation = DashboardRequest.class)
+            )
+            @RequestBody DashboardRequest dashboardRequest) {
         try {
             Dashboard dashboard = convertRequestToDashboard(dashboardRequest);
             dashboard.setId(id);
@@ -118,8 +239,39 @@ public class DashboardController {
      * @param userId The user ID (for access control)
      * @return Success response
      */
+    @Operation(
+        summary = "Delete a dashboard",
+        description = "Deletes a dashboard by its ID. Only the owner or an administrator can delete a dashboard."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Dashboard deleted successfully",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Access denied - user does not have permission to delete this dashboard",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "Dashboard not found",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDashboard(@PathVariable String id, @RequestParam String userId) {
+    public ResponseEntity<?> deleteDashboard(
+            @Parameter(description = "Dashboard ID to delete", required = true) 
+            @PathVariable String id, 
+            
+            @Parameter(description = "User ID for access control", required = true) 
+            @RequestParam String userId) {
         try {
             boolean deleted = dashboardService.deleteDashboard(id, userId);
             if (deleted) {
@@ -168,8 +320,47 @@ public class DashboardController {
      * @param widgetRequest The widget creation request
      * @return The created widget
      */
+    @Operation(
+        summary = "Add a widget to a dashboard",
+        description = "Creates a new widget and adds it to the specified dashboard. " +
+                "Widgets can be of various types such as charts, tables, or gauges."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "Widget created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = DashboardWidget.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid widget creation request",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "403", 
+            description = "Access denied - user does not have permission to modify this dashboard",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content(mediaType = "application/json")
+        )
+    })
     @PostMapping("/{dashboardId}/widgets")
-    public ResponseEntity<?> addWidget(@PathVariable String dashboardId, @RequestBody WidgetRequest widgetRequest) {
+    public ResponseEntity<?> addWidget(
+            @Parameter(description = "Dashboard ID to add the widget to", required = true) 
+            @PathVariable String dashboardId, 
+            
+            @Parameter(
+                description = "Widget creation request containing title, type, query, and layout information",
+                required = true,
+                schema = @Schema(implementation = WidgetRequest.class)
+            )
+            @RequestBody WidgetRequest widgetRequest) {
         try {
             DashboardWidget widget = convertRequestToWidget(widgetRequest);
             widget.setDashboardId(dashboardId);

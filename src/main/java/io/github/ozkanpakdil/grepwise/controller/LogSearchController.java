@@ -5,6 +5,13 @@ import io.github.ozkanpakdil.grepwise.repository.LogRepository;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
 import io.github.ozkanpakdil.grepwise.service.SearchCacheService;
 import io.github.ozkanpakdil.grepwise.service.SplQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +24,7 @@ import java.util.stream.Collectors;
 /**
  * REST controller for searching logs.
  */
+@Tag(name = "Log Search", description = "API endpoints for searching and analyzing logs")
 @RestController
 @RequestMapping("/api/logs")
 @CrossOrigin(origins = "*") // Allow requests from any origin for development
@@ -42,12 +50,40 @@ public class LogSearchController {
      * @param endTime Custom end time (for custom time range)
      * @return A list of matching log entries
      */
+    @Operation(
+        summary = "Search logs",
+        description = "Search logs using a query string with support for regex and time range filtering"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successful search operation",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = LogEntry.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error during search operation",
+            content = @Content
+        )
+    })
     @GetMapping("/search")
     public ResponseEntity<List<LogEntry>> searchLogs(
+            @Parameter(description = "Search query string") 
             @RequestParam(required = false) String query,
+            
+            @Parameter(description = "Whether to treat the query as a regular expression") 
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
             @RequestParam(required = false) String timeRange,
+            
+            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)") 
             @RequestParam(required = false) Long startTime,
+            
+            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)") 
             @RequestParam(required = false) Long endTime) {
 
         // Calculate time range if a predefined range is specified
@@ -93,8 +129,42 @@ public class LogSearchController {
      * @param splQuery The SPL query string (e.g., "search error | stats count by level")
      * @return Query results (either log entries or statistics)
      */
+    @Operation(
+        summary = "Execute SPL query",
+        description = "Execute a Splunk Processing Language (SPL) query to search and analyze logs. " +
+                "Supports commands like 'search', 'stats', 'where', 'eval', etc."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successful query execution",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid SPL query syntax",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error during query execution",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        )
+    })
     @PostMapping("/spl")
-    public ResponseEntity<?> executeSplQuery(@RequestBody String splQuery) {
+    public ResponseEntity<?> executeSplQuery(
+            @Parameter(
+                description = "SPL query string (e.g., \"search error | stats count by level\")",
+                required = true,
+                example = "search error | stats count by level"
+            ) 
+            @RequestBody String splQuery) {
         try {
             SplQueryService.SplQueryResult result = splQueryService.executeSplQuery(splQuery);
 
@@ -240,13 +310,43 @@ public class LogSearchController {
      * @param slots Number of time slots to divide the range into
      * @return A map of time slots to log counts
      */
+    @Operation(
+        summary = "Get log count by time slots",
+        description = "Aggregates log counts into time slots for visualization. " +
+                "This endpoint is useful for creating time-based charts and graphs."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successful aggregation",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error during aggregation",
+            content = @Content
+        )
+    })
     @GetMapping("/time-aggregation")
     public ResponseEntity<Map<Long, Integer>> getLogCountByTimeSlots(
+            @Parameter(description = "Search query string") 
             @RequestParam(required = false) String query,
+            
+            @Parameter(description = "Whether to treat the query as a regular expression") 
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
             @RequestParam(required = false) String timeRange,
+            
+            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)") 
             @RequestParam(required = false) Long startTime,
+            
+            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)") 
             @RequestParam(required = false) Long endTime,
+            
+            @Parameter(description = "Number of time slots to divide the range into (default: 24)") 
             @RequestParam(required = false, defaultValue = "24") int slots) {
 
         // Calculate time range if a predefined range is specified
@@ -328,6 +428,15 @@ public class LogSearchController {
      *
      * @return Cache statistics
      */
+    @Operation(
+        summary = "Get search cache statistics",
+        description = "Provides information about the search cache performance, including cache size, hit ratio, and other metrics"
+    )
+    @ApiResponse(
+        responseCode = "200", 
+        description = "Cache statistics retrieved successfully",
+        content = @Content(mediaType = "application/json")
+    )
     @GetMapping("/cache/stats")
     public ResponseEntity<Map<String, Object>> getCacheStats() {
         Map<String, Object> stats = searchCacheService.getCacheStats();
@@ -340,6 +449,15 @@ public class LogSearchController {
      *
      * @return A message indicating the cache was cleared
      */
+    @Operation(
+        summary = "Clear search cache",
+        description = "Clears all entries from the search cache"
+    )
+    @ApiResponse(
+        responseCode = "200", 
+        description = "Cache cleared successfully",
+        content = @Content(mediaType = "application/json")
+    )
     @PostMapping("/cache/clear")
     public ResponseEntity<Map<String, String>> clearCache() {
         searchCacheService.clearCache();
@@ -356,10 +474,24 @@ public class LogSearchController {
      * @param expirationMs Cache entry expiration time in milliseconds
      * @return The updated cache configuration
      */
+    @Operation(
+        summary = "Update search cache configuration",
+        description = "Updates the search cache configuration parameters such as enabled status, maximum size, and expiration time"
+    )
+    @ApiResponse(
+        responseCode = "200", 
+        description = "Cache configuration updated successfully",
+        content = @Content(mediaType = "application/json")
+    )
     @PostMapping("/cache/config")
     public ResponseEntity<Map<String, Object>> updateCacheConfig(
+            @Parameter(description = "Whether the cache is enabled") 
             @RequestParam(required = false) Boolean enabled,
+            
+            @Parameter(description = "Maximum cache size (number of entries)") 
             @RequestParam(required = false) Integer maxSize,
+            
+            @Parameter(description = "Cache entry expiration time in milliseconds") 
             @RequestParam(required = false) Integer expirationMs) {
         
         if (enabled != null) {

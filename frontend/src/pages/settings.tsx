@@ -28,6 +28,10 @@ import {
 import {
   configBackupApi
 } from '@/api/configBackup';
+import {
+  profileApi,
+  ProfileUpdateRequest
+} from '@/api/profile';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -173,6 +177,44 @@ export default function SettingsPage() {
 
     fetchData();
   }, []);
+  
+  // Load user profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return; // Skip if user is not logged in
+      
+      setIsUpdatingProfile(true);
+      
+      try {
+        const profileData = await profileApi.getCurrentProfile();
+        
+        // Update the profile form with the fetched data
+        setProfileForm({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          email: profileData.email,
+        });
+        
+        // Update the auth store with the latest user data
+        updateUser({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          email: profileData.email,
+        });
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load profile data',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUpdatingProfile(false);
+      }
+    };
+    
+    fetchProfileData();
+  }, [user, updateUser]);
 
   // Handle creating a new log directory configuration
   const handleCreateConfig = async (e: React.FormEvent) => {
@@ -578,24 +620,31 @@ export default function SettingsPage() {
     setIsUpdatingProfile(true);
 
     try {
-      // In a real app, this would be an API call to update the user profile
-      // For now, we'll just simulate a successful update
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      updateUser({
+      // Create profile update request
+      const profileUpdateRequest: ProfileUpdateRequest = {
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
         email: profileForm.email,
+      };
+
+      // Call the API to update the profile
+      const updatedProfile = await profileApi.updateProfile(profileUpdateRequest);
+
+      // Update the auth store with the latest user data
+      updateUser({
+        firstName: updatedProfile.firstName,
+        lastName: updatedProfile.lastName,
+        email: updatedProfile.email,
       });
 
       toast({
         title: 'Profile updated',
         description: 'Your profile has been updated successfully',
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'An error occurred while updating your profile',
+        description: error.message || 'An error occurred while updating your profile',
         variant: 'destructive',
       });
       console.error('Profile update error:', error);
@@ -638,9 +687,11 @@ export default function SettingsPage() {
     setIsChangingPassword(true);
 
     try {
-      // In a real app, this would be an API call to change the password
-      // For now, we'll just simulate a successful password change
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Call the API to change the password
+      await profileApi.changePassword(
+        passwordForm.currentPassword,
+        passwordForm.newPassword
+      );
 
       // Reset the password form
       setPasswordForm({
@@ -653,10 +704,10 @@ export default function SettingsPage() {
         title: 'Password changed',
         description: 'Your password has been changed successfully',
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'An error occurred while changing your password',
+        description: error.message || 'An error occurred while changing your password',
         variant: 'destructive',
       });
       console.error('Password change error:', error);

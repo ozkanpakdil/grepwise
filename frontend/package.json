@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run generate-proto && tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "generate-proto": "node protoc.js"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
@@ -51,6 +52,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/google-protobuf": "^3.15.12",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
@@ -63,7 +65,9 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "jsdom": "^26.1.0",
     "postcss": "^8.4.33",
+    "protoc-gen-grpc-web": "^1.4.2",
     "tailwindcss": "^3.4.1",
+    "ts-protoc-gen": "^0.15.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^0.19.0",

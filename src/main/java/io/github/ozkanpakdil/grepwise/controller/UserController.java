@@ -1,5 +1,6 @@
 package io.github.ozkanpakdil.grepwise.controller;
 
+import io.github.ozkanpakdil.grepwise.annotation.ApiVersion;
 import io.github.ozkanpakdil.grepwise.model.Role;
 import io.github.ozkanpakdil.grepwise.model.User;
 import io.github.ozkanpakdil.grepwise.repository.RoleRepository;
@@ -23,10 +24,14 @@ import java.util.stream.Collectors;
 /**
  * REST controller for user management.
  * This controller provides endpoints for creating, retrieving, updating, and deleting users.
+ * 
+ * This controller is versioned as v1 by default, making all endpoints accessible at /api/v1/users.
+ * Individual methods can override this version with their own @ApiVersion annotation.
  */
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
+@ApiVersion(1)
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -45,9 +50,9 @@ public class UserController {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
-     * Get all users.
+     * Get all users (API v1).
      *
-     * @return List of all users
+     * @return List of all users with basic information
      */
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
@@ -59,6 +64,64 @@ public class UserController {
             return ResponseEntity.ok(userResponses);
         } catch (Exception e) {
             logger.error("Error retrieving users: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Get all users with enhanced information (API v2).
+     * This endpoint provides additional user information compared to the v1 endpoint.
+     *
+     * @return List of all users with enhanced information
+     */
+    @GetMapping
+    @ApiVersion(2)
+    public ResponseEntity<List<Map<String, Object>>> getAllUsersV2() {
+        try {
+            List<User> users = userRepository.findAll();
+            List<Map<String, Object>> enhancedUserResponses = users.stream()
+                    .map(user -> {
+                        UserResponse basicResponse = convertToUserResponse(user);
+                        Map<String, Object> enhancedResponse = new HashMap<>();
+                        
+                        // Include all basic user information
+                        enhancedResponse.put("id", basicResponse.getId());
+                        enhancedResponse.put("username", basicResponse.getUsername());
+                        enhancedResponse.put("email", basicResponse.getEmail());
+                        enhancedResponse.put("firstName", basicResponse.getFirstName());
+                        enhancedResponse.put("lastName", basicResponse.getLastName());
+                        enhancedResponse.put("roleIds", basicResponse.getRoleIds());
+                        enhancedResponse.put("roleNames", basicResponse.getRoleNames());
+                        enhancedResponse.put("enabled", basicResponse.isEnabled());
+                        enhancedResponse.put("createdAt", basicResponse.getCreatedAt());
+                        enhancedResponse.put("updatedAt", basicResponse.getUpdatedAt());
+                        
+                        // Add enhanced information
+                        enhancedResponse.put("fullName", basicResponse.getFirstName() + " " + basicResponse.getLastName());
+                        enhancedResponse.put("accountAge", (System.currentTimeMillis() - basicResponse.getCreatedAt()) / (1000 * 60 * 60 * 24)); // Age in days
+                        enhancedResponse.put("version", "v2");
+                        
+                        // Add permissions based on roles (if available)
+                        List<String> permissionNames = new ArrayList<>();
+                        for (String roleId : basicResponse.getRoleIds()) {
+                            Role role = roleRepository.findById(roleId);
+                            if (role != null && role.getPermissions() != null) {
+                                // Extract permission names from Permission objects
+                                List<String> rolePermissionNames = role.getPermissions().stream()
+                                    .map(permission -> permission.getName())
+                                    .collect(Collectors.toList());
+                                permissionNames.addAll(rolePermissionNames);
+                            }
+                        }
+                        enhancedResponse.put("permissions", permissionNames.stream().distinct().collect(Collectors.toList()));
+                        
+                        return enhancedResponse;
+                    })
+                    .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(enhancedUserResponses);
+        } catch (Exception e) {
+            logger.error("Error retrieving enhanced users: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

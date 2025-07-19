@@ -4,6 +4,8 @@ import io.github.ozkanpakdil.grepwise.model.Alarm;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.model.NotificationChannel;
 import io.github.ozkanpakdil.grepwise.repository.AlarmRepository;
+import io.github.ozkanpakdil.grepwise.service.alerting.OpsGenieService;
+import io.github.ozkanpakdil.grepwise.service.alerting.PagerDutyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,12 @@ public class AlarmService {
 
     @Autowired
     private LuceneService luceneService;
+    
+    @Autowired
+    private PagerDutyService pagerDutyService;
+    
+    @Autowired
+    private OpsGenieService opsGenieService;
 
     // Throttling: Track notification history for each alarm
     // Key: alarmId, Value: List of notification timestamps
@@ -298,7 +306,7 @@ public class AlarmService {
         // Send to all unique channels
         for (NotificationChannel channel : uniqueChannels.values()) {
             try {
-                sendGroupedNotificationToChannel(message.toString(), channel);
+                sendGroupedNotificationToChannel(message.toString(), channel, groupingKey, groupedAlarms.size());
 
                 // Record notifications for throttling (for each alarm in the group)
                 for (GroupedAlarmNotification groupedAlarm : groupedAlarms) {
@@ -316,8 +324,10 @@ public class AlarmService {
      *
      * @param message The grouped message
      * @param channel The notification channel
+     * @param groupingKey The grouping key
+     * @param alarmCount The number of alarms in the group
      */
-    private void sendGroupedNotificationToChannel(String message, NotificationChannel channel) {
+    private void sendGroupedNotificationToChannel(String message, NotificationChannel channel, String groupingKey, int alarmCount) {
         switch (channel.getType().toUpperCase()) {
             case "EMAIL":
                 // TODO: Implement email notification
@@ -330,6 +340,24 @@ public class AlarmService {
             case "WEBHOOK":
                 // TODO: Implement webhook notification
                 logger.info("WEBHOOK grouped notification to {}: {}", channel.getDestination(), message);
+                break;
+            case "PAGERDUTY":
+                // Send grouped notification to PagerDuty
+                boolean success = pagerDutyService.sendGroupedAlert(groupingKey, channel.getDestination(), message, alarmCount);
+                if (success) {
+                    logger.info("PagerDuty grouped notification sent successfully to integration key: {}", channel.getDestination());
+                } else {
+                    logger.error("Failed to send PagerDuty grouped notification for grouping key: {}", groupingKey);
+                }
+                break;
+            case "OPSGENIE":
+                // Send grouped notification to OpsGenie
+                boolean opsGenieSuccess = opsGenieService.sendGroupedAlert(groupingKey, channel.getDestination(), message, alarmCount);
+                if (opsGenieSuccess) {
+                    logger.info("OpsGenie grouped notification sent successfully to API key: {}", channel.getDestination());
+                } else {
+                    logger.error("Failed to send OpsGenie grouped notification for grouping key: {}", groupingKey);
+                }
                 break;
             default:
                 logger.warn("Unsupported notification channel type: {}", channel.getType());
@@ -497,6 +525,24 @@ public class AlarmService {
             case "WEBHOOK":
                 // TODO: Implement webhook notification
                 logger.info("WEBHOOK notification to {}: {}", channel.getDestination(), message);
+                break;
+            case "PAGERDUTY":
+                // Send notification to PagerDuty
+                boolean success = pagerDutyService.sendAlert(alarm, channel.getDestination(), message);
+                if (success) {
+                    logger.info("PagerDuty notification sent successfully to integration key: {}", channel.getDestination());
+                } else {
+                    logger.error("Failed to send PagerDuty notification for alarm: {}", alarm.getName());
+                }
+                break;
+            case "OPSGENIE":
+                // Send notification to OpsGenie
+                boolean opsGenieSuccess = opsGenieService.sendAlert(alarm, channel.getDestination(), message);
+                if (opsGenieSuccess) {
+                    logger.info("OpsGenie notification sent successfully to API key: {}", channel.getDestination());
+                } else {
+                    logger.error("Failed to send OpsGenie notification for alarm: {}", alarm.getName());
+                }
                 break;
             default:
                 logger.warn("Unsupported notification channel type: {}", channel.getType());

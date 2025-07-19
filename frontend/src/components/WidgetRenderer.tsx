@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 import { logSearchApi } from '@/api/logSearch';
-import { BarChart3, PieChart, Table, Activity, AlertCircle, LineChart, TrendingUp, ScatterChart } from 'lucide-react';
+import { BarChart3, PieChart, Table, Activity, AlertCircle, LineChart, TrendingUp, ScatterChart, RefreshCw } from 'lucide-react';
 import { getWidgetUpdateClient } from '@/utils/sseClient';
+import { useSwipeable } from 'react-swipeable';
 
 // Widget-specific components
 import BarChartWidget from './widgets/BarChartWidget';
@@ -29,9 +30,29 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
     error: null,
     data: null,
   });
+  
+  // State to track swipe refresh gesture
+  const [refreshing, setRefreshing] = useState(false);
 
   // Reference to the SSE client
   const sseClientRef = useRef<any>(null);
+  
+  // Swipe handlers for widget interactions
+  const widgetSwipeHandlers = useSwipeable({
+    onSwipedDown: () => {
+      // Pull-to-refresh functionality
+      if (!widgetData.loading) {
+        setRefreshing(true);
+        loadWidgetData().finally(() => {
+          setTimeout(() => setRefreshing(false), 1000);
+        });
+      }
+    },
+    trackMouse: false,
+    swipeDuration: 500,
+    preventScrollOnSwipe: false, // Allow scrolling for widgets with scrollable content
+    delta: 50, // Minimum swipe distance to trigger the action
+  });
 
   useEffect(() => {
     // Initial data load
@@ -189,29 +210,43 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
   };
 
   return (
-    <div className="widget-renderer h-full flex flex-col">
+    <div className="widget-renderer h-full flex flex-col" {...widgetSwipeHandlers}>
+      {/* Pull-to-refresh indicator */}
+      {refreshing && (
+        <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center z-10">
+          <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg">
+            <RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />
+          </div>
+        </div>
+      )}
+      
       {/* Widget Header */}
       <div className="widget-header flex items-center justify-between p-3 border-b bg-gray-50">
         <div className="flex items-center space-x-2">
           {getWidgetIcon(widget.type)}
           <h3 className="font-medium text-sm">{widget.title}</h3>
         </div>
-        <div className="flex items-center space-x-1">
-          {widgetData.loading && (
+        <div className="flex items-center space-x-2">
+          {widgetData.loading && !refreshing && (
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
           )}
           <button
             onClick={loadWidgetData}
-            className="text-xs text-muted-foreground hover:text-foreground"
-            title="Refresh widget"
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            title="Refresh widget (or swipe down to refresh)"
+            aria-label="Refresh widget"
           >
-            ↻
+            <RefreshCw className="h-4 w-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" />
           </button>
         </div>
       </div>
 
       {/* Widget Content */}
-      <div className="widget-content flex-1 p-3">
+      <div className="widget-content flex-1 p-3 relative">
+        {/* Swipe hint - shown briefly on first render */}
+        <div className="absolute top-0 left-0 right-0 text-center text-xs text-muted-foreground py-1 opacity-70">
+          Swipe down to refresh
+        </div>
         {renderWidget()}
       </div>
     </div>

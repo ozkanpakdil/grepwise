@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Plus, Trash2, Share2, Copy, Check, Download, FileText, Image, Database, Save, Menu } from 'lucide-react';
+import { ArrowLeft, Edit, Plus, Trash2, Share2, Copy, Check, Download, FileText, Image, Database, Save, Menu, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { dashboardApi, Dashboard, DashboardWidget } from '@/api/dashboard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Responsive, WidthProvider } from 'react-grid-layout';
+import { useSwipeable } from 'react-swipeable';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -33,6 +34,45 @@ const DashboardView: React.FC = () => {
   
   // Reference to the dashboard content for export
   const dashboardRef = useRef<HTMLDivElement>(null);
+  
+  // Swipe handlers for mobile menu
+  const mobileMenuSwipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (mobileActionsOpen) {
+        setMobileActionsOpen(false);
+      }
+    },
+    onSwipedRight: () => {
+      if (!mobileActionsOpen) {
+        setMobileActionsOpen(true);
+      }
+    },
+    trackMouse: false,
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+  });
+  
+  // Swipe handlers for share modal
+  const shareModalSwipeHandlers = useSwipeable({
+    onSwipedDown: () => {
+      setShowShareModal(false);
+    },
+    trackMouse: false,
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+  });
+  
+  // Swipe handlers for export modal
+  const exportModalSwipeHandlers = useSwipeable({
+    onSwipedDown: () => {
+      if (!exporting) {
+        setShowExportModal(false);
+      }
+    },
+    trackMouse: false,
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+  });
 
   useEffect(() => {
     if (id) {
@@ -389,7 +429,7 @@ const DashboardView: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" {...mobileMenuSwipeHandlers}>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
         <div className="flex items-center space-x-4">
@@ -460,17 +500,18 @@ const DashboardView: React.FC = () => {
                 variant="default"
                 onClick={saveLayout}
                 size="sm"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 p-2"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5" />
               </Button>
             )}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setEditMode(!editMode)}
+              className="p-2"
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-5 w-5" />
             </Button>
           </div>
           
@@ -479,42 +520,52 @@ const DashboardView: React.FC = () => {
             size="sm"
             onClick={toggleMobileActions}
             aria-label="More actions"
+            className="p-2"
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-5 w-5" />
           </Button>
           
-          {/* Mobile actions dropdown */}
+          {/* Mobile actions dropdown with swipe to dismiss */}
           {mobileActionsOpen && (
             <div className="absolute right-6 mt-10 z-10 bg-white dark:bg-gray-800 shadow-lg rounded-md border p-2 w-48">
-              <div className="space-y-1">
+              <div className="flex justify-between items-center mb-1 pb-1 border-b">
+                <span className="text-xs text-muted-foreground">Swipe left to close</span>
+                <button 
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => setMobileActionsOpen(false)}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-1 pt-1">
                 <button
-                  className="flex w-full items-center px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="flex w-full items-center px-3 py-3 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => {
                     setShowShareModal(true);
                     setMobileActionsOpen(false);
                   }}
                 >
-                  <Share2 className="h-4 w-4 mr-2" />
+                  <Share2 className="h-5 w-5 mr-3" />
                   {dashboard.isShared ? 'Shared' : 'Share'}
                 </button>
                 <button
-                  className="flex w-full items-center px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="flex w-full items-center px-3 py-3 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => {
                     setShowExportModal(true);
                     setMobileActionsOpen(false);
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-5 w-5 mr-3" />
                   Export
                 </button>
                 <button
-                  className="flex w-full items-center px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="flex w-full items-center px-3 py-3 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => {
                     navigate(`/dashboards/${dashboard.id}/add-widget`);
                     setMobileActionsOpen(false);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-5 w-5 mr-3" />
                   Add Widget
                 </button>
               </div>
@@ -580,7 +631,14 @@ const DashboardView: React.FC = () => {
       {/* Share Modal */}
       {showShareModal && dashboard && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-auto">
+          <div 
+            {...shareModalSwipeHandlers}
+            className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-auto"
+          >
+            {/* Swipe indicator */}
+            <div className="flex justify-center mb-2">
+              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            </div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg md:text-xl font-bold">Share Dashboard</h2>
               <Button
@@ -589,9 +647,12 @@ const DashboardView: React.FC = () => {
                 className="h-8 w-8 p-0"
                 onClick={() => setShowShareModal(false)}
               >
-                <XIcon className="h-4 w-4" />
+                <XIcon className="h-5 w-5" />
                 <span className="sr-only">Close</span>
               </Button>
+            </div>
+            <div className="text-xs text-muted-foreground text-center mb-4">
+              Swipe down to close
             </div>
             
             <div className="mb-6">
@@ -651,7 +712,14 @@ const DashboardView: React.FC = () => {
       {/* Export Modal */}
       {showExportModal && dashboard && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-auto">
+          <div 
+            {...exportModalSwipeHandlers}
+            className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 w-full max-w-md max-h-[90vh] overflow-auto"
+          >
+            {/* Swipe indicator */}
+            <div className="flex justify-center mb-2">
+              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            </div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg md:text-xl font-bold">Export Dashboard</h2>
               <Button
@@ -661,10 +729,16 @@ const DashboardView: React.FC = () => {
                 onClick={() => setShowExportModal(false)}
                 disabled={exporting}
               >
-                <XIcon className="h-4 w-4" />
+                <XIcon className="h-5 w-5" />
                 <span className="sr-only">Close</span>
               </Button>
             </div>
+            
+            {!exporting && (
+              <div className="text-xs text-muted-foreground text-center mb-4">
+                Swipe down to close
+              </div>
+            )}
             
             <p className="text-sm text-muted-foreground mb-4">
               Choose a format to export your dashboard

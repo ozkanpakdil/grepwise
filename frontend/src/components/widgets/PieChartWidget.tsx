@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 
 interface PieChartWidgetProps {
@@ -15,8 +15,28 @@ interface PieSlice {
   endAngle: number;
 }
 
+// Helper function to format numbers in a compact way (e.g., 1000 -> 1K)
+const formatCompactNumber = (num: number): string => {
+  if (num < 1000) return num.toString();
+  if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+  return (num / 1000000).toFixed(1) + 'M';
+};
+
 const PieChartWidget: React.FC<PieChartWidgetProps> = ({ data, widget: _widget }) => {
   const [hoveredSlice, setHoveredSlice] = useState<PieSlice | null>(null);
+  const [screenWidth, setScreenWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Color palette for pie slices
   const colors = [
@@ -129,15 +149,19 @@ const PieChartWidget: React.FC<PieChartWidgetProps> = ({ data, widget: _widget }
     );
   }
 
-  const svgSize = 200;
-  const radius = 80;
+  // Responsive SVG size and radius based on screen width
+  const svgSize = screenWidth < 480 ? 150 : 
+                 screenWidth < 640 ? 180 : 200;
+  const radius = screenWidth < 480 ? 60 : 
+                screenWidth < 640 ? 70 : 80;
   const centerX = svgSize / 2;
   const centerY = svgSize / 2;
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex items-center space-x-4">
+        {/* Responsive layout - stack vertically on small screens */}
+        <div className={`${screenWidth < 640 ? 'flex flex-col items-center space-y-4' : 'flex items-center space-x-4'}`}>
           {/* Pie Chart SVG */}
           <div className="relative">
             <svg width={svgSize} height={svgSize} className="drop-shadow-sm">
@@ -155,31 +179,44 @@ const PieChartWidget: React.FC<PieChartWidgetProps> = ({ data, widget: _widget }
               ))}
             </svg>
             
-            {/* Tooltip */}
+            {/* Tooltip - position differently based on screen size */}
             {hoveredSlice && (
-              <div className="absolute top-0 left-full ml-2 bg-black text-white text-xs rounded px-2 py-1 z-10 whitespace-nowrap">
-                <div className="font-medium">{hoveredSlice.label}</div>
+              <div 
+                className={`absolute bg-black text-white ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} rounded px-2 py-1 z-10 whitespace-nowrap`}
+                style={screenWidth < 640 ? {
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  maxWidth: '120px'
+                } : {
+                  top: '0',
+                  left: '100%',
+                  marginLeft: '8px',
+                  maxWidth: '200px'
+                }}
+              >
+                <div className="font-medium truncate">{hoveredSlice.label}</div>
                 <div>{hoveredSlice.value} ({hoveredSlice.percentage.toFixed(1)}%)</div>
               </div>
             )}
           </div>
 
-          {/* Legend */}
-          <div className="space-y-1 max-h-full overflow-y-auto">
+          {/* Legend - adjust layout for small screens */}
+          <div className={`${screenWidth < 640 ? 'w-full grid grid-cols-2 gap-1' : 'space-y-1 max-h-full overflow-y-auto'}`}>
             {pieData.map((slice, index) => (
               <div
                 key={index}
-                className="flex items-center space-x-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded"
+                className={`flex items-center ${screenWidth < 640 ? 'space-x-1' : 'space-x-2'} ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} cursor-pointer hover:bg-gray-50 p-1 rounded`}
                 onMouseEnter={() => setHoveredSlice(slice)}
                 onMouseLeave={() => setHoveredSlice(null)}
               >
                 <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  className={`${screenWidth < 640 ? 'w-2 h-2' : 'w-3 h-3'} rounded-sm flex-shrink-0`}
                   style={{ backgroundColor: slice.color }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="truncate font-medium">{slice.label}</div>
-                  <div className="text-muted-foreground">
+                  <div className="text-muted-foreground truncate">
                     {slice.value} ({slice.percentage.toFixed(1)}%)
                   </div>
                 </div>
@@ -190,8 +227,10 @@ const PieChartWidget: React.FC<PieChartWidgetProps> = ({ data, widget: _widget }
       </div>
 
       {/* Summary */}
-      <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-        {pieData.length} categories • Total: {pieData.reduce((sum, slice) => sum + slice.value, 0)}
+      <div className={`${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground text-center pt-2 border-t`}>
+        {pieData.length} categories • Total: {screenWidth < 480 ? 
+          formatCompactNumber(pieData.reduce((sum, slice) => sum + slice.value, 0)) : 
+          pieData.reduce((sum, slice) => sum + slice.value, 0)}
       </div>
     </div>
   );

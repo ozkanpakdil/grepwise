@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 
 interface BarChartWidgetProps {
@@ -6,8 +6,28 @@ interface BarChartWidgetProps {
   widget: DashboardWidget;
 }
 
+// Helper function to format numbers in a compact way (e.g., 1000 -> 1K)
+const formatCompactNumber = (num: number): string => {
+  if (num < 1000) return num.toString();
+  if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+  return (num / 1000000).toFixed(1) + 'M';
+};
+
 const BarChartWidget: React.FC<BarChartWidgetProps> = ({ data, widget: _widget }) => {
   const [hoveredBar, setHoveredBar] = useState<any>(null);
+  const [screenWidth, setScreenWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Process the data for bar chart visualization
   const processData = () => {
@@ -71,23 +91,36 @@ const BarChartWidget: React.FC<BarChartWidgetProps> = ({ data, widget: _widget }
         {/* Tooltip */}
         {hoveredBar && (
           <div 
-            className="absolute bg-black text-white text-xs rounded px-2 py-1 z-10 pointer-events-none"
+            className={`absolute bg-black text-white ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} rounded px-2 py-1 z-10 pointer-events-none`}
             style={{ 
               left: `${(chartData.indexOf(hoveredBar) / chartData.length) * 100}%`,
               bottom: '100%',
               transform: 'translateX(-50%)',
-              marginBottom: '8px'
+              marginBottom: '8px',
+              // Ensure tooltip stays within viewport on small screens
+              maxWidth: screenWidth < 480 ? '120px' : '200px'
             }}
           >
-            <div className="font-medium">{hoveredBar.label}</div>
+            <div className="font-medium truncate">{hoveredBar.label}</div>
             <div>{hoveredBar.value}</div>
           </div>
         )}
 
         {/* Bar Chart */}
-        <div className="flex items-end h-full gap-1 p-2">
+        <div className={`flex items-end h-full ${screenWidth < 640 ? 'gap-0.5' : 'gap-1'} p-2`}>
           {chartData.map((item: any, index: number) => {
             const height = (item.value / maxValue) * 100;
+            
+            // Calculate how many labels to show based on screen width
+            const labelDivisor = screenWidth < 480 ? 12 : 
+                               screenWidth < 640 ? 10 : 
+                               screenWidth < 768 ? 8 : 6;
+            
+            // Determine if this bar should show a label
+            const showLabel = chartData.length <= (screenWidth < 640 ? 6 : 10) || 
+                             index % Math.ceil(chartData.length / labelDivisor) === 0 ||
+                             index === 0 || 
+                             index === chartData.length - 1;
             
             return (
               <div 
@@ -102,10 +135,10 @@ const BarChartWidget: React.FC<BarChartWidgetProps> = ({ data, widget: _widget }
                   title={`${item.label}: ${item.value}`}
                 />
                 
-                {/* X-axis label (show only for smaller datasets or every nth item) */}
-                {(chartData.length <= 10 || index % Math.ceil(chartData.length / 8) === 0) && (
-                  <div className="text-xs text-muted-foreground mt-1 truncate w-full text-center">
-                    {item.label}
+                {/* X-axis label (adaptive based on screen size) */}
+                {showLabel && (
+                  <div className={`${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground mt-1 truncate w-full text-center ${screenWidth < 480 ? 'transform -rotate-45 origin-top-left' : ''}`}>
+                    {screenWidth < 480 && item.label.length > 6 ? item.label.substring(0, 6) + '...' : item.label}
                   </div>
                 )}
               </div>
@@ -114,9 +147,9 @@ const BarChartWidget: React.FC<BarChartWidgetProps> = ({ data, widget: _widget }
         </div>
 
         {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-muted-foreground pr-1">
-          <div>{maxValue}</div>
-          <div>{Math.round(maxValue / 2)}</div>
+        <div className={`absolute left-0 top-0 h-full flex flex-col justify-between ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground pr-1`}>
+          <div>{screenWidth < 480 ? formatCompactNumber(maxValue) : maxValue}</div>
+          {screenWidth >= 480 && <div>{Math.round(maxValue / 2)}</div>}
           <div>0</div>
         </div>
       </div>

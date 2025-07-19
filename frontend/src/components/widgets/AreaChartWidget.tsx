@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 import { 
   AreaChart, 
@@ -16,8 +16,28 @@ interface AreaChartWidgetProps {
   widget: DashboardWidget;
 }
 
+// Helper function to format numbers in a compact way (e.g., 1000 -> 1K)
+const formatCompactNumber = (num: number): string => {
+  if (num < 1000) return num.toString();
+  if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+  return (num / 1000000).toFixed(1) + 'M';
+};
+
 const AreaChartWidget: React.FC<AreaChartWidgetProps> = ({ data, widget: _widget }) => {
   const [hoveredPoint, setHoveredPoint] = useState<any>(null);
+  const [screenWidth, setScreenWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Process the data for area chart visualization
   const processData = () => {
@@ -121,13 +141,44 @@ const AreaChartWidget: React.FC<AreaChartWidgetProps> = ({ data, widget: _widget
   // Determine x-axis data key
   const xAxisDataKey = chartData[0].time ? 'time' : (chartData[0].name ? 'name' : 'index');
 
+  // Responsive chart configuration based on screen width
+  const getResponsiveConfig = () => {
+    if (screenWidth < 480) {
+      return {
+        margin: { top: 5, right: 5, left: 0, bottom: 0 },
+        fontSize: 10,
+        activeDotRadius: 5,
+        maxLabelLength: 6,
+        hideEveryNthTick: 2
+      };
+    } else if (screenWidth < 640) {
+      return {
+        margin: { top: 8, right: 8, left: 0, bottom: 0 },
+        fontSize: 11,
+        activeDotRadius: 6,
+        maxLabelLength: 8,
+        hideEveryNthTick: 1
+      };
+    } else {
+      return {
+        margin: { top: 10, right: 10, left: 0, bottom: 0 },
+        fontSize: 12,
+        activeDotRadius: 8,
+        maxLabelLength: 10,
+        hideEveryNthTick: 0
+      };
+    }
+  };
+
+  const config = getResponsiveConfig();
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            margin={config.margin}
             onMouseMove={(e) => {
               if (e.activePayload) {
                 setHoveredPoint(e.activePayload[0].payload);
@@ -138,20 +189,27 @@ const AreaChartWidget: React.FC<AreaChartWidgetProps> = ({ data, widget: _widget
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey={xAxisDataKey} 
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: config.fontSize }}
               tickFormatter={(value) => {
-                // Truncate long labels
-                return typeof value === 'string' && value.length > 10 
-                  ? `${value.substring(0, 10)}...` 
+                // Truncate long labels based on screen size
+                return typeof value === 'string' && value.length > config.maxLabelLength 
+                  ? `${value.substring(0, config.maxLabelLength)}...` 
                   : value;
               }}
+              // On small screens, hide some ticks to prevent overcrowding
+              interval={config.hideEveryNthTick}
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis 
+              tick={{ fontSize: config.fontSize }} 
+              // Format large numbers in a compact way on small screens
+              tickFormatter={screenWidth < 480 ? formatCompactNumber : undefined}
+            />
             <Tooltip 
               formatter={(value, name) => [value, name]}
               labelFormatter={(label) => `Time: ${label}`}
+              contentStyle={{ fontSize: config.fontSize }}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: config.fontSize }} />
             {dataKeys.map((key, index) => (
               <Area
                 key={key}
@@ -159,7 +217,7 @@ const AreaChartWidget: React.FC<AreaChartWidgetProps> = ({ data, widget: _widget
                 dataKey={key}
                 stroke={colors[index % colors.length]}
                 fill={`${colors[index % colors.length]}33`} // Add transparency to fill color
-                activeDot={{ r: 8 }}
+                activeDot={{ r: config.activeDotRadius }}
                 name={key}
                 stackId={dataKeys.length > 1 ? "1" : undefined} // Stack areas if multiple series
               />
@@ -169,7 +227,7 @@ const AreaChartWidget: React.FC<AreaChartWidgetProps> = ({ data, widget: _widget
       </div>
 
       {/* Summary */}
-      <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+      <div className={`${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground text-center pt-2 border-t`}>
         {chartData.length} data points • {dataKeys.length} series
       </div>
     </div>

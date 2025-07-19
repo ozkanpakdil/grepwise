@@ -75,6 +75,16 @@ public class LuceneService {
     @Autowired
     private PartitionConfigurationRepository partitionConfigurationRepository;
     
+    /**
+     * Set the partition configuration repository.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param partitionConfigurationRepository The partition configuration repository
+     */
+    public void setPartitionConfigurationRepository(PartitionConfigurationRepository partitionConfigurationRepository) {
+        this.partitionConfigurationRepository = partitionConfigurationRepository;
+    }
+    
     // Map of partition name to IndexWriter
     private final Map<String, IndexWriter> partitionWriters = new ConcurrentHashMap<>();
     
@@ -98,7 +108,67 @@ public class LuceneService {
     
     @Autowired
     private RealTimeUpdateService realTimeUpdateService;
+    
+    /**
+     * Set the field configuration service.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param fieldConfigurationService The field configuration service
+     */
+    public void setFieldConfigurationService(FieldConfigurationService fieldConfigurationService) {
+        this.fieldConfigurationService = fieldConfigurationService;
+    }
+    
+    /**
+     * Set the archive service.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param archiveService The archive service
+     */
+    public void setArchiveService(ArchiveService archiveService) {
+        this.archiveService = archiveService;
+    }
+    
+    /**
+     * Set the search cache service.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param searchCacheService The search cache service
+     */
+    public void setSearchCacheService(SearchCacheService searchCacheService) {
+        this.searchCacheService = searchCacheService;
+    }
 
+    /**
+     * Set the index directory path.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param indexPath The path to the index directory
+     */
+    public void setIndexPath(String indexPath) {
+        this.indexDirPath = indexPath;
+    }
+    
+    /**
+     * Set whether partitioning is enabled.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param partitioningEnabled Whether partitioning is enabled
+     */
+    public void setPartitioningEnabled(boolean partitioningEnabled) {
+        this.partitioningEnabled = partitioningEnabled;
+    }
+    
+    /**
+     * Set the real-time update service.
+     * This method is primarily for testing and benchmarking purposes.
+     * 
+     * @param realTimeUpdateService The real-time update service
+     */
+    public void setRealTimeUpdateService(RealTimeUpdateService realTimeUpdateService) {
+        this.realTimeUpdateService = realTimeUpdateService;
+    }
+    
     /**
      * Initialize the Lucene index.
      */

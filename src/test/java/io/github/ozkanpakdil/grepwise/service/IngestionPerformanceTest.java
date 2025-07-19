@@ -52,8 +52,12 @@ public class IngestionPerformanceTest {
         
         // Configure the LuceneService to use the test index path
         try {
-            ReflectionTestUtils.setField(luceneService, "indexPath", testIndexPath.toString());
-            ReflectionTestUtils.setField(luceneService, "partitioningEnabled", false);
+            // Use setter methods instead of reflection
+            luceneService.setIndexPath(testIndexPath.toString());
+            luceneService.setPartitioningEnabled(false);
+            
+            // Create and set a mock RealTimeUpdateService to avoid circular dependency
+            luceneService.setRealTimeUpdateService(new MockRealTimeUpdateService());
         } catch (Exception e) {
             System.err.println("Failed to configure LuceneService: " + e.getMessage());
         }
@@ -63,7 +67,7 @@ public class IngestionPerformanceTest {
         
         // Configure the LogBufferService
         try {
-            ReflectionTestUtils.setField(logBufferService, "bufferSize", 1000);
+            ReflectionTestUtils.setField(logBufferService, "maxBufferSize", 1000);
             ReflectionTestUtils.setField(logBufferService, "flushIntervalMs", 5000);
         } catch (Exception e) {
             System.err.println("Failed to configure LogBufferService: " + e.getMessage());
@@ -377,5 +381,30 @@ public class IngestionPerformanceTest {
                 fields,
                 "Raw content: " + message
         );
+    }
+    
+    /**
+     * A simple mock implementation of RealTimeUpdateService that does nothing.
+     * This is used to avoid the circular dependency between LuceneService and RealTimeUpdateService.
+     */
+    private static class MockRealTimeUpdateService extends RealTimeUpdateService {
+        public MockRealTimeUpdateService() {
+            super(); // Use the no-argument constructor
+        }
+        
+        @Override
+        public void broadcastLogUpdate(LogEntry logEntry) {
+            // Do nothing - this is a mock implementation
+        }
+        
+        @Override
+        public void broadcastWidgetUpdate(String dashboardId, String widgetId, Object data) {
+            // Do nothing - this is a mock implementation
+        }
+        
+        @Override
+        public Map<String, Object> getConnectionStats() {
+            return new HashMap<>(); // Return empty stats
+        }
     }
 }

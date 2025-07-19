@@ -22,7 +22,7 @@ public class RealTimeUpdateService {
     private static final long SSE_TIMEOUT = 300000L; // 5 minutes
     private static final long HEARTBEAT_INTERVAL = 15000L; // 15 seconds
 
-    private final LuceneService luceneService;
+    private LuceneService luceneService;
     private final ExecutorService executorService;
 
     // Store active SSE connections
@@ -37,9 +37,7 @@ public class RealTimeUpdateService {
     private long totalConnections = 0;
     private long activeConnections = 0;
 
-    @Autowired
-    public RealTimeUpdateService(LuceneService luceneService) {
-        this.luceneService = luceneService;
+    public RealTimeUpdateService() {
         this.executorService = Executors.newCachedThreadPool();
         
         // Initialize connection stats
@@ -47,6 +45,11 @@ public class RealTimeUpdateService {
         connectionStats.put("activeConnections", 0L);
         connectionStats.put("logUpdateConnections", 0L);
         connectionStats.put("widgetUpdateConnections", 0L);
+    }
+    
+    @Autowired
+    public void setLuceneService(LuceneService luceneService) {
+        this.luceneService = luceneService;
     }
 
     /**
@@ -187,6 +190,17 @@ public class RealTimeUpdateService {
     private void sendInitialLogData(SseEmitter emitter, String query, boolean isRegex, String timeRange) {
         executorService.execute(() -> {
             try {
+                // Check if luceneService is available
+                if (luceneService == null) {
+                    logger.warn("LuceneService not available yet, cannot fetch initial data");
+                    // Send empty data to client
+                    emitter.send(SseEmitter.event()
+                            .name("initialData")
+                            .data(new ArrayList<>())
+                            .id(UUID.randomUUID().toString()));
+                    return;
+                }
+                
                 // Fetch initial data
                 List<LogEntry> logs = luceneService.search(query, isRegex, null, null);
                 

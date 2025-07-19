@@ -1,8 +1,4 @@
-@import io.github.ozkanpakdil.grepwise.controller.ApiDocumentationController
-@import java.util.Map
-@import java.util.List
-
-@param ApiDocumentationController controller
+<!-- No imports or parameters needed for static content -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -87,25 +83,25 @@
     
     <h2>API Endpoints</h2>
     
-    <% 
-    Map<String, Object> apiData = controller.getApiEndpoints();
-    List<Map<String, Object>> endpoints = (List<Map<String, Object>>) apiData.get("endpoints");
+    <!-- API endpoints are hardcoded for simplicity -->
     
-    for (Map<String, Object> endpoint : endpoints) {
-        String method = (String) endpoint.get("method");
-        String path = (String) endpoint.get("path");
-        String description = (String) endpoint.get("description");
-        String parameters = (String) endpoint.get("parameters");
-    %>
     <div class="endpoint">
         <div>
-            <span class="method ${method.toLowerCase()}">${method}</span>
-            <span class="path">${path}</span>
+            <span class="method get">GET</span>
+            <span class="path">/api/logs/search</span>
         </div>
-        <div class="description">${description}</div>
-        <div class="parameters">${parameters}</div>
+        <div class="description">Search logs with query parameters</div>
+        <div class="parameters">query, startTime, endTime, limit</div>
     </div>
-    <% } %>
+    
+    <div class="endpoint">
+        <div>
+            <span class="method post">POST</span>
+            <span class="path">/api/logs/ingest</span>
+        </div>
+        <div class="description">Ingest logs via API</div>
+        <div class="parameters">logs (array of log entries)</div>
+    </div>
     
     <h2>Response Formats</h2>
     <p>All API endpoints return JSON responses unless otherwise specified.</p>

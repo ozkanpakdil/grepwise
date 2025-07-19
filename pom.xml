@@ -21,9 +21,8 @@
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-grpc.version>0.8.0</spring-grpc.version>
         <jte.version>3.1.16</jte.version>
-        <protobuf.version>3.24.0</protobuf.version>
-        <protobuf-java.version>4.30.2</protobuf-java.version>
-        <grpc.version>1.72.0</grpc.version>
+        <protobuf.version>3.21.7</protobuf.version>
+        <grpc.version>1.50.2</grpc.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <lucene.version>10.2.2</lucene.version>
@@ -74,6 +73,13 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-services</artifactId>
+        </dependency>
+        
+        <!-- javax.annotation-api for @Generated annotation -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
         </dependency>
 
         <!-- Spring AI -->
@@ -251,7 +257,13 @@
     </dependencyManagement>
 
     <build>
-
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
@@ -284,31 +296,23 @@
                 </executions>
             </plugin>
 
-            <!-- Protobuf Maven Plugin -->
+            <!-- Protobuf and gRPC code generation -->
             <plugin>
-                <groupId>io.github.ascopes</groupId>
+                <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>${protobuf-maven-plugin.version}</version>
+                <extensions>true</extensions>
                 <configuration>
-                    <sourceDirectories>
-                        <sourceDirectory>src/main/proto</sourceDirectory>
-                    </sourceDirectories>
-                    <protocVersion>${protobuf-java.version}</protocVersion>
-                    <binaryMavenPlugins>
-                        <binaryMavenPlugin>
-                            <groupId>io.grpc</groupId>
-                            <artifactId>protoc-gen-grpc-java</artifactId>
-                            <version>${grpc.version}</version>
-                            <options>jakarta_omit,@generated=omit</options>
-                        </binaryMavenPlugin>
-                    </binaryMavenPlugins>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:windows-x86_64</protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:windows-x86_64</pluginArtifact>
+                    <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
                 </configuration>
                 <executions>
                     <execution>
-                        <?m2e execute onConfiguration,onIncremental?>
-                        <id>generate</id>
                         <goals>
-                            <goal>generate</goal>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
                         </goals>
                     </execution>
                 </executions>

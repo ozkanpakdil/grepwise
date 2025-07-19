@@ -4,6 +4,7 @@ import io.github.ozkanpakdil.grepwise.model.Role;
 import io.github.ozkanpakdil.grepwise.model.User;
 import io.github.ozkanpakdil.grepwise.repository.RoleRepository;
 import io.github.ozkanpakdil.grepwise.repository.UserRepository;
+import io.github.ozkanpakdil.grepwise.service.AuditLogService;
 import io.github.ozkanpakdil.grepwise.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +38,9 @@ public class UserController {
 
     @Autowired
     private AuthService authService;
+    
+    @Autowired
+    private AuditLogService auditLogService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -88,12 +93,38 @@ public class UserController {
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserRequest userRequest) {
         try {
+            logger.info("User creation attempt for username: {}", userRequest.getUsername());
+            
             // Check if username or email already exists
             if (userRepository.existsByUsername(userRequest.getUsername())) {
+                logger.warn("User creation failed: Username already exists: {}", userRequest.getUsername());
+                
+                // Log the failed user creation
+                auditLogService.createUserAuditLog(
+                    "CREATE", 
+                    "FAILURE", 
+                    null, 
+                    userRequest.getUsername(), 
+                    "User creation failed: Username already exists", 
+                    null
+                );
+                
                 return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
             }
             
             if (userRepository.existsByEmail(userRequest.getEmail())) {
+                logger.warn("User creation failed: Email already exists: {}", userRequest.getEmail());
+                
+                // Log the failed user creation
+                auditLogService.createUserAuditLog(
+                    "CREATE", 
+                    "FAILURE", 
+                    null, 
+                    userRequest.getUsername(), 
+                    "User creation failed: Email already exists", 
+                    null
+                );
+                
                 return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
             }
             
@@ -125,12 +156,51 @@ public class UserController {
             
             User createdUser = userRepository.save(user);
             
+            // Log the successful user creation
+            logger.info("User created successfully: {}", createdUser.getUsername());
+            Map<String, String> details = new HashMap<>();
+            details.put("email", createdUser.getEmail());
+            details.put("firstName", createdUser.getFirstName());
+            details.put("lastName", createdUser.getLastName());
+            details.put("roles", String.join(",", createdUser.getRoleNames()));
+            
+            auditLogService.createUserAuditLog(
+                "CREATE", 
+                "SUCCESS", 
+                createdUser.getId(), 
+                createdUser.getUsername(), 
+                "User created successfully", 
+                details
+            );
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToUserResponse(createdUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user creation request: {}", e.getMessage());
+            
+            // Log the failed user creation
+            auditLogService.createUserAuditLog(
+                "CREATE", 
+                "FAILURE", 
+                null, 
+                userRequest.getUsername(), 
+                "User creation failed: Invalid request - " + e.getMessage(), 
+                null
+            );
+            
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Error creating user: {}", e.getMessage());
+            
+            // Log the failed user creation
+            auditLogService.createUserAuditLog(
+                "CREATE", 
+                "FAILURE", 
+                null, 
+                userRequest.getUsername(), 
+                "User creation failed: Internal server error", 
+                null
+            );
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -146,21 +216,65 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody UserRequest userRequest) {
         try {
+            logger.info("User update attempt for ID: {}", id);
+            
             User existingUser = userRepository.findById(id);
             if (existingUser == null) {
+                logger.warn("User update failed: User not found with ID: {}", id);
+                
+                // Log the failed user update
+                auditLogService.createUserAuditLog(
+                    "UPDATE", 
+                    "FAILURE", 
+                    id, 
+                    null, 
+                    "User update failed: User not found", 
+                    null
+                );
+                
                 return ResponseEntity.notFound().build();
             }
             
             // Check if username or email already exists (if changed)
             if (userRequest.getUsername() != null && !userRequest.getUsername().equals(existingUser.getUsername()) 
                     && userRepository.existsByUsername(userRequest.getUsername())) {
+                logger.warn("User update failed: Username already exists: {}", userRequest.getUsername());
+                
+                // Log the failed user update
+                auditLogService.createUserAuditLog(
+                    "UPDATE", 
+                    "FAILURE", 
+                    id, 
+                    existingUser.getUsername(), 
+                    "User update failed: Username already exists", 
+                    null
+                );
+                
                 return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
             }
             
             if (userRequest.getEmail() != null && !userRequest.getEmail().equals(existingUser.getEmail()) 
                     && userRepository.existsByEmail(userRequest.getEmail())) {
+                logger.warn("User update failed: Email already exists: {}", userRequest.getEmail());
+                
+                // Log the failed user update
+                auditLogService.createUserAuditLog(
+                    "UPDATE", 
+                    "FAILURE", 
+                    id, 
+                    existingUser.getUsername(), 
+                    "User update failed: Email already exists", 
+                    null
+                );
+                
                 return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
             }
+            
+            // Store original values for audit log
+            String originalUsername = existingUser.getUsername();
+            String originalEmail = existingUser.getEmail();
+            List<String> originalRoles = new ArrayList<>(existingUser.getRoleNames());
+            boolean originalEnabled = existingUser.isEnabled();
             
             // Update user fields if provided
             if (userRequest.getUsername() != null) {
@@ -203,12 +317,64 @@ public class UserController {
             
             User updatedUser = userRepository.save(existingUser);
             
+            // Log the successful user update
+            logger.info("User updated successfully: {}", updatedUser.getUsername());
+            
+            // Create details map with changes
+            Map<String, String> details = new HashMap<>();
+            if (!originalUsername.equals(updatedUser.getUsername())) {
+                details.put("usernameChanged", originalUsername + " -> " + updatedUser.getUsername());
+            }
+            if (!originalEmail.equals(updatedUser.getEmail())) {
+                details.put("emailChanged", originalEmail + " -> " + updatedUser.getEmail());
+            }
+            if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty()) {
+                details.put("passwordChanged", "true");
+            }
+            if (!originalRoles.equals(updatedUser.getRoleNames())) {
+                details.put("rolesChanged", String.join(",", originalRoles) + " -> " + String.join(",", updatedUser.getRoleNames()));
+            }
+            if (originalEnabled != updatedUser.isEnabled()) {
+                details.put("enabledChanged", originalEnabled + " -> " + updatedUser.isEnabled());
+            }
+            
+            auditLogService.createUserAuditLog(
+                "UPDATE", 
+                "SUCCESS", 
+                updatedUser.getId(), 
+                updatedUser.getUsername(), 
+                "User updated successfully", 
+                details
+            );
+            
             return ResponseEntity.ok(convertToUserResponse(updatedUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user update request for {}: {}", id, e.getMessage());
+            
+            // Log the failed user update
+            auditLogService.createUserAuditLog(
+                "UPDATE", 
+                "FAILURE", 
+                id, 
+                null, 
+                "User update failed: Invalid request - " + e.getMessage(), 
+                null
+            );
+            
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Error updating user {}: {}", id, e.getMessage());
+            
+            // Log the failed user update
+            auditLogService.createUserAuditLog(
+                "UPDATE", 
+                "FAILURE", 
+                id, 
+                null, 
+                "User update failed: Internal server error", 
+                null
+            );
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -223,14 +389,60 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
         try {
+            logger.info("User deletion attempt for ID: {}", id);
+            
+            // Get user before deletion for audit logging
+            User user = userRepository.findById(id);
+            String username = user != null ? user.getUsername() : null;
+            
             boolean deleted = userRepository.deleteById(id);
             if (deleted) {
+                logger.info("User deleted successfully: ID={}, username={}", id, username);
+                
+                // Log the successful user deletion
+                Map<String, String> details = new HashMap<>();
+                if (username != null) {
+                    details.put("username", username);
+                }
+                
+                auditLogService.createUserAuditLog(
+                    "DELETE", 
+                    "SUCCESS", 
+                    id, 
+                    username, 
+                    "User deleted successfully", 
+                    details
+                );
+                
                 return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
             } else {
+                logger.warn("User deletion failed: User not found with ID: {}", id);
+                
+                // Log the failed user deletion
+                auditLogService.createUserAuditLog(
+                    "DELETE", 
+                    "FAILURE", 
+                    id, 
+                    null, 
+                    "User deletion failed: User not found", 
+                    null
+                );
+                
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
             logger.error("Error deleting user {}: {}", id, e.getMessage());
+            
+            // Log the failed user deletion
+            auditLogService.createUserAuditLog(
+                "DELETE", 
+                "FAILURE", 
+                id, 
+                null, 
+                "User deletion failed: Internal server error", 
+                null
+            );
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }

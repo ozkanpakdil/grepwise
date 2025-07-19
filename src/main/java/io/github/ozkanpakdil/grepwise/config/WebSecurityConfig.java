@@ -1,5 +1,6 @@
 package io.github.ozkanpakdil.grepwise.config;
 
+import io.github.ozkanpakdil.grepwise.filter.RateLimitingFilter;
 import io.github.ozkanpakdil.grepwise.security.JwtAuthenticationFilter;
 import io.github.ozkanpakdil.grepwise.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class WebSecurityConfig {
 
     @Autowired
     private TokenService tokenService;
+    
+    @Autowired
+    private RateLimitingFilter rateLimitingFilter;
 
     /**
      * Configure security for the application.
@@ -42,6 +46,8 @@ public class WebSecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Add rate limiting filter before authentication filter
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(authorize -> authorize
                 // Public endpoints

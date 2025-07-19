@@ -126,7 +126,7 @@ The project has achieved a **functional log analysis platform** with:
 - [x] Complete the alarm creation functionality (connect to backend API)
 - [x] Implement alarm monitoring dashboard
 - [x] Add support for acknowledging and resolving alerts
-- [ ] Create notification preferences UI
+- [x] Create notification preferences UI
 
 ### 4. Settings and Configuration (Completed ✓)
 

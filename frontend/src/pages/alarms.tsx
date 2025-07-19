@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { alarmApi, Alarm, AlarmRequest } from '@/api/alarm';
+import { alarmApi, Alarm, AlarmRequest, NotificationChannel } from '@/api/alarm';
+import NotificationPreferences from '@/components/NotificationPreferences';
 
 export default function AlarmsPage() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function AlarmsPage() {
     threshold: 5,
     timeWindowMinutes: 15,
     enabled: true,
-    notificationEmail: ''
+    notificationChannels: [] as NotificationChannel[]
   });
 
   const resetForm = () => {
@@ -55,7 +56,7 @@ export default function AlarmsPage() {
       threshold: 5,
       timeWindowMinutes: 15,
       enabled: true,
-      notificationEmail: ''
+      notificationChannels: []
     });
   };
 
@@ -79,7 +80,7 @@ export default function AlarmsPage() {
       threshold: alarm.threshold,
       timeWindowMinutes: alarm.timeWindowMinutes,
       enabled: alarm.enabled,
-      notificationEmail: alarm.notificationChannels.find(c => c.type === 'EMAIL')?.destination || ''
+      notificationChannels: alarm.notificationChannels || []
     });
   };
 
@@ -138,10 +139,7 @@ export default function AlarmsPage() {
         threshold: formData.threshold,
         timeWindowMinutes: formData.timeWindowMinutes,
         enabled: formData.enabled,
-        notificationEmail: formData.notificationEmail,
-        notificationChannels: formData.notificationEmail ? [
-          { type: 'EMAIL', destination: formData.notificationEmail }
-        ] : []
+        notificationChannels: formData.notificationChannels
       };
 
       if (isEditing && selectedAlarm) {
@@ -368,16 +366,9 @@ export default function AlarmsPage() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium">
-                  Notification Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.notificationEmail}
-                  onChange={(e) => setFormData({...formData, notificationEmail: e.target.value})}
-                  className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="admin@example.com"
+                <NotificationPreferences
+                  channels={formData.notificationChannels}
+                  onChange={(channels) => setFormData({...formData, notificationChannels: channels})}
                 />
               </div>
 

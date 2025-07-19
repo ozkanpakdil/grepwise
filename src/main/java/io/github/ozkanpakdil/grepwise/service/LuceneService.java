@@ -4,6 +4,7 @@ import io.github.ozkanpakdil.grepwise.model.FieldConfiguration;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.service.ArchiveService;
 import io.github.ozkanpakdil.grepwise.service.FieldConfigurationService;
+import io.github.ozkanpakdil.grepwise.service.SearchCacheService;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -65,6 +66,9 @@ public class LuceneService {
     
     @Autowired
     private ArchiveService archiveService;
+    
+    @Autowired
+    private SearchCacheService searchCacheService;
 
     /**
      * Initialize the Lucene index.
@@ -315,6 +319,17 @@ public class LuceneService {
         if ((queryStr == null || queryStr.isEmpty()) && startTime == null && endTime == null) {
             return new ArrayList<>();
         }
+        
+        // Check cache first
+        List<LogEntry> cachedResults = searchCacheService.getFromCache(queryStr, isRegex, startTime, endTime);
+        if (cachedResults != null) {
+            logger.debug("Returning cached results for query: {}, isRegex: {}, timeRange: [{} - {}]", 
+                    queryStr, isRegex, startTime, endTime);
+            return cachedResults;
+        }
+        
+        logger.debug("Cache miss, performing search for query: {}, isRegex: {}, timeRange: [{} - {}]", 
+                queryStr, isRegex, startTime, endTime);
 
         // Create a boolean query
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
@@ -349,6 +364,10 @@ public class LuceneService {
                 Document doc = searcher.storedFields().document(scoreDoc.doc);
                 results.add(documentToLogEntry(doc));
             }
+            
+            // Add results to cache
+            searchCacheService.addToCache(queryStr, isRegex, startTime, endTime, results);
+            logger.debug("Added search results to cache, result count: {}", results.size());
 
             return results;
         }

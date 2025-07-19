@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.controller;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogRepository;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
+import io.github.ozkanpakdil.grepwise.service.SearchCacheService;
 import io.github.ozkanpakdil.grepwise.service.SplQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,12 @@ public class LogSearchController {
 
     private final LuceneService luceneService;
     private final SplQueryService splQueryService;
+    private final SearchCacheService searchCacheService;
 
-    public LogSearchController(LogRepository logRepository, LuceneService luceneService, SplQueryService splQueryService) {
+    public LogSearchController(LogRepository logRepository, LuceneService luceneService, SplQueryService splQueryService, SearchCacheService searchCacheService) {
         this.luceneService = luceneService;
         this.splQueryService = splQueryService;
+        this.searchCacheService = searchCacheService;
     }
 
     /**
@@ -316,5 +319,61 @@ public class LogSearchController {
         }
 
         return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * Get search cache statistics.
+     * This endpoint provides information about the search cache performance,
+     * including cache size, hit ratio, and other metrics.
+     *
+     * @return Cache statistics
+     */
+    @GetMapping("/cache/stats")
+    public ResponseEntity<Map<String, Object>> getCacheStats() {
+        Map<String, Object> stats = searchCacheService.getCacheStats();
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Clear the search cache.
+     * This endpoint clears all entries from the search cache.
+     *
+     * @return A message indicating the cache was cleared
+     */
+    @PostMapping("/cache/clear")
+    public ResponseEntity<Map<String, String>> clearCache() {
+        searchCacheService.clearCache();
+        Map<String, String> response = Map.of("message", "Search cache cleared successfully");
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Update search cache configuration.
+     * This endpoint allows updating the cache configuration parameters.
+     *
+     * @param enabled Whether the cache is enabled
+     * @param maxSize Maximum cache size
+     * @param expirationMs Cache entry expiration time in milliseconds
+     * @return The updated cache configuration
+     */
+    @PostMapping("/cache/config")
+    public ResponseEntity<Map<String, Object>> updateCacheConfig(
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Integer maxSize,
+            @RequestParam(required = false) Integer expirationMs) {
+        
+        if (enabled != null) {
+            searchCacheService.setCacheEnabled(enabled);
+        }
+        
+        if (maxSize != null && maxSize > 0) {
+            searchCacheService.setMaxCacheSize(maxSize);
+        }
+        
+        if (expirationMs != null && expirationMs > 0) {
+            searchCacheService.setExpirationMs(expirationMs);
+        }
+        
+        return ResponseEntity.ok(searchCacheService.getCacheStats());
     }
 }

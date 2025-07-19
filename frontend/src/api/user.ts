@@ -6,7 +6,7 @@ export interface UserRequest {
   password?: string;
   firstName: string;
   lastName: string;
-  roles: string[];
+  roleIds: string[];
   enabled?: boolean;
 }
 

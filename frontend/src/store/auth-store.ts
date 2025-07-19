@@ -8,6 +8,7 @@ export interface User {
   firstName: string;
   lastName: string;
   roles: string[];
+  roleIds?: string[]; // Added for compatibility with the updated API
 }
 
 interface AuthState {

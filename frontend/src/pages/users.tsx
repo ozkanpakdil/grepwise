@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { userApi, UserRequest } from '@/api/user';
+import { roleApi, Role } from '@/api/role';
 import { User } from '@/store/auth-store';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -14,25 +16,34 @@ export default function UsersPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuthStore();
 
-  // Load users on component mount
+  // Load users and roles on component mount
   useEffect(() => {
-    loadUsers();
+    loadUsersAndRoles();
   }, []);
-
-  const loadUsers = async () => {
+  
+  const loadUsersAndRoles = async () => {
     try {
       setLoading(true);
-      const data = await userApi.getAllUsers();
-      setUsers(data);
+      const [usersData, rolesData] = await Promise.all([
+        userApi.getAllUsers(),
+        roleApi.getAllRoles()
+      ]);
+      setUsers(usersData);
+      setRoles(rolesData);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to load users',
+        description: 'Failed to load data',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to reload data after operations
+  const reloadData = () => {
+    loadUsersAndRoles();
   };
 
   // Form state for creating/editing users
@@ -42,7 +53,7 @@ export default function UsersPage() {
     password: '',
     firstName: '',
     lastName: '',
-    roles: ['USER'],
+    roleIds: [],
     enabled: true
   });
 
@@ -53,7 +64,7 @@ export default function UsersPage() {
       password: '',
       firstName: '',
       lastName: '',
-      roles: ['USER'],
+      roleIds: [],
       enabled: true
     });
   };
@@ -76,7 +87,7 @@ export default function UsersPage() {
       password: '', // Don't populate password
       firstName: user.firstName,
       lastName: user.lastName,
-      roles: user.roles,
+      roleIds: user.roleIds || [], // Use roleIds from user or empty array if not available
       enabled: true // Assuming all users in the list are enabled
     });
   };
@@ -94,7 +105,7 @@ export default function UsersPage() {
 
     try {
       await userApi.deleteUser(id);
-      await loadUsers(); // Reload users after deletion
+      await reloadData(); // Reload data after deletion
       toast({
         title: 'User deleted',
         description: 'The user has been deleted successfully',
@@ -120,7 +131,7 @@ export default function UsersPage() {
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-    setFormData(prev => ({ ...prev, roles: selectedOptions }));
+    setFormData(prev => ({ ...prev, roleIds: selectedOptions }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,7 +160,7 @@ export default function UsersPage() {
       
       setIsCreatingUser(false);
       resetForm();
-      await loadUsers(); // Reload users after creation/update
+      await reloadData(); // Reload data after creation/update
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -253,19 +264,22 @@ export default function UsersPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="roles" className="block text-sm font-medium">
+                <label htmlFor="roleIds" className="block text-sm font-medium">
                   Roles
                 </label>
                 <select
-                  id="roles"
-                  name="roles"
+                  id="roleIds"
+                  name="roleIds"
                   multiple
-                  value={formData.roles}
+                  value={formData.roleIds}
                   onChange={handleRoleChange}
                   className="w-full rounded-md border border-input bg-background px-3 py-2"
                 >
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
+                  {roles.map(role => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
                 </select>
                 <p className="text-xs text-muted-foreground">Hold Ctrl/Cmd to select multiple roles</p>
               </div>

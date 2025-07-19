@@ -68,13 +68,13 @@ The project has achieved a **functional log analysis platform** with:
 - [x] Implement a query language similar to Splunk's SPL
 - [x] Add advanced search commands (stats, eval, where, etc.)
 
-### 3. Storage and Retention (Partially Completed)
+### 3. Storage and Retention (Mostly Completed)
 
 - [x] Implement H2 database for configuration and metadata storage
 - [x] Use Lucene file-based indexing for log data storage
 - [x] Add configurable retention policies for log data
 - [x] Implement data compression and archiving
-- [ ] Develop a mechanism for data partitioning
+- [x] Develop a mechanism for data partitioning
 - [ ] Consider migration to more scalable storage (Elasticsearch, ClickHouse)
 
 ### 4. Alerting System (Completed ✓)

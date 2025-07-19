@@ -1,0 +1,5 @@
+This is a placeholder file. In a real implementation, you would need to create actual PNG icon files:
+- icon-192x192.png (192x192 pixels)
+- icon-512x512.png (512x512 pixels)
+
+These icons should be created by a designer or generated from the application logo.

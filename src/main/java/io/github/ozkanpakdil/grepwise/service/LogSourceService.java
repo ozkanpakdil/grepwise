@@ -29,6 +29,7 @@ public class LogSourceService {
     private final LogScannerService logScannerService;
     private final SyslogServer syslogServer;
     private final HttpLogController httpLogController;
+    private final CloudWatchLogService cloudWatchLogService;
     private final LogDirectoryConfigRepository legacyConfigRepository;
     
     private final Map<String, LogSourceConfig> sources = new ConcurrentHashMap<>();
@@ -37,10 +38,12 @@ public class LogSourceService {
             LogScannerService logScannerService,
             SyslogServer syslogServer,
             HttpLogController httpLogController,
+            CloudWatchLogService cloudWatchLogService,
             LogDirectoryConfigRepository legacyConfigRepository) {
         this.logScannerService = logScannerService;
         this.syslogServer = syslogServer;
         this.httpLogController = httpLogController;
+        this.cloudWatchLogService = cloudWatchLogService;
         this.legacyConfigRepository = legacyConfigRepository;
         logger.info("LogSourceService initialized");
     }
@@ -259,6 +262,16 @@ public class LogSourceService {
                     }
                     return httpRegistered;
                     
+                case CLOUDWATCH:
+                    // For CloudWatch sources, we register them with the CloudWatchLogService
+                    boolean cloudWatchRegistered = cloudWatchLogService.registerSource(config);
+                    if (cloudWatchRegistered) {
+                        logger.info("Started CloudWatch log source: {}", config.getId());
+                    } else {
+                        logger.error("Failed to start CloudWatch log source: {}", config.getId());
+                    }
+                    return cloudWatchRegistered;
+                    
                 default:
                     logger.error("Unsupported log source type: {}", config.getSourceType());
                     return false;
@@ -307,6 +320,16 @@ public class LogSourceService {
                         logger.warn("Failed to stop HTTP log source: {}", config.getId());
                     }
                     return httpUnregistered;
+                    
+                case CLOUDWATCH:
+                    // For CloudWatch sources, we unregister them from the CloudWatchLogService
+                    boolean cloudWatchUnregistered = cloudWatchLogService.unregisterSource(config.getId());
+                    if (cloudWatchUnregistered) {
+                        logger.info("Stopped CloudWatch log source: {}", config.getId());
+                    } else {
+                        logger.warn("Failed to stop CloudWatch log source: {}", config.getId());
+                    }
+                    return cloudWatchUnregistered;
                     
                 default:
                     logger.error("Unsupported log source type: {}", config.getSourceType());

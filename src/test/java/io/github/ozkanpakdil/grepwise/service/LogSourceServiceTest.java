@@ -25,6 +25,7 @@ public class LogSourceServiceTest {
     private LogScannerService logScannerService;
     private SyslogServer syslogServer;
     private HttpLogController httpLogController;
+    private CloudWatchLogService cloudWatchLogService;
     private LogDirectoryConfigRepository legacyConfigRepository;
     private LogSourceService logSourceService;
 
@@ -34,6 +35,7 @@ public class LogSourceServiceTest {
         logScannerService = Mockito.mock(LogScannerService.class);
         syslogServer = Mockito.mock(SyslogServer.class);
         httpLogController = Mockito.mock(HttpLogController.class);
+        cloudWatchLogService = Mockito.mock(CloudWatchLogService.class);
         legacyConfigRepository = Mockito.mock(LogDirectoryConfigRepository.class);
         
         // Configure mocks
@@ -44,6 +46,7 @@ public class LogSourceServiceTest {
                 logScannerService,
                 syslogServer,
                 httpLogController,
+                cloudWatchLogService,
                 legacyConfigRepository
         );
     }
@@ -433,6 +436,7 @@ public class LogSourceServiceTest {
                 logScannerService,
                 syslogServer,
                 httpLogController,
+                cloudWatchLogService,
                 legacyConfigRepository
         );
         

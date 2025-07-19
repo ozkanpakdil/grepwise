@@ -26,6 +26,14 @@ public class LogSourceConfig {
     private String httpEndpoint;
     private String httpAuthToken;
     private boolean requireAuth;
+    
+    // CloudWatch source specific fields
+    private String awsRegion;
+    private String awsAccessKey;
+    private String awsSecretKey;
+    private String logGroupName;
+    private String logStreamName;
+    private long queryRefreshIntervalSeconds;
 
     /**
      * Enum representing the type of log source.
@@ -33,7 +41,8 @@ public class LogSourceConfig {
     public enum SourceType {
         FILE,
         SYSLOG,
-        HTTP
+        HTTP,
+        CLOUDWATCH
     }
 
     /**
@@ -49,6 +58,10 @@ public class LogSourceConfig {
         this.syslogFormat = "RFC5424";
         this.httpEndpoint = "/api/logs";
         this.requireAuth = true;
+        this.awsRegion = "us-east-1";
+        this.logGroupName = "";
+        this.logStreamName = "";
+        this.queryRefreshIntervalSeconds = 60;
     }
 
     /**
@@ -95,6 +108,27 @@ public class LogSourceConfig {
         config.httpEndpoint = httpEndpoint;
         config.httpAuthToken = httpAuthToken;
         config.requireAuth = requireAuth;
+        config.enabled = enabled;
+        return config;
+    }
+    
+    /**
+     * Constructor for CloudWatch source type.
+     */
+    public static LogSourceConfig createCloudWatchSource(String id, String name, String awsRegion,
+                                                        String logGroupName, String logStreamName,
+                                                        String awsAccessKey, String awsSecretKey,
+                                                        long queryRefreshIntervalSeconds, boolean enabled) {
+        LogSourceConfig config = new LogSourceConfig();
+        config.id = id;
+        config.name = name;
+        config.sourceType = SourceType.CLOUDWATCH;
+        config.awsRegion = awsRegion;
+        config.logGroupName = logGroupName;
+        config.logStreamName = logStreamName;
+        config.awsAccessKey = awsAccessKey;
+        config.awsSecretKey = awsSecretKey;
+        config.queryRefreshIntervalSeconds = queryRefreshIntervalSeconds;
         config.enabled = enabled;
         return config;
     }
@@ -235,6 +269,54 @@ public class LogSourceConfig {
     public void setRequireAuth(boolean requireAuth) {
         this.requireAuth = requireAuth;
     }
+    
+    public String getAwsRegion() {
+        return awsRegion;
+    }
+
+    public void setAwsRegion(String awsRegion) {
+        this.awsRegion = awsRegion;
+    }
+
+    public String getAwsAccessKey() {
+        return awsAccessKey;
+    }
+
+    public void setAwsAccessKey(String awsAccessKey) {
+        this.awsAccessKey = awsAccessKey;
+    }
+
+    public String getAwsSecretKey() {
+        return awsSecretKey;
+    }
+
+    public void setAwsSecretKey(String awsSecretKey) {
+        this.awsSecretKey = awsSecretKey;
+    }
+
+    public String getLogGroupName() {
+        return logGroupName;
+    }
+
+    public void setLogGroupName(String logGroupName) {
+        this.logGroupName = logGroupName;
+    }
+
+    public String getLogStreamName() {
+        return logStreamName;
+    }
+
+    public void setLogStreamName(String logStreamName) {
+        this.logStreamName = logStreamName;
+    }
+
+    public long getQueryRefreshIntervalSeconds() {
+        return queryRefreshIntervalSeconds;
+    }
+
+    public void setQueryRefreshIntervalSeconds(long queryRefreshIntervalSeconds) {
+        this.queryRefreshIntervalSeconds = queryRefreshIntervalSeconds;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -245,6 +327,7 @@ public class LogSourceConfig {
                 scanIntervalSeconds == that.scanIntervalSeconds &&
                 syslogPort == that.syslogPort &&
                 requireAuth == that.requireAuth &&
+                queryRefreshIntervalSeconds == that.queryRefreshIntervalSeconds &&
                 Objects.equals(id, that.id) &&
                 Objects.equals(name, that.name) &&
                 sourceType == that.sourceType &&
@@ -253,13 +336,19 @@ public class LogSourceConfig {
                 Objects.equals(syslogProtocol, that.syslogProtocol) &&
                 Objects.equals(syslogFormat, that.syslogFormat) &&
                 Objects.equals(httpEndpoint, that.httpEndpoint) &&
-                Objects.equals(httpAuthToken, that.httpAuthToken);
+                Objects.equals(httpAuthToken, that.httpAuthToken) &&
+                Objects.equals(awsRegion, that.awsRegion) &&
+                Objects.equals(awsAccessKey, that.awsAccessKey) &&
+                Objects.equals(awsSecretKey, that.awsSecretKey) &&
+                Objects.equals(logGroupName, that.logGroupName) &&
+                Objects.equals(logStreamName, that.logStreamName);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, name, enabled, sourceType, directoryPath, filePattern, scanIntervalSeconds,
-                syslogPort, syslogProtocol, syslogFormat, httpEndpoint, httpAuthToken, requireAuth);
+                syslogPort, syslogProtocol, syslogFormat, httpEndpoint, httpAuthToken, requireAuth,
+                awsRegion, awsAccessKey, awsSecretKey, logGroupName, logStreamName, queryRefreshIntervalSeconds);
     }
 
     @Override
@@ -278,6 +367,12 @@ public class LogSourceConfig {
                 ", httpEndpoint='" + httpEndpoint + '\'' +
                 ", httpAuthToken='" + (httpAuthToken != null ? "****" : null) + '\'' +
                 ", requireAuth=" + requireAuth +
+                ", awsRegion='" + awsRegion + '\'' +
+                ", awsAccessKey='" + (awsAccessKey != null ? "****" : null) + '\'' +
+                ", awsSecretKey='" + (awsSecretKey != null ? "****" : null) + '\'' +
+                ", logGroupName='" + logGroupName + '\'' +
+                ", logStreamName='" + logStreamName + '\'' +
+                ", queryRefreshIntervalSeconds=" + queryRefreshIntervalSeconds +
                 '}';
     }
 }

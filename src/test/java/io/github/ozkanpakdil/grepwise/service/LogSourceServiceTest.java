@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -180,7 +182,8 @@ public class LogSourceServiceTest {
         verify(legacyConfigRepository).save(any(LogDirectoryConfig.class));
         
         // Verify that the source was restarted
-        verify(logScannerService).saveConfig(any(LogDirectoryConfig.class));
+        // saveConfig is called twice: once in stopSource and once in startSource
+        verify(logScannerService, times(2)).saveConfig(any(LogDirectoryConfig.class));
         verify(logScannerService).scanDirectory(any(LogDirectoryConfig.class));
     }
     
@@ -439,6 +442,8 @@ public class LogSourceServiceTest {
                 cloudWatchLogService,
                 legacyConfigRepository
         );
+
+        service.init();
         
         // Verify that the legacy configs were loaded
         List<LogSourceConfig> sources = service.getAllSources();

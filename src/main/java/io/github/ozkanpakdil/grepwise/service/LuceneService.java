@@ -107,6 +107,7 @@ public class LuceneService {
     private SearchCacheService searchCacheService;
     
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private RealTimeUpdateService realTimeUpdateService;
     
     /**

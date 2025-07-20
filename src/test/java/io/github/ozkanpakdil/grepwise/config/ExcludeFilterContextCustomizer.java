@@ -11,6 +11,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -96,8 +97,56 @@ public class ExcludeFilterContextCustomizer implements ContextCustomizer {
      * @param registry The bean definition registry
      */
     private void registerMockTokenService(BeanDefinitionRegistry registry) {
-        RootBeanDefinition beanDefinition = new RootBeanDefinition(MockTokenService.class);
+        // First, remove the existing bean definition if it exists
+        if (registry.containsBeanDefinition("tokenService")) {
+            registry.removeBeanDefinition("tokenService");
+        }
+
+        // Create a RootBeanDefinition for TokenService
+        RootBeanDefinition beanDefinition = new RootBeanDefinition(TokenService.class);
+        
+        // Set a factory method to create and configure the mock
+        beanDefinition.setFactoryMethodName("createMockTokenService");
+        beanDefinition.setFactoryBeanName("tokenServiceFactory");
+        
+        // Register the factory bean that will create our mock
+        RootBeanDefinition factoryBeanDefinition = new RootBeanDefinition(TokenServiceFactory.class);
+        registry.registerBeanDefinition("tokenServiceFactory", factoryBeanDefinition);
+        
+        // Add @Primary annotation to ensure this bean is preferred over any other implementations
+        beanDefinition.setPrimary(true);
         registry.registerBeanDefinition("tokenService", beanDefinition);
+    }
+    
+    /**
+     * Factory class for creating mock TokenService instances.
+     */
+    public static class TokenServiceFactory {
+        /**
+         * Creates and configures a mock TokenService.
+         * 
+         * @return A configured mock TokenService
+         */
+        public TokenService createMockTokenService() {
+            TokenService mockTokenService = Mockito.mock(TokenService.class);
+            
+            // Configure the mock to return dummy values
+            Mockito.when(mockTokenService.generateToken(Mockito.any(User.class))).thenReturn("dummy.jwt.token");
+            Mockito.when(mockTokenService.generateRefreshToken(Mockito.any(User.class))).thenReturn("dummy.jwt.token");
+            Mockito.when(mockTokenService.validateToken(Mockito.anyString())).thenReturn(true);
+            Mockito.when(mockTokenService.getUserIdFromToken(Mockito.anyString())).thenReturn("test-user-id");
+            Mockito.when(mockTokenService.getUsernameFromToken(Mockito.anyString())).thenReturn("test-user");
+            
+            List<String> roles = new ArrayList<>();
+            roles.add("ROLE_USER");
+            Mockito.when(mockTokenService.getRolesFromToken(Mockito.anyString())).thenReturn(roles);
+            
+            Date expirationDate = new Date(System.currentTimeMillis() + 3600000); // 1 hour from now
+            Mockito.when(mockTokenService.getExpirationDateFromToken(Mockito.anyString())).thenReturn(expirationDate);
+            Mockito.when(mockTokenService.isTokenExpired(Mockito.anyString())).thenReturn(false);
+            
+            return mockTokenService;
+        }
     }
 
     @Override
@@ -160,53 +209,4 @@ public class ExcludeFilterContextCustomizer implements ContextCustomizer {
         }
     }
     
-    /**
-     * Mock implementation of TokenService for tests.
-     * This implementation provides dummy token functionality.
-     */
-    public static class MockTokenService extends TokenService {
-        private static final String DUMMY_TOKEN = "dummy.jwt.token";
-        
-        @Override
-        public String generateToken(User user) {
-            return DUMMY_TOKEN;
-        }
-        
-        @Override
-        public String generateRefreshToken(User user) {
-            return DUMMY_TOKEN;
-        }
-        
-        @Override
-        public boolean validateToken(String token) {
-            return true;
-        }
-        
-        @Override
-        public String getUserIdFromToken(String token) {
-            return "test-user-id";
-        }
-        
-        @Override
-        public String getUsernameFromToken(String token) {
-            return "test-user";
-        }
-        
-        @Override
-        public List<String> getRolesFromToken(String token) {
-            List<String> roles = new ArrayList<>();
-            roles.add("ROLE_USER");
-            return roles;
-        }
-        
-        @Override
-        public Date getExpirationDateFromToken(String token) {
-            return new Date(System.currentTimeMillis() + 3600000); // 1 hour from now
-        }
-        
-        @Override
-        public boolean isTokenExpired(String token) {
-            return false;
-        }
-    }
 }

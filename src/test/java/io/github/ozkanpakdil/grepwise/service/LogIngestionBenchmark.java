@@ -47,15 +47,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * These tests measure ingestion throughput, CPU usage, and memory consumption for different scenarios.
  * Results are saved to a file for historical comparison.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@Import(TestConfig.class)
 public class LogIngestionBenchmark {
 
-    @Autowired
     private LogBufferService logBufferService;
-
-    @Autowired
     private LuceneService luceneService;
 
     private Path testIndexPath;
@@ -76,6 +70,9 @@ public class LogIngestionBenchmark {
         // Create a temporary directory for the test index
         testIndexPath = Files.createTempDirectory("test-lucene-index");
         
+        // Initialize LuceneService
+        luceneService = new LuceneService();
+        
         // Configure the LuceneService to use the test index path
         try {
             // Use setter methods instead of reflection
@@ -94,6 +91,9 @@ public class LogIngestionBenchmark {
         
         // Initialize the services
         luceneService.init();
+        
+        // Initialize LogBufferService
+        logBufferService = new LogBufferService(luceneService);
         
         // Configure the LogBufferService
         try {

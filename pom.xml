@@ -218,6 +218,11 @@
             <artifactId>unboundid-ldapsdk</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         
         <!-- AWS SDK Dependencies -->
         <dependency>
@@ -273,6 +278,32 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            
+            <!-- Maven Surefire Plugin for test execution -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Enable parallel execution at the Maven level -->
+                    <parallel>both</parallel>
+                    <threadCount>0</threadCount>
+                    <threadCountClasses>0</threadCountClasses>
+                    <threadCountMethods>0</threadCountMethods>
+                    <useUnlimitedThreads>true</useUnlimitedThreads>
+                    
+                    <!-- Ensure JUnit platform properties are used -->
+                    <properties>
+                        <configurationParameters>
+                            junit.jupiter.execution.parallel.enabled=true
+                            junit.jupiter.execution.parallel.mode.default=concurrent
+                            junit.jupiter.execution.parallel.mode.classes.default=concurrent
+                        </configurationParameters>
+                    </properties>
+                    
+                    <!-- Increase test timeout to accommodate parallel execution -->
+                    <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
+                </configuration>
             </plugin>
 
             <!-- JTE Maven Plugin -->

@@ -10,10 +10,23 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
+import org.springframework.security.ldap.authentication.BindAuthenticator;
+import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
+import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopulator;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -24,58 +37,120 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Test configuration that provides mock implementations of beans for tests.
- * This configuration is used to replace real implementations with test doubles
- * to avoid dependencies on external systems and to simplify test setup.
+ * Test configuration that provides mock implementations of beans for tests. This configuration is used to replace real
+ * implementations with test doubles to avoid dependencies on external systems and to simplify test setup.
  */
 @TestConfiguration
 public class TestConfig {
 
+    @Bean
+    @Primary
+    public AuthenticationManager authenticationManager(AuthenticationProvider authenticationProvider) {
+        return new ProviderManager(authenticationProvider);
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder,
+            UserDetailsService userDetailsService) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(userDetailsService);
+        return provider;
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        UserDetails testUser = org.springframework.security.core.userdetails.User.builder()
+                .username("test")
+                .password(passwordEncoder.encode("test"))
+                .roles("USER")
+                .build();
+        manager.createUser(testUser);
+        return manager;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public LdapConfig ldapConfig() {
+        return new MockLdapConfig();
+    }
+
+    @Bean
+    public LdapAuthenticationProvider ldapAuthenticationProvider(AuthenticationProvider authenticationProvider) {
+        // This is a simple mock that delegates to our standard authentication provider
+        return new LdapAuthenticationProvider(
+                new BindAuthenticator(new DefaultSpringSecurityContextSource("ldap://localhost:389/dc=example,dc=com")),
+                new DefaultLdapAuthoritiesPopulator(
+                        new DefaultSpringSecurityContextSource("ldap://localhost:389/dc=example,dc=com"), "ou=groups"));
+    }
+
     /**
-     * Provides a mock implementation of RateLimitingFilter for tests.
-     * This implementation simply passes requests through without rate limiting.
+     * Provides a mock implementation of RateLimitingFilter for tests. This implementation simply passes requests through
+     * without rate limiting.
      *
      * @return A mock RateLimitingFilter
      */
     @Bean
     @Primary
-    public RateLimitingFilter rateLimitingFilter() {
+    public RateLimitingFilter testRateLimitingFilter() {
         return new MockRateLimitingFilter();
     }
 
     /**
-     * Provides a mock implementation of RateLimitingConfig for tests.
-     * This implementation provides dummy buckets that always allow requests.
+     * Provides a mock implementation of RateLimitingConfig for tests. This implementation provides dummy buckets that always
+     * allow requests.
      *
      * @return A mock RateLimitingConfig
      */
     @Bean
     @Primary
-    public RateLimitingConfig rateLimitingConfig() {
+    public RateLimitingConfig testRateLimitingConfig() {
         return new MockRateLimitingConfig();
     }
 
     /**
      * Provides a mock implementation of TokenService for tests.
-     * This implementation provides dummy token functionality.
      *
      * @return A mock TokenService
      */
     @Bean
     @Primary
     public TokenService tokenService() {
-        return new MockTokenService();
+        // Create a mock TokenService
+        TokenService mockTokenService = Mockito.mock(TokenService.class);
+        
+        // Configure the mock to return dummy values
+        Mockito.when(mockTokenService.generateToken(Mockito.any(User.class))).thenReturn("dummy.jwt.token");
+        Mockito.when(mockTokenService.generateRefreshToken(Mockito.any(User.class))).thenReturn("dummy.jwt.token");
+        Mockito.when(mockTokenService.validateToken(Mockito.anyString())).thenReturn(true);
+        Mockito.when(mockTokenService.getUserIdFromToken(Mockito.anyString())).thenReturn("test-user-id");
+        Mockito.when(mockTokenService.getUsernameFromToken(Mockito.anyString())).thenReturn("test-user");
+        
+        List<String> roles = new ArrayList<>();
+        roles.add("ROLE_USER");
+        Mockito.when(mockTokenService.getRolesFromToken(Mockito.anyString())).thenReturn(roles);
+        
+        Date expirationDate = new Date(System.currentTimeMillis() + 3600000); // 1 hour from now
+        Mockito.when(mockTokenService.getExpirationDateFromToken(Mockito.anyString())).thenReturn(expirationDate);
+        Mockito.when(mockTokenService.isTokenExpired(Mockito.anyString())).thenReturn(false);
+        
+        return mockTokenService;
     }
 
     /**
-     * Mock implementation of RateLimitingFilter for tests.
-     * This implementation simply passes requests through without rate limiting.
+     * Mock implementation of RateLimitingFilter for tests. This implementation simply passes requests through without rate
+     * limiting.
      */
     public static class MockRateLimitingFilter extends RateLimitingFilter {
         public MockRateLimitingFilter() {
             super(new MockRateLimitingConfig());
         }
-        
+
         @Override
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
                 throws ServletException, IOException {
@@ -85,12 +160,12 @@ public class TestConfig {
     }
 
     /**
-     * Mock implementation of RateLimitingConfig for tests.
-     * This implementation provides dummy buckets that always allow requests.
+     * Mock implementation of RateLimitingConfig for tests. This implementation provides dummy buckets that always allow
+     * requests.
      */
     public static class MockRateLimitingConfig extends RateLimitingConfig {
         private final Map<String, Bucket> bucketCache = new ConcurrentHashMap<>();
-        
+
         /**
          * Creates a dummy bucket that always allows requests.
          */
@@ -99,22 +174,22 @@ public class TestConfig {
                     .addLimit(Bandwidth.classic(Integer.MAX_VALUE, Refill.intervally(Integer.MAX_VALUE, Duration.ofSeconds(1))))
                     .build();
         }
-        
+
         @Override
         public Bucket defaultBucket() {
             return createDummyBucket();
         }
-        
+
         @Override
         public Bucket searchBucket() {
             return createDummyBucket();
         }
-        
+
         @Override
         public Bucket adminBucket() {
             return createDummyBucket();
         }
-        
+
         @Override
         public Bucket resolveBucket(String clientId, String bucketType) {
             return bucketCache.computeIfAbsent(clientId, key -> createDummyBucket());
@@ -122,52 +197,12 @@ public class TestConfig {
     }
 
     /**
-     * Mock implementation of TokenService for tests.
-     * This implementation provides dummy token functionality.
+     * Mock implementation of LdapConfig for tests.
      */
-    public static class MockTokenService extends TokenService {
-        private static final String DUMMY_TOKEN = "dummy.jwt.token";
-        
+    public static class MockLdapConfig extends LdapConfig {
         @Override
-        public String generateToken(User user) {
-            return DUMMY_TOKEN;
-        }
-        
-        @Override
-        public String generateRefreshToken(User user) {
-            return DUMMY_TOKEN;
-        }
-        
-        @Override
-        public boolean validateToken(String token) {
-            return true;
-        }
-        
-        @Override
-        public String getUserIdFromToken(String token) {
-            return "test-user-id";
-        }
-        
-        @Override
-        public String getUsernameFromToken(String token) {
-            return "test-user";
-        }
-        
-        @Override
-        public List<String> getRolesFromToken(String token) {
-            List<String> roles = new ArrayList<>();
-            roles.add("ROLE_USER");
-            return roles;
-        }
-        
-        @Override
-        public Date getExpirationDateFromToken(String token) {
-            return new Date(System.currentTimeMillis() + 3600000); // 1 hour from now
-        }
-        
-        @Override
-        public boolean isTokenExpired(String token) {
-            return false;
+        public boolean isLdapEnabled() {
+            return false;  // Disable LDAP for tests
         }
     }
 }

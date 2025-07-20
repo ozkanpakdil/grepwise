@@ -3,10 +3,11 @@ package io.github.ozkanpakdil.grepwise.service;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
@@ -23,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class LogBufferServiceTest {
 
     private LogBufferService logBufferService;
@@ -36,8 +37,8 @@ public class LogBufferServiceTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        // Mock LuceneService behavior
-        when(luceneService.indexLogEntries(any())).thenAnswer(invocation -> {
+        // Mock LuceneService behavior - use lenient to avoid UnnecessaryStubbingException
+        lenient().when(luceneService.indexLogEntries(any())).thenAnswer(invocation -> {
             List<LogEntry> entries = invocation.getArgument(0);
             return entries.size();
         });

@@ -1,8 +1,6 @@
 package io.github.ozkanpakdil.grepwise;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -14,9 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test to verify the CI configuration is properly set up.
  * This test checks for the existence of the GitHub Actions workflow file.
+ * This is a simple JUnit test that doesn't require the Spring context.
  */
-@SpringBootTest
-@ActiveProfiles("test")
 public class CIConfigurationTest {
 
     @Test

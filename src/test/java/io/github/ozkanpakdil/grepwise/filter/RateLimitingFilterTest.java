@@ -64,7 +64,7 @@ public class RateLimitingFilterTest {
         // Setup response writer
         responseWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(responseWriter);
-        when(response.getWriter()).thenReturn(writer);
+        lenient().when(response.getWriter()).thenReturn(writer);
 
         // Setup security context
         SecurityContextHolder.setContext(securityContext);
@@ -92,7 +92,7 @@ public class RateLimitingFilterTest {
         when(authentication.getName()).thenReturn("testUser");
         
         when(rateLimitingConfig.resolveBucket(eq("testUser"), eq("search"))).thenReturn(bucket);
-        when(bucket.tryConsumeAndReturnRemaining(anyInt())).thenReturn(consumptionProbe);
+        when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(consumptionProbe);
         when(consumptionProbe.isConsumed()).thenReturn(true);
         when(consumptionProbe.getRemainingTokens()).thenReturn(99L);
 
@@ -113,7 +113,7 @@ public class RateLimitingFilterTest {
         when(authentication.getName()).thenReturn("testUser");
         
         when(rateLimitingConfig.resolveBucket(eq("testUser"), eq("admin"))).thenReturn(bucket);
-        when(bucket.tryConsumeAndReturnRemaining(anyInt())).thenReturn(consumptionProbe);
+        when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(consumptionProbe);
         when(consumptionProbe.isConsumed()).thenReturn(false);
         when(consumptionProbe.getNanosToWaitForRefill()).thenReturn(5_000_000_000L); // 5 seconds
 
@@ -139,7 +139,7 @@ public class RateLimitingFilterTest {
         when(request.getRemoteAddr()).thenReturn("192.168.1.1");
         
         when(rateLimitingConfig.resolveBucket(eq("192.168.1.1"), eq("search"))).thenReturn(bucket);
-        when(bucket.tryConsumeAndReturnRemaining(anyInt())).thenReturn(consumptionProbe);
+        when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(consumptionProbe);
         when(consumptionProbe.isConsumed()).thenReturn(true);
         when(consumptionProbe.getRemainingTokens()).thenReturn(99L);
 
@@ -159,7 +159,7 @@ public class RateLimitingFilterTest {
         when(authentication.getName()).thenReturn("testUser");
         when(consumptionProbe.isConsumed()).thenReturn(true);
         when(consumptionProbe.getRemainingTokens()).thenReturn(99L);
-        when(bucket.tryConsumeAndReturnRemaining(anyInt())).thenReturn(consumptionProbe);
+        when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(consumptionProbe);
 
         // Test search endpoint
         when(request.getRequestURI()).thenReturn("/api/logs/search");

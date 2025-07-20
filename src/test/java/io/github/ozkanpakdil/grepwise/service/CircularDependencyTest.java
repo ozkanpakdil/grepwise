@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Simple test to verify that the circular dependency between LuceneService and RealTimeUpdateService is fixed.
  */
-@SpringBootTest
+@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true"})
 @ActiveProfiles("test")
 @Import(TestConfig.class)
 public class CircularDependencyTest {

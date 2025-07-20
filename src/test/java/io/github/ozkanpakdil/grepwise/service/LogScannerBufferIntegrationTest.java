@@ -25,7 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true"})
+@org.springframework.test.context.ActiveProfiles("test")
+@org.springframework.context.annotation.Import({
+    io.github.ozkanpakdil.grepwise.config.TestConfig.class,
+    io.github.ozkanpakdil.grepwise.config.LogScannerTestConfig.class
+})
 public class LogScannerBufferIntegrationTest {
 
     @Autowired

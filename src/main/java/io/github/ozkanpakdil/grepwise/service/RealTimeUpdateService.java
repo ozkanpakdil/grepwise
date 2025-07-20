@@ -48,6 +48,7 @@ public class RealTimeUpdateService {
     }
     
     @Autowired
+    @org.springframework.context.annotation.Lazy
     public void setLuceneService(LuceneService luceneService) {
         this.luceneService = luceneService;
     }

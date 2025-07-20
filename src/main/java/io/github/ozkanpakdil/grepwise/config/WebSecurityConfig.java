@@ -4,6 +4,7 @@ import io.github.ozkanpakdil.grepwise.filter.RateLimitingFilter;
 import io.github.ozkanpakdil.grepwise.security.JwtAuthenticationFilter;
 import io.github.ozkanpakdil.grepwise.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,7 +14,13 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -31,24 +38,31 @@ import java.util.Collections;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    @Autowired
-    private TokenService tokenService;
+    private final TokenService tokenService;
     
-    @Autowired
-    private RateLimitingFilter rateLimitingFilter;
+    private final RateLimitingFilter rateLimitingFilter;
     
-    @Autowired(required = false)
-    private LdapConfig ldapConfig;
+    private final LdapConfig ldapConfig;
     
-    @Autowired(required = false)
-    private LdapAuthenticationProvider ldapAuthenticationProvider;
+    private final LdapAuthenticationProvider ldapAuthenticationProvider;
+
+    public WebSecurityConfig(TokenService tokenService, RateLimitingFilter rateLimitingFilter, LdapConfig ldapConfig,
+            LdapAuthenticationProvider ldapAuthenticationProvider) {
+        this.tokenService = tokenService;
+        this.rateLimitingFilter = rateLimitingFilter;
+        this.ldapConfig = ldapConfig;
+        this.ldapAuthenticationProvider = ldapAuthenticationProvider;
+    }
 
     /**
      * Creates an authentication manager that includes the LDAP authentication provider if LDAP is enabled.
+     * This bean is only created if the security.enabled property is true (default) and
+     * the auth.manager.enabled property is true (default).
      *
      * @return The authentication manager
      */
     @Bean
+    @ConditionalOnProperty(name = {"security.enabled", "auth.manager.enabled"}, havingValue = "true", matchIfMissing = true)
     public AuthenticationManager authenticationManager() {
         if (ldapConfig != null && ldapConfig.isLdapEnabled() && ldapAuthenticationProvider != null) {
             return new ProviderManager(Collections.singletonList(ldapAuthenticationProvider));

@@ -37,6 +37,19 @@ public class AlarmService {
     
     @Autowired
     private OpsGenieService opsGenieService;
+    
+    // Default constructor for Spring
+    public AlarmService() {
+    }
+    
+    // Constructor for testing
+    public AlarmService(AlarmRepository alarmRepository, LuceneService luceneService, 
+                        PagerDutyService pagerDutyService, OpsGenieService opsGenieService) {
+        this.alarmRepository = alarmRepository;
+        this.luceneService = luceneService;
+        this.pagerDutyService = pagerDutyService;
+        this.opsGenieService = opsGenieService;
+    }
 
     // Throttling: Track notification history for each alarm
     // Key: alarmId, Value: List of notification timestamps

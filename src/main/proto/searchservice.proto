@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.github.ozkanpakdil.grepwise.grpc";
+option java_outer_classname = "SearchServiceProto";
+
+package searchservice;
+
+import "logservice.proto";
+
+// Service for advanced log searching and analytics
+service SearchService {
+  // Search logs with advanced filtering
+  rpc SearchLogs(SearchLogsRequest) returns (SearchLogsResponse);
+  
+  // Execute an SPL query
+  rpc ExecuteSplQuery(SplQueryRequest) returns (SplQueryResponse);
+  
+  // Get log count by time slots for visualization
+  rpc GetLogCountByTimeSlots(LogCountRequest) returns (LogCountResponse);
+  
+  // Get logs by level
+  rpc GetLogsByLevel(LogLevelRequest) returns (SearchLogsResponse);
+  
+  // Get logs by source
+  rpc GetLogsBySource(LogSourceRequest) returns (SearchLogsResponse);
+  
+  // Get logs by time range
+  rpc GetLogsByTimeRange(TimeRangeRequest) returns (SearchLogsResponse);
+  
+  // Get all available log levels
+  rpc GetLogLevels(EmptyRequest) returns (LogLevelsResponse);
+  
+  // Get all available log sources
+  rpc GetLogSources(EmptyRequest) returns (LogSourcesResponse);
+  
+  // Get cache statistics
+  rpc GetCacheStats(EmptyRequest) returns (CacheStatsResponse);
+  
+  // Clear the search cache
+  rpc ClearCache(EmptyRequest) returns (CacheOperationResponse);
+  
+  // Update cache configuration
+  rpc UpdateCacheConfig(CacheConfigRequest) returns (CacheStatsResponse);
+}
+
+
+// Empty request for methods that don't need parameters
+message EmptyRequest {
+}
+
+// Request for searching logs
+message SearchLogsRequest {
+  string query = 1;
+  bool is_regex = 2;
+  string time_range = 3;
+  int64 start_time = 4;
+  int64 end_time = 5;
+}
+
+// Response for search operations
+message SearchLogsResponse {
+  repeated logservice.LogEntry logs = 1;
+  int32 total_count = 2;
+}
+
+// Request for executing an SPL query
+message SplQueryRequest {
+  string spl_query = 1;
+}
+
+// Response for SPL query execution
+message SplQueryResponse {
+  oneof result {
+    SearchLogsResponse logs = 1;
+    StatisticsResult statistics = 2;
+    string error_message = 3;
+  }
+}
+
+// Statistics result for SPL queries that aggregate data
+message StatisticsResult {
+  repeated string column_names = 1;
+  repeated StatisticsRow rows = 2;
+}
+
+// A row in the statistics result
+message StatisticsRow {
+  repeated string values = 1;
+}
+
+// Request for getting log count by time slots
+message LogCountRequest {
+  string query = 1;
+  bool is_regex = 2;
+  string time_range = 3;
+  int64 start_time = 4;
+  int64 end_time = 5;
+  int32 slots = 6;
+}
+
+// Response for log count by time slots
+message LogCountResponse {
+  map<int64, int32> counts = 1;
+}
+
+// Request for getting logs by level
+message LogLevelRequest {
+  string level = 1;
+}
+
+// Request for getting logs by source
+message LogSourceRequest {
+  string source = 1;
+}
+
+// Request for getting logs by time range
+message TimeRangeRequest {
+  int64 start_time = 1;
+  int64 end_time = 2;
+}
+
+// Response for getting log levels
+message LogLevelsResponse {
+  repeated string levels = 1;
+}
+
+// Response for getting log sources
+message LogSourcesResponse {
+  repeated string sources = 1;
+}
+
+// Response for cache statistics
+message CacheStatsResponse {
+  int32 cache_size = 1;
+  int32 max_cache_size = 2;
+  int32 expiration_ms = 3;
+  bool cache_enabled = 4;
+  int32 hits = 5;
+  int32 misses = 6;
+  double hit_ratio = 7;
+}
+
+// Response for cache operations
+message CacheOperationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request for updating cache configuration
+message CacheConfigRequest {
+  bool cache_enabled = 1;
+  int32 max_cache_size = 2;
+  int32 expiration_ms = 3;
+}

@@ -202,7 +202,7 @@ The project has achieved a **functional log analysis platform** with:
 
 - [x] Create benchmarks for log ingestion performance
 - [x] Test search performance under load
-- [ ] Evaluate system resource usage under various conditions
+- [x] Evaluate system resource usage under various conditions
 
 ## Deployment Considerations
 

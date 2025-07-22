@@ -751,6 +751,9 @@ public class LuceneService {
      * Search log entries by query string.
      * If partitioning is enabled, searches across all active partitions.
      * Otherwise, uses the legacy single index approach.
+     * 
+     * Note: This method is used directly by the ShardManagerService for local searches.
+     * External callers should use the ShardManagerService for distributed searches.
      */
     public List<LogEntry> search(String queryStr, boolean isRegex, Long startTime, Long endTime) throws IOException {
         // If no query and no time range, return empty list

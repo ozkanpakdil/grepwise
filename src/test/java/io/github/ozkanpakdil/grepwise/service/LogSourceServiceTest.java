@@ -29,6 +29,7 @@ public class LogSourceServiceTest {
     private HttpLogController httpLogController;
     private CloudWatchLogService cloudWatchLogService;
     private LogDirectoryConfigRepository legacyConfigRepository;
+    private LogIngestionCoordinatorService coordinatorService;
     private LogSourceService logSourceService;
 
     @BeforeEach
@@ -39,6 +40,7 @@ public class LogSourceServiceTest {
         httpLogController = Mockito.mock(HttpLogController.class);
         cloudWatchLogService = Mockito.mock(CloudWatchLogService.class);
         legacyConfigRepository = Mockito.mock(LogDirectoryConfigRepository.class);
+        coordinatorService = Mockito.mock(LogIngestionCoordinatorService.class);
         
         // Configure mocks
         when(legacyConfigRepository.findAll()).thenReturn(new ArrayList<>());
@@ -49,7 +51,8 @@ public class LogSourceServiceTest {
                 syslogServer,
                 httpLogController,
                 cloudWatchLogService,
-                legacyConfigRepository
+                legacyConfigRepository,
+                coordinatorService
         );
     }
 
@@ -440,7 +443,8 @@ public class LogSourceServiceTest {
                 syslogServer,
                 httpLogController,
                 cloudWatchLogService,
-                legacyConfigRepository
+                legacyConfigRepository,
+                coordinatorService
         );
 
         service.init();

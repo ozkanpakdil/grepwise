@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing log sources of different types (file, syslog, HTTP).
@@ -31,6 +32,7 @@ public class LogSourceService {
     private final HttpLogController httpLogController;
     private final CloudWatchLogService cloudWatchLogService;
     private final LogDirectoryConfigRepository legacyConfigRepository;
+    private final LogIngestionCoordinatorService coordinatorService;
     
     private final Map<String, LogSourceConfig> sources = new ConcurrentHashMap<>();
     
@@ -39,13 +41,15 @@ public class LogSourceService {
             SyslogServer syslogServer,
             HttpLogController httpLogController,
             CloudWatchLogService cloudWatchLogService,
-            LogDirectoryConfigRepository legacyConfigRepository) {
+            LogDirectoryConfigRepository legacyConfigRepository,
+            LogIngestionCoordinatorService coordinatorService) {
         this.logScannerService = logScannerService;
         this.syslogServer = syslogServer;
         this.httpLogController = httpLogController;
         this.cloudWatchLogService = cloudWatchLogService;
         this.legacyConfigRepository = legacyConfigRepository;
-        logger.info("LogSourceService initialized");
+        this.coordinatorService = coordinatorService;
+        logger.info("LogSourceService initialized with horizontal scaling support");
     }
     
     @PostConstruct
@@ -88,11 +92,21 @@ public class LogSourceService {
     
     /**
      * Get all log source configurations.
+     * When horizontal scaling is enabled, only returns sources that should be processed by this instance.
      * 
-     * @return A list of all log source configurations
+     * @return A list of log source configurations for this instance
      */
     public List<LogSourceConfig> getAllSources() {
-        return new ArrayList<>(sources.values());
+        List<LogSourceConfig> allSources = new ArrayList<>(sources.values());
+        
+        // If horizontal scaling is enabled, filter sources for this instance
+        if (coordinatorService.isHorizontalScalingEnabled()) {
+            logger.debug("Horizontal scaling is enabled, filtering sources for instance {}", 
+                    coordinatorService.getInstanceId());
+            return coordinatorService.filterSourcesForThisInstance(allSources);
+        }
+        
+        return allSources;
     }
     
     /**
@@ -220,6 +234,7 @@ public class LogSourceService {
     
     /**
      * Start a log source.
+     * When horizontal scaling is enabled, only starts the source if it should be processed by this instance.
      * 
      * @param config The log source configuration to start
      * @return true if the source was started successfully, false otherwise
@@ -230,7 +245,18 @@ public class LogSourceService {
             return false;
         }
         
-        logger.info("Starting log source: {}", config.getId());
+        // If horizontal scaling is enabled, check if this instance should process this source
+        if (coordinatorService.isHorizontalScalingEnabled()) {
+            if (!coordinatorService.shouldProcessSource(config.getId())) {
+                logger.debug("Skipping log source {} as it's assigned to another instance (this instance: {})",
+                        config.getId(), coordinatorService.getInstanceId());
+                return true; // Return true as this is not an error condition
+            }
+            logger.info("Starting log source: {} on instance: {}", 
+                    config.getId(), coordinatorService.getInstanceId());
+        } else {
+            logger.info("Starting log source: {}", config.getId());
+        }
         
         try {
             switch (config.getSourceType()) {

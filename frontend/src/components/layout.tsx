@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
-import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard, UsersIcon, ShieldIcon, MenuIcon, XIcon } from 'lucide-react';
+import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard, UsersIcon, ShieldIcon, MenuIcon, XIcon, ActivityIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -84,6 +84,17 @@ export default function Layout() {
               >
                 <SettingsIcon className="h-4 w-4" />
                 Settings
+              </Link>
+              <Link
+                to="/monitoring"
+                className={`flex items-center gap-2 ${
+                  isActive('/monitoring')
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground'
+                } transition-colors hover:text-foreground`}
+              >
+                <ActivityIcon className="h-4 w-4" />
+                Monitoring
               </Link>
               <Link
                 to="/users"
@@ -225,6 +236,20 @@ export default function Layout() {
                 >
                   <SettingsIcon className="h-5 w-5" />
                   <span>Settings</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/monitoring"
+                  className={`flex items-center gap-3 p-2 rounded-md ${
+                    isActive('/monitoring')
+                      ? 'bg-muted font-medium'
+                      : ''
+                  }`}
+                  onClick={toggleMobileMenu}
+                >
+                  <ActivityIcon className="h-5 w-5" />
+                  <span>Monitoring</span>
                 </Link>
               </li>
               <li>

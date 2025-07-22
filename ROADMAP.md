@@ -210,7 +210,7 @@ The project has achieved a **functional log analysis platform** with:
 
 - [x] Create Docker configurations for backend and frontend
 - [x] Develop Docker Compose setup for local deployment
-- [ ] Implement Kubernetes manifests for cloud deployment
+- [x] Implement Kubernetes manifests for cloud deployment
 
 ### 2. Scaling
 

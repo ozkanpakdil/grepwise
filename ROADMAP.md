@@ -236,7 +236,7 @@ The project has achieved a **functional log analysis platform** with:
 
 - [x] Create plugins system for custom integrations - ✅ **COMPLETED** - Implemented comprehensive plugin system with lifecycle management, dynamic loading, and type-safe registry
 - [ ] Implement an app marketplace
-- [ ] Add support for custom visualizations
+- [x] Add support for custom visualizations - ✅ **COMPLETED** - Implemented HeatmapWidget component with auto-field detection, responsive design, and configuration options
 
 ### 3. Enterprise Features
 

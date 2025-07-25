@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DashboardWidget } from '@/api/dashboard';
 import { logSearchApi } from '@/api/logSearch';
-import { BarChart3, PieChart, Table, Activity, AlertCircle, LineChart, TrendingUp, ScatterChart, RefreshCw } from 'lucide-react';
+import { BarChart3, PieChart, Table, Activity, AlertCircle, LineChart, TrendingUp, ScatterChart, RefreshCw, Grid } from 'lucide-react';
 import { getWidgetUpdateClient } from '@/utils/sseClient';
 import { useSwipeable } from 'react-swipeable';
 
@@ -13,6 +13,7 @@ import MetricWidget from './widgets/MetricWidget';
 import LineChartWidget from './widgets/LineChartWidget';
 import AreaChartWidget from './widgets/AreaChartWidget';
 import ScatterPlotWidget from './widgets/ScatterPlotWidget';
+import HeatmapWidget from './widgets/HeatmapWidget';
 
 interface WidgetRendererProps {
   widget: DashboardWidget;
@@ -149,6 +150,8 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
         return <TrendingUp className="h-4 w-4" />;
       case 'scatter':
         return <ScatterChart className="h-4 w-4" />;
+      case 'heatmap':
+        return <Grid className="h-4 w-4" />;
       default:
         return <BarChart3 className="h-4 w-4" />;
     }
@@ -198,6 +201,8 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
         return <AreaChartWidget data={widgetData.data} widget={widget} />;
       case 'scatter':
         return <ScatterPlotWidget data={widgetData.data} widget={widget} />;
+      case 'heatmap':
+        return <HeatmapWidget data={widgetData.data} widget={widget} />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

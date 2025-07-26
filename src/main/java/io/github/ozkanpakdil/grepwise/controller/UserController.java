@@ -198,6 +198,7 @@ public class UserController {
             user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
             user.setFirstName(userRequest.getFirstName());
             user.setLastName(userRequest.getLastName());
+            user.setTenantId(userRequest.getTenantId());
             
             // Add roles if provided
             if (userRequest.getRoleIds() != null && !userRequest.getRoleIds().isEmpty()) {
@@ -358,6 +359,10 @@ public class UserController {
             
             if (userRequest.getLastName() != null) {
                 existingUser.setLastName(userRequest.getLastName());
+            }
+            
+            if (userRequest.getTenantId() != null) {
+                existingUser.setTenantId(userRequest.getTenantId());
             }
             
             // Update roles if provided
@@ -566,6 +571,7 @@ public class UserController {
         response.setLastName(user.getLastName());
         response.setRoleIds(user.getRoles().stream().map(Role::getId).collect(Collectors.toList()));
         response.setRoleNames(user.getRoleNames());
+        response.setTenantId(user.getTenantId());
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         response.setEnabled(user.isEnabled());
@@ -583,6 +589,7 @@ public class UserController {
         private String lastName;
         private List<String> roleIds;
         private Boolean enabled;
+        private String tenantId;
 
         // Getters and setters
         public String getUsername() { return username; }
@@ -605,6 +612,9 @@ public class UserController {
 
         public Boolean getEnabled() { return enabled; }
         public void setEnabled(Boolean enabled) { this.enabled = enabled; }
+        
+        public String getTenantId() { return tenantId; }
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     }
     
     /**
@@ -618,6 +628,7 @@ public class UserController {
         private String lastName;
         private List<String> roleIds;
         private List<String> roleNames;
+        private String tenantId;
         private long createdAt;
         private long updatedAt;
         private boolean enabled;
@@ -643,6 +654,9 @@ public class UserController {
 
         public List<String> getRoleNames() { return roleNames; }
         public void setRoleNames(List<String> roleNames) { this.roleNames = roleNames; }
+        
+        public String getTenantId() { return tenantId; }
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
         public long getCreatedAt() { return createdAt; }
         public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }

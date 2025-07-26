@@ -16,6 +16,7 @@ public class User {
     private String firstName;
     private String lastName;
     private List<Role> roles;
+    private String tenantId; // Reference to the tenant this user belongs to
     private long createdAt;
     private long updatedAt;
     private boolean enabled;
@@ -25,7 +26,7 @@ public class User {
         this.enabled = true;
     }
 
-    public User(String id, String username, String email, String password, String firstName, String lastName, List<Role> roles, long createdAt, long updatedAt, boolean enabled) {
+    public User(String id, String username, String email, String password, String firstName, String lastName, List<Role> roles, String tenantId, long createdAt, long updatedAt, boolean enabled) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -33,9 +34,17 @@ public class User {
         this.firstName = firstName;
         this.lastName = lastName;
         this.roles = roles != null ? roles : new ArrayList<>();
+        this.tenantId = tenantId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.enabled = enabled;
+    }
+    
+    /**
+     * Constructor without tenantId for backward compatibility.
+     */
+    public User(String id, String username, String email, String password, String firstName, String lastName, List<Role> roles, long createdAt, long updatedAt, boolean enabled) {
+        this(id, username, email, password, firstName, lastName, roles, null, createdAt, updatedAt, enabled);
     }
 
     public String getId() {
@@ -84,6 +93,24 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    /**
+     * Get the tenant ID this user belongs to.
+     *
+     * @return The tenant ID
+     */
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    /**
+     * Set the tenant ID this user belongs to.
+     *
+     * @param tenantId The tenant ID
+     */
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public List<Role> getRoles() {
@@ -189,12 +216,13 @@ public class User {
                 Objects.equals(password, user.password) &&
                 Objects.equals(firstName, user.firstName) &&
                 Objects.equals(lastName, user.lastName) &&
+                Objects.equals(tenantId, user.tenantId) &&
                 Objects.equals(roles, user.roles);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, username, email, password, firstName, lastName, roles, createdAt, updatedAt, enabled);
+        return Objects.hash(id, username, email, password, firstName, lastName, roles, tenantId, createdAt, updatedAt, enabled);
     }
 
     @Override
@@ -207,6 +235,7 @@ public class User {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", roles=" + roles +
+                ", tenantId='" + tenantId + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 ", enabled=" + enabled +

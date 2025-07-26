@@ -61,3 +61,4 @@ out/
 /*.log
 /frontend/dist/*
 /logs/*.gz
+logs/app.log

@@ -664,10 +664,12 @@ public class LuceneService {
                 indexWriter.addDocument(doc);
                 
                 // Broadcast log update for real-time notifications
-                try {
-                    realTimeUpdateService.broadcastLogUpdate(logEntry);
-                } catch (Exception e) {
-                    logger.warn("Failed to broadcast log update: {}", e.getMessage());
+                if (realTimeUpdateService != null) {
+                    try {
+                        realTimeUpdateService.broadcastLogUpdate(logEntry);
+                    } catch (Exception e) {
+                        logger.warn("Failed to broadcast log update: {}", e.getMessage());
+                    }
                 }
             }
             indexWriter.commit();

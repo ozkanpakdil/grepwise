@@ -67,7 +67,7 @@ public class LogBufferService {
         buffer.add(logEntry);
         int currentSize = bufferSize.incrementAndGet();
         
-        logger.debug("Added log entry to buffer. Current buffer size: {}", currentSize);
+        logger.trace("Added log entry to buffer. Current buffer size: {}", currentSize);
         
         // If buffer is full, flush it
         if (currentSize >= maxBufferSize) {

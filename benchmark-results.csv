@@ -63,3 +63,11 @@ Timestamp,Test,BatchSize,Mode,IngestionTime(ms),LogsPerSecond,CPUUsage(%),HeapMe
 2025-07-20 14:40:08,MediumBatch,1000,Buffered,1799,555.86,39.74,-2.18,2.00
 2025-07-20 14:40:18,LargeBatch,5000,Direct,4913,1017.71,43.69,52.62,3.33
 2025-07-20 14:40:18,LargeBatch,5000,Buffered,11267,443.77,37.04,-26.02,11.30
+2025-07-26 17:51:33,ConcurrentIngestion,1000,Direct,1509,662.69,49.44,-41.42,12.44
+2025-07-26 17:51:33,ConcurrentIngestion,1000,Buffered,748,1336.90,40.73,-17.74,1.43
+2025-07-26 17:51:35,LargeBatch,5000,Direct,601,8319.47,52.32,10.65,5.34
+2025-07-26 17:51:35,LargeBatch,5000,Buffered,1846,2708.56,45.71,48.85,2.13
+2025-07-26 17:51:35,SmallBatch,100,Direct,217,460.83,38.70,-55.87,0.51
+2025-07-26 17:51:35,SmallBatch,100,Buffered,0,Infinity,NaN,0.00,0.00
+2025-07-26 17:51:36,MediumBatch,1000,Direct,568,1760.56,39.54,-27.87,1.53
+2025-07-26 17:51:36,MediumBatch,1000,Buffered,657,1522.07,42.51,12.84,0.15

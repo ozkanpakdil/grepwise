@@ -238,7 +238,7 @@ public class LogScannerService {
     private LogEntry parseLogLine(String line, String source) {
         // First, check if this is an Nginx log format
         if (nginxLogParser.isNginxLogFormat(line)) {
-            logger.debug("Detected Nginx log format: {}", line);
+            logger.trace("Detected Nginx log format: {}", line);
             LogEntry nginxLogEntry = nginxLogParser.parseNginxLogLine(line, source);
             if (nginxLogEntry != null) {
                 return nginxLogEntry;
@@ -247,7 +247,7 @@ public class LogScannerService {
         
         // Next, check if this is an Apache log format
         if (apacheLogParser.isApacheLogFormat(line)) {
-            logger.debug("Detected Apache log format: {}", line);
+            logger.trace("Detected Apache log format: {}", line);
             LogEntry apacheLogEntry = apacheLogParser.parseApacheLogLine(line, source);
             if (apacheLogEntry != null) {
                 return apacheLogEntry;

@@ -67,6 +67,15 @@ public class LogScannerTestConfig {
     }
 
     /**
+     * Provides a mock implementation of LogPatternRecognitionService for tests.
+     */
+    @Bean
+    @Primary
+    public LogPatternRecognitionService logPatternRecognitionService() {
+        return Mockito.mock(LogPatternRecognitionService.class);
+    }
+
+    /**
      * Provides a real implementation of LogBufferService for tests.
      */
     @Bean
@@ -86,12 +95,15 @@ public class LogScannerTestConfig {
             LogBufferService logBufferService,
             NginxLogParser nginxLogParser,
             ApacheLogParser apacheLogParser,
-            LogPatternRecognitionService patternRecognitionService) {
+            LogPatternRecognitionService patternRecognitionService,
+            RealTimeUpdateService realTimeUpdateService) {
         return new LogScannerService(
                 configRepository,
                 luceneService,
                 logBufferService,
                 nginxLogParser,
-                apacheLogParser,patternRecognitionService, new RealTimeUpdateService());
+                apacheLogParser,
+                patternRecognitionService,
+                realTimeUpdateService);
     }
 }

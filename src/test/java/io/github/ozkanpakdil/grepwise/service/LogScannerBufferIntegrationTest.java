@@ -5,13 +5,15 @@ import io.github.ozkanpakdil.grepwise.repository.LogDirectoryConfigRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
@@ -25,25 +27,30 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true"})
-@org.springframework.test.context.ActiveProfiles("test")
-@org.springframework.context.annotation.Import({
-    io.github.ozkanpakdil.grepwise.config.TestConfig.class,
-    io.github.ozkanpakdil.grepwise.config.LogScannerTestConfig.class
-})
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class LogScannerBufferIntegrationTest {
 
-    @Autowired
     private LogScannerService logScannerService;
-
-    @SpyBean
     private LogBufferService logBufferService;
 
-    @MockBean
+    @Mock
     private LogDirectoryConfigRepository configRepository;
 
-    @MockBean
+    @Mock
     private LuceneService luceneService;
+    
+    @Mock
+    private NginxLogParser nginxLogParser;
+    
+    @Mock
+    private ApacheLogParser apacheLogParser;
+    
+    @Mock
+    private LogPatternRecognitionService patternRecognitionService;
+    
+    @Mock
+    private RealTimeUpdateService realTimeUpdateService;
 
     @Captor
     private ArgumentCaptor<List<Object>> logEntriesCaptor;
@@ -56,6 +63,20 @@ public class LogScannerBufferIntegrationTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        // Initialize LogBufferService with LuceneService
+        logBufferService = spy(new LogBufferService(luceneService));
+        
+        // Initialize LogScannerService with all dependencies
+        logScannerService = new LogScannerService(
+            configRepository,
+            luceneService,
+            logBufferService,
+            nginxLogParser,
+            apacheLogParser,
+            patternRecognitionService,
+            realTimeUpdateService
+        );
+        
         // Create a temporary log file
         logFile = new File(tempDir.toFile(), "test.log");
         try (FileWriter writer = new FileWriter(logFile)) {

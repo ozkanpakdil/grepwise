@@ -59,11 +59,20 @@ public class PluginRegistry {
         // Register plugin with all its interfaces and superclasses
         registerPluginTypes(plugin);
         
+        // Initialize the plugin
+        try {
+            plugin.initialize();
+        } catch (Exception e) {
+            logger.error("Failed to initialize plugin {} ({}): {}", plugin.getName(), pluginId, e.getMessage(), e);
+            // Keep the plugin registered even if initialization fails
+        }
+        
         return true;
     }
     
     /**
      * Unregisters a plugin from the registry.
+     * This will stop the plugin if it is running.
      *
      * @param pluginId The ID of the plugin to unregister
      * @return true if unregistration was successful, false otherwise
@@ -81,6 +90,14 @@ public class PluginRegistry {
         }
         
         logger.info("Unregistering plugin: {} ({})", plugin.getName(), pluginId);
+        
+        // Stop the plugin if it's running
+        try {
+            plugin.stop();
+        } catch (Exception e) {
+            logger.error("Failed to stop plugin {} ({}): {}", plugin.getName(), pluginId, e.getMessage(), e);
+            // Continue with unregistration even if stopping fails
+        }
         
         // Remove plugin from all type maps
         for (Map.Entry<Class<?>, Set<String>> entry : pluginsByType.entrySet()) {
@@ -272,5 +289,58 @@ public class PluginRegistry {
         }
         
         return types;
+    }
+
+    /**
+     * Returns a plugin by its ID.
+     *
+     * @param pluginId The ID of the plugin to retrieve
+     * @return The plugin, or null if not found
+     */
+    public Plugin getPlugin(String pluginId) {
+        return getPluginById(pluginId).orElse(null);
+    }
+
+    /**
+     * Returns all plugins of the specified type.
+     *
+     * @param pluginType The class or interface that plugins should implement
+     * @param <T> The type of plugin to retrieve
+     * @return List of plugins of the specified type
+     */
+    public <T extends Plugin> List<T> getPlugins(Class<T> pluginType) {
+        return getPluginsByType(pluginType);
+    }
+
+    /**
+     * Starts all plugins.
+     * All plugins will be started regardless of their enabled status.
+     */
+    public void startAllPlugins() {
+        logger.info("Starting all plugins");
+        getAllPlugins().forEach(plugin -> {
+            try {
+                logger.info("Starting plugin: {} ({})", plugin.getName(), plugin.getId());
+                plugin.start();
+            } catch (Exception e) {
+                logger.error("Error starting plugin: {} ({})", plugin.getName(), plugin.getId(), e);
+            }
+        });
+    }
+
+    /**
+     * Stops all plugins.
+     * All plugins will be stopped regardless of their enabled status.
+     */
+    public void stopAllPlugins() {
+        logger.info("Stopping all plugins");
+        getAllPlugins().forEach(plugin -> {
+            try {
+                logger.info("Stopping plugin: {} ({})", plugin.getName(), plugin.getId());
+                plugin.stop();
+            } catch (Exception e) {
+                logger.error("Error stopping plugin: {} ({})", plugin.getName(), plugin.getId(), e);
+            }
+        });
     }
 }

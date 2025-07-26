@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import java.util.Map;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -36,20 +37,26 @@ public class LogScannerService {
     private final LogBufferService logBufferService;
     private final NginxLogParser nginxLogParser;
     private final ApacheLogParser apacheLogParser;
+    private final LogPatternRecognitionService patternRecognitionService;
     
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
+    
+    @Value("${grepwise.log-scanner.analyze-patterns:true}")
+    private boolean analyzePatterns;
 
     public LogScannerService(LogDirectoryConfigRepository configRepository, 
                             LuceneService luceneService,
                             LogBufferService logBufferService,
                             NginxLogParser nginxLogParser,
-                            ApacheLogParser apacheLogParser) {
+                            ApacheLogParser apacheLogParser,
+                            LogPatternRecognitionService patternRecognitionService, RealTimeUpdateService realTimeUpdateService) {
         this.configRepository = configRepository;
         this.luceneService = luceneService;
         this.logBufferService = logBufferService;
         this.nginxLogParser = nginxLogParser;
         this.apacheLogParser = apacheLogParser;
+        this.patternRecognitionService = patternRecognitionService;
         logger.info("LogScannerService initialized");
     }
 
@@ -106,14 +113,32 @@ public class LogScannerService {
         }
 
         int totalProcessed = 0;
+        List<LogEntry> processedEntries = new ArrayList<>();
+        
         for (Path logFile : logFiles) {
             try {
                 int processed = processLogFile(logFile.toFile());
                 totalProcessed += processed;
                 logger.info("Processed {} log entries from file: {}", processed, logFile);
+                
+                // If pattern analysis is enabled, collect log entries for analysis
+                if (analyzePatterns && processed > 0) {
+                    try {
+                        // Get the most recent log entries from this file
+                        List<LogEntry> entries = luceneService.findBySource(logFile.getFileName().toString());
+                        processedEntries.addAll(entries);
+                    } catch (IOException e) {
+                        logger.error("Error retrieving log entries for pattern analysis: {}", logFile, e);
+                    }
+                }
             } catch (Exception e) {
                 logger.error("Error processing log file: {}", logFile, e);
             }
+        }
+        
+        // Analyze patterns in the processed log entries
+        if (analyzePatterns && !processedEntries.isEmpty()) {
+            analyzeLogPatterns(processedEntries);
         }
 
         return totalProcessed;
@@ -360,5 +385,33 @@ public class LogScannerService {
         logger.info("Manually triggering scan of all log directories");
         scanAllDirectories();
         return configRepository.count();
+    }
+    
+    /**
+     * Analyze patterns in a batch of log entries.
+     * This method uses the LogPatternRecognitionService to identify common patterns
+     * in the log entries and logs the results.
+     *
+     * @param logEntries The log entries to analyze
+     */
+    private void analyzeLogPatterns(List<LogEntry> logEntries) {
+        if (!analyzePatterns || logEntries.isEmpty()) {
+            return;
+        }
+        
+        try {
+            logger.info("Analyzing patterns in {} log entries", logEntries.size());
+            
+            // Get the most common patterns (top 10)
+            Map<String, Integer> commonPatterns = patternRecognitionService.getMostCommonPatterns(null, null, 10);
+            
+            // Log the results
+            logger.info("Found {} distinct log patterns", commonPatterns.size());
+            for (Map.Entry<String, Integer> entry : commonPatterns.entrySet()) {
+                logger.info("Pattern: '{}' - Count: {}", entry.getKey(), entry.getValue());
+            }
+        } catch (Exception e) {
+            logger.error("Error analyzing log patterns", e);
+        }
     }
 }

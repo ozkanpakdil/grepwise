@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.config;
 import io.github.ozkanpakdil.grepwise.repository.LogDirectoryConfigRepository;
 import io.github.ozkanpakdil.grepwise.service.ApacheLogParser;
 import io.github.ozkanpakdil.grepwise.service.LogBufferService;
+import io.github.ozkanpakdil.grepwise.service.LogPatternRecognitionService;
 import io.github.ozkanpakdil.grepwise.service.LogScannerService;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
 import io.github.ozkanpakdil.grepwise.service.NginxLogParser;
@@ -84,12 +85,13 @@ public class LogScannerTestConfig {
             LuceneService luceneService,
             LogBufferService logBufferService,
             NginxLogParser nginxLogParser,
-            ApacheLogParser apacheLogParser) {
+            ApacheLogParser apacheLogParser,
+            LogPatternRecognitionService patternRecognitionService) {
         return new LogScannerService(
                 configRepository,
                 luceneService,
                 logBufferService,
                 nginxLogParser,
-                apacheLogParser);
+                apacheLogParser,patternRecognitionService, new RealTimeUpdateService());
     }
 }

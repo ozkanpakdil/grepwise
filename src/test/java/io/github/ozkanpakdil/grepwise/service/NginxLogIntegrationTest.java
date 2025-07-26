@@ -54,7 +54,8 @@ public class NginxLogIntegrationTest {
         apacheLogParser = new ApacheLogParser();
 
         // Create LogScannerService with mocked dependencies
-        logScannerService = new LogScannerService(configRepository, luceneService, logBufferService, nginxLogParser, apacheLogParser);
+        logScannerService = new LogScannerService(configRepository, luceneService, logBufferService, nginxLogParser, apacheLogParser,
+                new LogPatternRecognitionService(), new RealTimeUpdateService());
 
         // Create temporary directory for test log files
         tempDir = Files.createTempDirectory("nginx-test-logs");

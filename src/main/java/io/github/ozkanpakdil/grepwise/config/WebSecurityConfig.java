@@ -3,7 +3,6 @@ package io.github.ozkanpakdil.grepwise.config;
 import io.github.ozkanpakdil.grepwise.filter.RateLimitingFilter;
 import io.github.ozkanpakdil.grepwise.security.JwtAuthenticationFilter;
 import io.github.ozkanpakdil.grepwise.service.TokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,13 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -29,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Security configuration for the application.
@@ -41,7 +35,7 @@ public class WebSecurityConfig {
     private final TokenService tokenService;
     
     private final RateLimitingFilter rateLimitingFilter;
-    
+
     private final LdapConfig ldapConfig;
     
     private final LdapAuthenticationProvider ldapAuthenticationProvider;
@@ -62,7 +56,7 @@ public class WebSecurityConfig {
      * @return The authentication manager
      */
     @Bean
-    @ConditionalOnProperty(name = {"security.enabled", "auth.manager.enabled"}, havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(name = {"security.enabled", "auth.manager.enabled"}, havingValue = "true")
     public AuthenticationManager authenticationManager() {
         if (ldapConfig != null && ldapConfig.isLdapEnabled() && ldapAuthenticationProvider != null) {
             return new ProviderManager(Collections.singletonList(ldapAuthenticationProvider));
@@ -148,7 +142,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

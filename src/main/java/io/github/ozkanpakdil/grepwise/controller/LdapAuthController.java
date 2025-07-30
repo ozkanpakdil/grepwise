@@ -10,24 +10,20 @@ import io.github.ozkanpakdil.grepwise.service.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.filter.EqualsFilter;
-import org.springframework.ldap.filter.Filter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/auth/ldap")
+@ConditionalOnProperty(name = {"grepwise.ldap.enabled"}, havingValue = "true")
 public class LdapAuthController {
     private static final Logger logger = LoggerFactory.getLogger(LdapAuthController.class);
 

@@ -5,13 +5,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +36,7 @@ import java.util.Properties;
 @RestController
 @RequestMapping("/api/settings/ldap")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+@ConditionalOnProperty(name = {"grepwise.ldap.enabled"}, havingValue = "true")
 public class LdapSettingsController {
     private static final Logger logger = LoggerFactory.getLogger(LdapSettingsController.class);
 

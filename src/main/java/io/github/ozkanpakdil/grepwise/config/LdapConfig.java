@@ -1,6 +1,7 @@
 package io.github.ozkanpakdil.grepwise.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.ldap.core.LdapTemplate;
@@ -79,6 +80,7 @@ public class LdapConfig {
      * @return The LDAP template
      */
     @Bean
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public LdapTemplate ldapTemplate() {
         LdapContextSource contextSource = new LdapContextSource();
         contextSource.setUrl(ldapUrl);

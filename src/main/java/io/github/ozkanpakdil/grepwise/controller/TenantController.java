@@ -1,6 +1,5 @@
 package io.github.ozkanpakdil.grepwise.controller;
 
-import io.github.ozkanpakdil.grepwise.annotation.ApiVersion;
 import io.github.ozkanpakdil.grepwise.model.Tenant;
 import io.github.ozkanpakdil.grepwise.service.TenantService;
 import org.slf4j.Logger;
@@ -8,7 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,22 +41,6 @@ public class TenantController {
      */
     @GetMapping
     public ResponseEntity<List<TenantResponse>> getAllTenants() {
-        List<Tenant> tenants = tenantService.getAllTenants();
-        List<TenantResponse> response = tenants.stream()
-                .map(this::convertToTenantResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Get all tenants (API v2).
-     * This version returns more detailed information.
-     *
-     * @return A list of all tenants with detailed information
-     */
-    @GetMapping("/v2")
-    @ApiVersion(2)
-    public ResponseEntity<List<TenantResponse>> getAllTenantsV2() {
         List<Tenant> tenants = tenantService.getAllTenants();
         List<TenantResponse> response = tenants.stream()
                 .map(this::convertToTenantResponse)

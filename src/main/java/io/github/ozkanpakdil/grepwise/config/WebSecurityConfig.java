@@ -33,15 +33,15 @@ import java.util.List;
 public class WebSecurityConfig {
 
     private final TokenService tokenService;
-    
+
     private final RateLimitingFilter rateLimitingFilter;
 
     private final LdapConfig ldapConfig;
-    
+
     private final LdapAuthenticationProvider ldapAuthenticationProvider;
 
     public WebSecurityConfig(TokenService tokenService, RateLimitingFilter rateLimitingFilter, LdapConfig ldapConfig,
-            LdapAuthenticationProvider ldapAuthenticationProvider) {
+                             LdapAuthenticationProvider ldapAuthenticationProvider) {
         this.tokenService = tokenService;
         this.rateLimitingFilter = rateLimitingFilter;
         this.ldapConfig = ldapConfig;
@@ -79,57 +79,58 @@ public class WebSecurityConfig {
         if (ldapConfig != null && ldapConfig.isLdapEnabled()) {
             http.authenticationManager(authenticationManager());
         }
-        
+
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Add rate limiting filter before authentication filter
-            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(authorize -> authorize
-                // Add LDAP login endpoint if LDAP is enabled
-                .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ? 
-                    "/api/auth/ldap/login" : "/api/auth/non-existent-path").permitAll()
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/logs/search").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/logs/count").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/logs/fields").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/logs/sources").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/logs/levels").permitAll()
-                
-                // User management endpoints - require admin role
-                .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/users/role/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/api/users/permission/**").hasAuthority("ROLE_ADMIN")
-                
-                // Role management endpoints - require admin role
-                .requestMatchers("/api/roles/**").hasAuthority("ROLE_ADMIN")
-                
-                // Dashboard endpoints - require appropriate permissions
-                .requestMatchers(HttpMethod.GET, "/api/dashboards").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/dashboards").hasAuthority("dashboard:create")
-                .requestMatchers(HttpMethod.PUT, "/api/dashboards/**").hasAuthority("dashboard:edit")
-                .requestMatchers(HttpMethod.DELETE, "/api/dashboards/**").hasAuthority("dashboard:delete")
-                .requestMatchers("/api/dashboards/*/share").hasAuthority("dashboard:share")
-                
-                // Alarm endpoints - require appropriate permissions
-                .requestMatchers(HttpMethod.GET, "/api/alarms").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/alarms").hasAuthority("alarm:create")
-                .requestMatchers(HttpMethod.PUT, "/api/alarms/**").hasAuthority("alarm:edit")
-                .requestMatchers(HttpMethod.DELETE, "/api/alarms/**").hasAuthority("alarm:delete")
-                .requestMatchers("/api/alarms/*/acknowledge").hasAuthority("alarm:acknowledge")
-                
-                // Settings endpoints - require admin role
-                .requestMatchers("/api/settings/**").hasAuthority("ROLE_ADMIN")
-                
-                // Require authentication for all other endpoints
-                .anyRequest().authenticated()
-            );
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Add rate limiting filter before authentication filter
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(authorize -> authorize
+                        // Add LDAP login endpoint if LDAP is enabled
+                        .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ?
+                                "/api/auth/ldap/login" : "/api/auth/non-existent-path").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/count").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/fields").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/sources").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/levels").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/time-aggregation").permitAll()
+
+                        // User management endpoints - require admin role
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/users/role/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/users/permission/**").hasAuthority("ROLE_ADMIN")
+
+                        // Role management endpoints - require admin role
+                        .requestMatchers("/api/roles/**").hasAuthority("ROLE_ADMIN")
+
+                        // Dashboard endpoints - require appropriate permissions
+                        .requestMatchers(HttpMethod.GET, "/api/dashboards").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/dashboards").hasAuthority("dashboard:create")
+                        .requestMatchers(HttpMethod.PUT, "/api/dashboards/**").hasAuthority("dashboard:edit")
+                        .requestMatchers(HttpMethod.DELETE, "/api/dashboards/**").hasAuthority("dashboard:delete")
+                        .requestMatchers("/api/dashboards/*/share").hasAuthority("dashboard:share")
+
+                        // Alarm endpoints - require appropriate permissions
+                        .requestMatchers(HttpMethod.GET, "/api/alarms").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/alarms").hasAuthority("alarm:create")
+                        .requestMatchers(HttpMethod.PUT, "/api/alarms/**").hasAuthority("alarm:edit")
+                        .requestMatchers(HttpMethod.DELETE, "/api/alarms/**").hasAuthority("alarm:delete")
+                        .requestMatchers("/api/alarms/*/acknowledge").hasAuthority("alarm:acknowledge")
+
+                        // Settings endpoints - require admin role
+                        .requestMatchers("/api/settings/**").hasAuthority("ROLE_ADMIN")
+
+                        // Require authentication for all other endpoints
+                        .anyRequest().authenticated()
+                );
 
         return http.build();
     }

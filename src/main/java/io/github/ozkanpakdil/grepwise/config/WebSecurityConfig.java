@@ -100,6 +100,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/logs/sources").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/levels").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/time-aggregation").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/histogram").permitAll()
 
                         // User management endpoints - require admin role
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ROLE_ADMIN")

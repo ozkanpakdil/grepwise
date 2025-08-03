@@ -101,6 +101,19 @@ export interface TimeSlot {
   count: number;
 }
 
+export interface HistogramParams {
+  query?: string;
+  isRegex?: boolean;
+  from: number;
+  to: number;
+  interval: string; // 1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 24h
+}
+
+export interface HistogramData {
+  timestamp: string;
+  count: number;
+}
+
 export const getTimeAggregation = async (params?: TimeAggregationParams): Promise<TimeSlot[]> => {
   // Build the URL with query parameters
   let url = `${API_URL}/time-aggregation`;
@@ -138,6 +151,29 @@ export const getTimeAggregation = async (params?: TimeAggregationParams): Promis
     time: parseInt(time),
     count
   }));
+};
+
+export const getHistogram = async (params: HistogramParams): Promise<HistogramData[]> => {
+  // Build the URL with query parameters
+  let url = `${API_URL}/histogram`;
+  const queryParams: string[] = [];
+
+  if (params.query) {
+    queryParams.push(`query=${encodeURIComponent(params.query)}`);
+  }
+  if (params.isRegex) {
+    queryParams.push(`isRegex=true`);
+  }
+  queryParams.push(`from=${params.from}`);
+  queryParams.push(`to=${params.to}`);
+  queryParams.push(`interval=${params.interval}`);
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
+  }
+
+  const response = await axios.get<HistogramData[]>(url);
+  return response.data;
 };
 
 // API object for dashboard widgets

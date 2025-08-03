@@ -428,6 +428,148 @@ public class LogSearchController {
     }
     
     /**
+     * Get histogram data for logs.
+     * This endpoint provides time-based histogram data for logs matching the given query and time range.
+     * It groups logs into time intervals and returns the count for each interval.
+     *
+     * @param query Search query string
+     * @param isRegex Whether to treat the query as a regular expression
+     * @param from Start time in milliseconds since epoch
+     * @param to End time in milliseconds since epoch
+     * @param interval Time interval (e.g., 1m, 5m, 1h)
+     * @return List of timestamp-count pairs
+     */
+    @Operation(
+        summary = "Get log histogram data",
+        description = "Provides time-based histogram data for logs matching the given query and time range"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Successful histogram generation",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Invalid parameters",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error",
+            content = @Content
+        )
+    })
+    @GetMapping("/histogram")
+    public ResponseEntity<List<Map<String, Object>>> getLogHistogram(
+            @Parameter(description = "Search query string") 
+            @RequestParam(required = false) String query,
+            
+            @Parameter(description = "Whether to treat the query as a regular expression") 
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            
+            @Parameter(description = "Start time in milliseconds since epoch") 
+            @RequestParam(required = true) Long from,
+            
+            @Parameter(description = "End time in milliseconds since epoch") 
+            @RequestParam(required = true) Long to,
+            
+            @Parameter(description = "Time interval (1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 24h)") 
+            @RequestParam(required = true) String interval) {
+
+        // Validate parameters
+        if (from >= to) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Parse interval string to milliseconds
+        long intervalMs;
+        switch (interval) {
+            case "1m":
+                intervalMs = 60 * 1000; // 1 minute
+                break;
+            case "5m":
+                intervalMs = 5 * 60 * 1000; // 5 minutes
+                break;
+            case "15m":
+                intervalMs = 15 * 60 * 1000; // 15 minutes
+                break;
+            case "30m":
+                intervalMs = 30 * 60 * 1000; // 30 minutes
+                break;
+            case "1h":
+                intervalMs = 60 * 60 * 1000; // 1 hour
+                break;
+            case "3h":
+                intervalMs = 3 * 60 * 60 * 1000; // 3 hours
+                break;
+            case "6h":
+                intervalMs = 6 * 60 * 60 * 1000; // 6 hours
+                break;
+            case "12h":
+                intervalMs = 12 * 60 * 60 * 1000; // 12 hours
+                break;
+            case "24h":
+                intervalMs = 24 * 60 * 60 * 1000; // 24 hours
+                break;
+            default:
+                return ResponseEntity.badRequest().build();
+        }
+        
+        // Get logs matching the query and time range
+        List<LogEntry> logs;
+        try {
+            logs = luceneService.search(query, isRegex, from, to);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+        
+        // Calculate number of intervals
+        long timeRangeMs = to - from;
+        int intervals = (int) Math.ceil((double) timeRangeMs / intervalMs);
+        
+        // Initialize the result map with all intervals (even empty ones)
+        Map<Long, Integer> countsByTimestamp = new TreeMap<>();
+        for (int i = 0; i < intervals; i++) {
+            long intervalStartTime = from + (i * intervalMs);
+            countsByTimestamp.put(intervalStartTime, 0);
+        }
+        
+        // Count logs in each interval
+        for (LogEntry log : logs) {
+            // Use record time if available, otherwise use entry time
+            long timeToCheck = log.recordTime() != null ? log.recordTime() : log.timestamp();
+            
+            // Find which interval this log belongs to
+            int intervalIndex = (int) ((timeToCheck - from) / intervalMs);
+            
+            // Ensure the interval index is valid
+            if (intervalIndex >= 0 && intervalIndex < intervals) {
+                long intervalStartTime = from + (intervalIndex * intervalMs);
+                countsByTimestamp.put(intervalStartTime, countsByTimestamp.get(intervalStartTime) + 1);
+            }
+        }
+        
+        // Convert to the required output format
+        List<Map<String, Object>> result = countsByTimestamp.entrySet().stream()
+            .map(entry -> {
+                Map<String, Object> item = new java.util.HashMap<>();
+                // Format timestamp as ISO-8601 string
+                String timestamp = Instant.ofEpochMilli(entry.getKey())
+                    .atZone(ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                item.put("timestamp", timestamp);
+                item.put("count", entry.getValue());
+                return item;
+            })
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Get search cache statistics.
      * This endpoint provides information about the search cache performance,
      * including cache size, hit ratio, and other metrics.

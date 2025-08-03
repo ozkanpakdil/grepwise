@@ -1,10 +1,12 @@
-import {useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useToast} from '@/components/ui/use-toast';
 import {Button} from '@/components/ui/button';
 import {
     exportLogsAsCsv,
     exportLogsAsJson,
     getTimeAggregation,
+    getHistogram,
+    HistogramData,
     LogEntry,
     searchLogs,
     SearchParams,
@@ -37,9 +39,35 @@ export default function SearchPage() {
     const [searchResults, setSearchResults] = useState<LogEntry[]>([]);
     const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
     const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+    const [histogramData, setHistogramData] = useState<HistogramData[]>([]);
     const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
     // Add state for editor loading
     const [isEditorLoading, setIsEditorLoading] = useState(true);
+    
+    // Auto-refresh settings
+    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+    const [autoRefreshInterval, setAutoRefreshInterval] = useState<string>("10s");
+    const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Effect to handle auto-refresh changes and cleanup
+    useEffect(() => {
+        // Setup auto-refresh when enabled
+        if (autoRefreshEnabled) {
+            setupAutoRefresh();
+        } else if (autoRefreshTimerRef.current) {
+            // Clear timer when disabled
+            clearInterval(autoRefreshTimerRef.current);
+            autoRefreshTimerRef.current = null;
+        }
+        
+        // Cleanup function to clear timer when component unmounts
+        return () => {
+            if (autoRefreshTimerRef.current) {
+                clearInterval(autoRefreshTimerRef.current);
+                autoRefreshTimerRef.current = null;
+            }
+        };
+    }, [autoRefreshEnabled, autoRefreshInterval]);
 
     // Sorting state
     const [sortColumn, setSortColumn] = useState<SortColumn>(null);
@@ -144,24 +172,71 @@ export default function SearchPage() {
         setIsLoadingTimeSlots(true);
 
         try {
+            // Calculate time range
+            let startTime: number;
+            let endTime: number;
+            
+            if (timeRange === 'custom' && customStartTime && customEndTime) {
+                startTime = customStartTime;
+                endTime = customEndTime;
+            } else {
+                endTime = Date.now();
+                
+                switch (timeRange) {
+                    case '1h':
+                        startTime = endTime - (60 * 60 * 1000);
+                        break;
+                    case '3h':
+                        startTime = endTime - (3 * 60 * 60 * 1000);
+                        break;
+                    case '12h':
+                        startTime = endTime - (12 * 60 * 60 * 1000);
+                        break;
+                    case '24h':
+                    default:
+                        startTime = endTime - (24 * 60 * 60 * 1000);
+                        break;
+                }
+            }
+
             // Build search parameters
             const searchParams: SearchParams = {
                 query: query.trim(),
                 isRegex,
                 timeRange: timeRange === 'custom' ? undefined : timeRange,
+                startTime,
+                endTime
             };
-
-            // Add custom time range if selected
-            if (timeRange === 'custom') {
-                searchParams.startTime = customStartTime;
-                searchParams.endTime = customEndTime;
-            }
 
             // Fetch logs
             const results = await searchLogs(searchParams);
             setSearchResults(results);
 
-            // Fetch time slots for the bar chart
+            // Determine appropriate interval based on time range
+            let interval: string;
+            const timeRangeMs = endTime - startTime;
+            
+            if (timeRangeMs <= 60 * 60 * 1000) { // 1 hour or less
+                interval = '1m';
+            } else if (timeRangeMs <= 3 * 60 * 60 * 1000) { // 3 hours or less
+                interval = '5m';
+            } else if (timeRangeMs <= 12 * 60 * 60 * 1000) { // 12 hours or less
+                interval = '15m';
+            } else { // 24 hours or less
+                interval = '30m';
+            }
+
+            // Fetch histogram data
+            const histogramResult = await getHistogram({
+                query: query.trim(),
+                isRegex,
+                from: startTime,
+                to: endTime,
+                interval
+            });
+            setHistogramData(histogramResult);
+
+            // Also fetch time slots for backward compatibility
             const slots = await getTimeAggregation({
                 ...searchParams,
                 slots: timeRange === '24h' ? 24 : timeRange === '12h' ? 12 : timeRange === '3h' ? 6 : timeRange === '1h' ? 6 : 24
@@ -179,6 +254,9 @@ export default function SearchPage() {
                     description: `Found ${results.length} matching logs`,
                 });
             }
+            
+            // Setup auto-refresh if enabled
+            setupAutoRefresh();
         } catch (error) {
             toast({
                 title: 'Error',
@@ -189,6 +267,118 @@ export default function SearchPage() {
         } finally {
             setIsSearching(false);
             setIsLoadingTimeSlots(false);
+        }
+    };
+    
+    // Setup auto-refresh timer
+    const setupAutoRefresh = () => {
+        // Clear any existing timer
+        if (autoRefreshTimerRef.current) {
+            clearInterval(autoRefreshTimerRef.current);
+            autoRefreshTimerRef.current = null;
+        }
+        
+        // If auto-refresh is enabled, set up a new timer
+        if (autoRefreshEnabled) {
+            const intervalMs = autoRefreshInterval === '5s' ? 5000 : 
+                              autoRefreshInterval === '10s' ? 10000 : 
+                              autoRefreshInterval === '30s' ? 30000 : 10000;
+            
+            autoRefreshTimerRef.current = setInterval(() => {
+                refreshData();
+            }, intervalMs);
+        }
+    };
+    
+    // Refresh data without changing search parameters
+    const refreshData = async () => {
+        if (isSearching) return; // Don't refresh if already searching
+        
+        setIsSearching(true);
+        
+        try {
+            // Calculate time range
+            let startTime: number;
+            let endTime: number = Date.now();
+            
+            if (timeRange === 'custom' && customStartTime && customEndTime) {
+                // For custom range, keep the same range length but slide it to now
+                const rangeLength = customEndTime - customStartTime;
+                startTime = endTime - rangeLength;
+            } else {
+                switch (timeRange) {
+                    case '1h':
+                        startTime = endTime - (60 * 60 * 1000);
+                        break;
+                    case '3h':
+                        startTime = endTime - (3 * 60 * 60 * 1000);
+                        break;
+                    case '12h':
+                        startTime = endTime - (12 * 60 * 60 * 1000);
+                        break;
+                    case '24h':
+                    default:
+                        startTime = endTime - (24 * 60 * 60 * 1000);
+                        break;
+                }
+            }
+            
+            // Update custom time range if it was being used
+            if (timeRange === 'custom') {
+                setCustomStartTime(startTime);
+                setCustomEndTime(endTime);
+            }
+            
+            // Fetch new logs
+            const results = await searchLogs({
+                query: query.trim(),
+                isRegex,
+                startTime,
+                endTime
+            });
+            
+            // Determine appropriate interval based on time range
+            let interval: string;
+            const timeRangeMs = endTime - startTime;
+            
+            if (timeRangeMs <= 60 * 60 * 1000) { // 1 hour or less
+                interval = '1m';
+            } else if (timeRangeMs <= 3 * 60 * 60 * 1000) { // 3 hours or less
+                interval = '5m';
+            } else if (timeRangeMs <= 12 * 60 * 60 * 1000) { // 12 hours or less
+                interval = '15m';
+            } else { // 24 hours or less
+                interval = '30m';
+            }
+            
+            // Fetch new histogram data
+            const histogramResult = await getHistogram({
+                query: query.trim(),
+                isRegex,
+                from: startTime,
+                to: endTime,
+                interval
+            });
+            
+            // Update state with new data
+            setSearchResults(results);
+            setHistogramData(histogramResult);
+            
+            // Also update time slots for backward compatibility
+            const slots = await getTimeAggregation({
+                query: query.trim(),
+                isRegex,
+                startTime,
+                endTime,
+                slots: timeRange === '24h' ? 24 : timeRange === '12h' ? 12 : timeRange === '3h' ? 6 : timeRange === '1h' ? 6 : 24
+            });
+            setTimeSlots(slots);
+            
+            console.log('Auto-refreshed data at', new Date().toLocaleTimeString());
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            setIsSearching(false);
         }
     };
 
@@ -443,6 +633,36 @@ export default function SearchPage() {
                             <RefreshCw className="h-4 w-4" />
                         </Button>
                     </div>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center space-x-1">
+                            <Label htmlFor="autoRefresh" className="text-sm flex items-center">
+                                Auto-refresh
+                            </Label>
+                            <Select 
+                                value={autoRefreshEnabled ? autoRefreshInterval : "off"}
+                                onValueChange={(value) => {
+                                    if (value === "off") {
+                                        setAutoRefreshEnabled(false);
+                                    } else {
+                                        setAutoRefreshEnabled(true);
+                                        setAutoRefreshInterval(value);
+                                        // Trigger setup of auto-refresh
+                                        setupAutoRefresh();
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh">
+                                    <SelectValue placeholder="Off"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="off">Off</SelectItem>
+                                    <SelectItem value="5s">5s</SelectItem>
+                                    <SelectItem value="10s">10s</SelectItem>
+                                    <SelectItem value="30s">30s</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap gap-6">
@@ -478,14 +698,78 @@ export default function SearchPage() {
             </form>
 
             {/* Bar chart visualization */}
-            {timeSlots.length > 0 && !isLoadingTimeSlots ? (
+            {(histogramData.length > 0 || timeSlots.length > 0) && !isLoadingTimeSlots ? (
                 <div className="mt-6 mb-8 border border-input rounded-md p-4 bg-background">
-                    <h3 className="text-lg font-medium mb-4">Time Distribution</h3>
-                    <LogBarChart
-                        timeSlots={timeSlots}
-                        timeRange={timeRange}
-                        onTimeSlotClick={handleTimeSlotClick}
-                    />
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Time Distribution</h3>
+                        {autoRefreshEnabled && (
+                            <div className="text-xs text-muted-foreground flex items-center">
+                                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                Auto-refreshing every {autoRefreshInterval}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {histogramData.length > 0 ? (
+                        <div>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {/* Histogram data visualization */}
+                                <div className="w-full h-64 relative">
+                                    <div className="absolute inset-0 flex items-end">
+                                        {histogramData.map((item, index) => {
+                                            // Find the maximum count for normalization
+                                            const maxCount = Math.max(...histogramData.map(d => d.count));
+                                            // Calculate height percentage
+                                            const heightPercent = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                                            // Parse the timestamp
+                                            const timestamp = new Date(item.timestamp);
+                                            
+                                            return (
+                                                <div 
+                                                    key={index} 
+                                                    className="flex-1 flex flex-col items-center group"
+                                                    title={`${timestamp.toLocaleString()}: ${item.count} logs`}
+                                                >
+                                                    <div className="relative w-full">
+                                                        {/* Tooltip */}
+                                                        <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-background border rounded-md p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
+                                                            <div>{timestamp.toLocaleString()}</div>
+                                                            <div className="font-bold">{item.count} logs</div>
+                                                        </div>
+                                                        
+                                                        {/* Bar */}
+                                                        <div 
+                                                            className={`w-full ${heightPercent > 0 ? 'bg-primary/80 group-hover:bg-primary transition-colors' : ''}`}
+                                                            style={{ height: `${heightPercent}%` }}
+                                                        />
+                                                    </div>
+                                                    
+                                                    {/* Only show some x-axis labels to avoid overcrowding */}
+                                                    {(index === 0 || index === histogramData.length - 1 || index % Math.max(1, Math.floor(histogramData.length / 8)) === 0) && (
+                                                        <div className="text-xs text-muted-foreground mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
+                                                            {timestamp.toLocaleTimeString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    
+                                    {/* Y-axis labels */}
+                                    <div className="absolute -left-8 bottom-0 h-full flex flex-col justify-between text-xs text-muted-foreground">
+                                        <div>Max: {Math.max(...histogramData.map(d => d.count))}</div>
+                                        <div>0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <LogBarChart
+                            timeSlots={timeSlots}
+                            timeRange={timeRange}
+                            onTimeSlotClick={handleTimeSlotClick}
+                        />
+                    )}
                 </div>
             ) : isLoadingTimeSlots ? (
                 <div className="mt-6 mb-8 text-center py-4 border border-input rounded-md bg-background">

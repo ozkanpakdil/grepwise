@@ -498,11 +498,23 @@ public class LuceneService {
             doc.add(new TextField("rawContent", logEntry.rawContent(), Field.Store.YES));
         }
 
-        // Store metadata as StringFields
+        // Store metadata as StringFields and TextFields for searchability
         if (logEntry.metadata() != null) {
             for (Map.Entry<String, String> entry : logEntry.metadata().entrySet()) {
                 if (entry.getValue() != null) {
-                    doc.add(new StringField("metadata_" + entry.getKey(), entry.getValue(), Field.Store.YES));
+                    String fieldName = "metadata_" + entry.getKey();
+                    
+                    // Store as StringField for exact matching and retrieval
+                    doc.add(new StringField(fieldName, entry.getValue(), Field.Store.YES));
+                    
+                    // Important fields that need to be searchable by content
+                    // Add as TextField for tokenized searching
+                    if (entry.getKey().equals("ip_address") || 
+                        entry.getKey().equals("client_ip") || 
+                        entry.getKey().equals("path") ||
+                        entry.getKey().equals("request")) {
+                        doc.add(new TextField(fieldName + "_text", entry.getValue(), Field.Store.NO));
+                    }
                 }
             }
         }
@@ -779,21 +791,73 @@ public class LuceneService {
 
         // Add text query if provided
         if (queryStr != null && !queryStr.isEmpty()) {
-            Query textQuery;
-            if (isRegex) {
-                // Use RegexpQuery for regex searches
-                textQuery = new RegexpQuery(new Term("message", queryStr));
-            } else {
-                // Use WildcardQuery for more flexible matching
-                textQuery = new WildcardQuery(new Term("message", "*" + queryStr.toLowerCase() + "*"));
+            BooleanQuery.Builder textQueryBuilder = new BooleanQuery.Builder();
+            
+            // Fields to search in
+            String[] fieldsToSearch = {"message", "rawContent"};
+            
+            // Add queries for standard fields
+            for (String field : fieldsToSearch) {
+                Query fieldQuery;
+                if (isRegex) {
+                    // Use RegexpQuery for regex searches
+                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
+                } else {
+                    // Use WildcardQuery for more flexible matching
+                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
+                }
+                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
             }
-            queryBuilder.add(textQuery, BooleanClause.Occur.MUST);
+            
+            // Search in metadata fields (especially IP address)
+            // These are stored with "metadata_" prefix
+            // First search in the StringFields for exact matches
+            String[] metadataFieldsToSearch = {"metadata_ip_address", "metadata_client_ip", "metadata_path", "metadata_request"};
+            for (String field : metadataFieldsToSearch) {
+                Query fieldQuery;
+                if (isRegex) {
+                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
+                } else {
+                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
+                }
+                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
+            }
+            
+            // Then search in the TextField versions for tokenized searching
+            String[] metadataTextFieldsToSearch = {
+                "metadata_ip_address_text", 
+                "metadata_client_ip_text", 
+                "metadata_path_text",
+                "metadata_request_text"
+            };
+            for (String field : metadataTextFieldsToSearch) {
+                Query fieldQuery;
+                if (isRegex) {
+                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
+                } else {
+                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
+                }
+                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
+            }
+            
+            queryBuilder.add(textQueryBuilder.build(), BooleanClause.Occur.MUST);
         }
 
         // Add time range query if provided
         if (startTime != null && endTime != null) {
-            Query timeQuery = LongPoint.newRangeQuery("timestamp", startTime, endTime);
-            queryBuilder.add(timeQuery, BooleanClause.Occur.MUST);
+            // Create a boolean query for time range that checks both timestamp and recordTime
+            BooleanQuery.Builder timeQueryBuilder = new BooleanQuery.Builder();
+            
+            // Add query for system timestamp (when the log was indexed)
+            Query timestampQuery = LongPoint.newRangeQuery("timestamp", startTime, endTime);
+            timeQueryBuilder.add(timestampQuery, BooleanClause.Occur.SHOULD);
+            
+            // Add query for record timestamp (from the log entry itself)
+            // This is the actual time when the log was generated
+            Query recordTimeQuery = LongPoint.newRangeQuery("recordTime", startTime, endTime);
+            timeQueryBuilder.add(recordTimeQuery, BooleanClause.Occur.SHOULD);
+            
+            queryBuilder.add(timeQueryBuilder.build(), BooleanClause.Occur.MUST);
         }
 
         Query query = queryBuilder.build();

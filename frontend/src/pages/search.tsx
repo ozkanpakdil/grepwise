@@ -168,6 +168,14 @@ export default function SearchPage() {
             e.preventDefault();
         }
 
+        // Get the current value from the editor if available
+        const currentEditorValue = editorRef.current?.getValue() || query;
+        
+        // Update the query state with the current editor value
+        if (currentEditorValue !== query) {
+            setQuery(currentEditorValue);
+        }
+
         setIsSearching(true);
         setIsLoadingTimeSlots(true);
 
@@ -201,7 +209,7 @@ export default function SearchPage() {
 
             // Build search parameters
             const searchParams: SearchParams = {
-                query: query.trim(),
+                query: currentEditorValue.trim(),
                 isRegex,
                 timeRange: timeRange === 'custom' ? undefined : timeRange,
                 startTime,
@@ -228,7 +236,7 @@ export default function SearchPage() {
 
             // Fetch histogram data
             const histogramResult = await getHistogram({
-                query: query.trim(),
+                query: currentEditorValue.trim(),
                 isRegex,
                 from: startTime,
                 to: endTime,
@@ -294,6 +302,14 @@ export default function SearchPage() {
     const refreshData = async () => {
         if (isSearching) return; // Don't refresh if already searching
         
+        // Get the current value from the editor if available
+        const currentEditorValue = editorRef.current?.getValue() || query;
+        
+        // Update the query state with the current editor value
+        if (currentEditorValue !== query) {
+            setQuery(currentEditorValue);
+        }
+        
         setIsSearching(true);
         
         try {
@@ -331,8 +347,9 @@ export default function SearchPage() {
             
             // Fetch new logs
             const results = await searchLogs({
-                query: query.trim(),
+                query: currentEditorValue.trim(),
                 isRegex,
+                timeRange,
                 startTime,
                 endTime
             });
@@ -353,7 +370,7 @@ export default function SearchPage() {
             
             // Fetch new histogram data
             const histogramResult = await getHistogram({
-                query: query.trim(),
+                query: currentEditorValue.trim(),
                 isRegex,
                 from: startTime,
                 to: endTime,
@@ -366,7 +383,7 @@ export default function SearchPage() {
             
             // Also update time slots for backward compatibility
             const slots = await getTimeAggregation({
-                query: query.trim(),
+                query: currentEditorValue.trim(),
                 isRegex,
                 startTime,
                 endTime,
@@ -498,6 +515,14 @@ export default function SearchPage() {
     };
 
     const handleTimeSlotClick = (slot: TimeSlot) => {
+        // Get the current value from the editor if available
+        const currentEditorValue = editorRef.current?.getValue() || query;
+        
+        // Update the query state with the current editor value
+        if (currentEditorValue !== query) {
+            setQuery(currentEditorValue);
+        }
+        
         // Calculate the time range for this slot
         const slotSizeMs = timeRange === '24h' ? 60 * 60 * 1000 : // 1 hour
             timeRange === '12h' ? 60 * 60 * 1000 : // 1 hour
@@ -512,7 +537,7 @@ export default function SearchPage() {
 
         // Trigger search with the new time range
         const searchParams: SearchParams = {
-            query: query.trim(),
+            query: currentEditorValue.trim(),
             isRegex,
             startTime: slot.time,
             endTime: slot.time + slotSizeMs

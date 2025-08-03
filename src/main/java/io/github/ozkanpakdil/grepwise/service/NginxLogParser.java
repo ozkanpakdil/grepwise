@@ -274,28 +274,60 @@ public class NginxLogParser {
      */
     private Long parseNginxTimestamp(String timestamp) {
         try {
-            // Convert Nginx timestamp format to a format that DateTimeRegexPatterns can handle
-            // Example: "10/Oct/2023:13:55:36 +0000" -> "10 Oct 2023 13:55:36"
-            String[] parts = timestamp.split(":");
-            if (parts.length >= 3) {
-                String datePart = parts[0]; // "10/Oct/2023"
-                String timePart = parts[1] + ":" + parts[2].split(" ")[0]; // "13:55:36"
+            // Parse Nginx timestamp format: "17/May/2015:08:05:32 +0000"
+            // Extract the date and time parts
+            String pattern = "(\\d+)/(\\w+)/(\\d+):(\\d+):(\\d+):(\\d+)\\s+([+-]\\d+)";
+            java.util.regex.Pattern r = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = r.matcher(timestamp);
+            
+            if (m.find()) {
+                int day = Integer.parseInt(m.group(1));
+                String month = m.group(2);
+                int year = Integer.parseInt(m.group(3));
+                int hour = Integer.parseInt(m.group(4));
+                int minute = Integer.parseInt(m.group(5));
+                int second = Integer.parseInt(m.group(6));
+                String timezone = m.group(7);
                 
-                datePart = datePart.replace("/", " "); // "10 Oct 2023"
+                // Convert month name to month number
+                int monthNum = switch (month.toLowerCase()) {
+                    case "jan" -> 1;
+                    case "feb" -> 2;
+                    case "mar" -> 3;
+                    case "apr" -> 4;
+                    case "may" -> 5;
+                    case "jun" -> 6;
+                    case "jul" -> 7;
+                    case "aug" -> 8;
+                    case "sep" -> 9;
+                    case "oct" -> 10;
+                    case "nov" -> 11;
+                    case "dec" -> 12;
+                    default -> 1; // Default to January if unknown
+                };
+
+                // Create a ZonedDateTime with the parsed components
+                java.time.ZonedDateTime zdt = java.time.ZonedDateTime.of(
+                    year, monthNum, day, hour, minute, second, 0, 
+                    java.time.ZoneId.of(timezone)
+                );
                 
-                String reformattedTimestamp = datePart + " " + timePart; // "10 Oct 2023 13:55:36"
-                
-                long time = DateTimeRegexPatterns.extractDateTimeToTimestamp(reformattedTimestamp);
-                if (time != -1) {
-                    return time;
-                }
+                // Convert to milliseconds since epoch
+                return zdt.toInstant().toEpochMilli();
             }
             
             // If the above parsing fails, try using the DateTimeRegexPatterns directly
-            return DateTimeRegexPatterns.extractDateTimeToTimestamp(timestamp);
+            long time = DateTimeRegexPatterns.extractDateTimeToTimestamp(timestamp);
+            if (time != -1) {
+                return time;
+            }
+            
+            // If all parsing attempts fail, log a warning and return current time
+            logger.warn("Failed to parse Nginx timestamp using all methods: {}", timestamp);
+            return System.currentTimeMillis();
         } catch (Exception e) {
             logger.warn("Failed to parse Nginx timestamp: {}", timestamp, e);
-            return null;
+            return System.currentTimeMillis();
         }
     }
 

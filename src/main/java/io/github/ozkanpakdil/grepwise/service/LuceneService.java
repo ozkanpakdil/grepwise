@@ -725,7 +725,7 @@ public class LuceneService {
                 writer.commit();
                 totalIndexed += partitionEntries.size();
                 
-                logger.debug("Indexed {} log entries in partition {}", partitionEntries.size(), partitionName);
+                logger.trace("Indexed {} log entries in partition {}", partitionEntries.size(), partitionName);
             } else {
                 logger.warn("No writer found for partition: {}, using legacy index", partitionName);
                 

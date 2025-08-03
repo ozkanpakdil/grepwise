@@ -71,7 +71,7 @@ public class LogBufferService {
         
         // If buffer is full, flush it
         if (currentSize >= maxBufferSize) {
-            logger.info("Buffer reached maximum size ({}). Flushing...", maxBufferSize);
+            logger.trace("Buffer reached maximum size ({}). Flushing...", maxBufferSize);
             flushBuffer();
         }
         
@@ -118,8 +118,6 @@ public class LogBufferService {
                 return 0;
             }
             
-            logger.info("Flushing buffer with {} log entries", currentSize);
-            
             // Drain the buffer into a list
             List<LogEntry> entriesToFlush = new ArrayList<>(currentSize);
             LogEntry entry;
@@ -133,7 +131,7 @@ public class LogBufferService {
             // Index the entries
             try {
                 int indexedCount = luceneService.indexLogEntries(entriesToFlush);
-                logger.info("Successfully indexed {} log entries", indexedCount);
+                logger.trace("Successfully indexed {} log entries", indexedCount);
                 return indexedCount;
             } catch (IOException e) {
                 logger.error("Error indexing log entries during buffer flush", e);

@@ -16,6 +16,7 @@ import {Label} from '@/components/ui/label';
 import LogBarChart from '@/components/LogBarChart';
 import Editor, {Monaco} from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
+import {Search, RefreshCw, Clock, Regex} from 'lucide-react';
 
 // Type definitions for sorting and filtering
 type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
@@ -97,6 +98,16 @@ export default function SearchPage() {
             if (editor.getModel()) {
                 monaco.editor.setModelLanguage(editor.getModel()!, 'spl');
             }
+
+            // Add key binding for Enter to trigger search and Ctrl+Enter for new line
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+                // Do nothing, this allows the default behavior of inserting a new line
+            });
+            
+            editor.addCommand(monaco.KeyCode.Enter, () => {
+                // Trigger search when Enter is pressed
+                handleSearch();
+            });
 
             // Focus the editor to ensure it's visible and ready for input
             editor.focus();
@@ -359,9 +370,9 @@ export default function SearchPage() {
                 </p>
             </div>
 
-            <form onSubmit={handleSearch} className="flex flex-col h-[110px]">
-                <div className="flex flex-col gap-2 h-full">
-                    <div className="flex-1 h-full">
+            <form onSubmit={handleSearch} className="h-[20px]">
+                <div className="flex h-full gap-2">
+                    <div className="flex-1 h-full w-96">
                         <Editor
                             defaultLanguage="spl"
                             defaultValue={query}
@@ -382,47 +393,59 @@ export default function SearchPage() {
                             className="monaco-editor-container h-full overflow-hidden"
                         />
                     </div>
-                    <div className="flex gap-2">
-                        <Button type="submit" disabled={isSearching}>
-                            {isSearching ? 'Searching...' : 'Search'}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center space-x-1">
+                            <Checkbox
+                                id="regex"
+                                checked={isRegex}
+                                onCheckedChange={(checked: boolean | 'indeterminate') => setIsRegex(checked as boolean)}
+                                className="h-4 w-4"
+                            />
+                            <Label htmlFor="regex" className="text-sm flex items-center">
+                                <Regex className="h-4 w-4 mr-1" />
+                            </Label>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center space-x-1">
+                            <Label htmlFor="timeRange" className="text-sm flex items-center">
+                                <Clock className="h-4 w-4" />
+                            </Label>
+                            <Select value={timeRange}
+                                    onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
+                                <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange">
+                                    <SelectValue placeholder="Time range"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1h">Last 1 hour</SelectItem>
+                                    <SelectItem value="3h">Last 3 hours</SelectItem>
+                                    <SelectItem value="12h">Last 12 hours</SelectItem>
+                                    <SelectItem value="24h">Last 24 hours</SelectItem>
+                                    <SelectItem value="custom">Custom range</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Button type="submit" size="sm" disabled={isSearching} className="px-3">
+                            {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
                         </Button>
+                    </div>
+                    <div className="flex flex-col gap-2">
                         <Button
                             type="button"
                             variant="outline"
+                            size="sm"
                             onClick={handleSearch}
                             disabled={isSearching}
+                            className="px-3"
                         >
-                            Refresh
+                            <RefreshCw className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap gap-6">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="regex"
-                            checked={isRegex}
-                            onCheckedChange={(checked: boolean | 'indeterminate') => setIsRegex(checked as boolean)}
-                        />
-                        <Label htmlFor="regex">Use regex</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                        <Label htmlFor="timeRange">Time range:</Label>
-                        <Select value={timeRange}
-                                onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
-                            <SelectTrigger className="w-[180px]" id="timeRange">
-                                <SelectValue placeholder="Select time range"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1h">Last 1 hour</SelectItem>
-                                <SelectItem value="3h">Last 3 hours</SelectItem>
-                                <SelectItem value="12h">Last 12 hours</SelectItem>
-                                <SelectItem value="24h">Last 24 hours</SelectItem>
-                                <SelectItem value="custom">Custom range</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
 
                     {timeRange === 'custom' && (
                         <div className="flex items-center space-x-2">

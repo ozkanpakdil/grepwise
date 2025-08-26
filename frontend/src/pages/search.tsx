@@ -31,6 +31,67 @@ type FilterValues = {
 };
 
 export default function SearchPage() {
+    // Helper: serialize current UI state to URLSearchParams
+    const serializeToParams = (state: {
+        query: string;
+        isRegex: boolean;
+        timeRange: SearchParams['timeRange'];
+        startTime?: number;
+        endTime?: number;
+        pageSize: number;
+        autoRefreshEnabled: boolean;
+        autoRefreshInterval: string;
+    }) => {
+        const sp = new URLSearchParams();
+        if (state.query?.trim()) sp.set('query', state.query.trim());
+        if (state.isRegex) sp.set('isRegex', 'true');
+        sp.set('pageSize', String(state.pageSize));
+        if (state.autoRefreshEnabled) {
+            sp.set('autoRefresh', 'on');
+            sp.set('autoRefreshInterval', state.autoRefreshInterval);
+        }
+        if (state.timeRange === 'custom' && state.startTime && state.endTime) {
+            sp.set('timeRange', 'custom');
+            sp.set('startTime', String(state.startTime));
+            sp.set('endTime', String(state.endTime));
+        } else {
+            sp.set('timeRange', state.timeRange || '24h');
+        }
+        return sp;
+    };
+
+    // Helper: parse URL into UI state
+    const parseFromLocation = () => {
+        const sp = new URLSearchParams(window.location.search);
+        const parsed: Partial<SearchParams> & {
+            pageSize?: number;
+            autoRefreshEnabled?: boolean;
+            autoRefreshInterval?: string;
+            query?: string;
+            isRegex?: boolean;
+        } = {};
+        const q = sp.get('query') || '';
+        const isRegex = sp.get('isRegex') === 'true';
+        const tr = (sp.get('timeRange') as SearchParams['timeRange']) || undefined;
+        const st = sp.get('startTime');
+        const et = sp.get('endTime');
+        const ps = sp.get('pageSize');
+        const ar = sp.get('autoRefresh');
+        const ari = sp.get('autoRefreshInterval') || '10s';
+        if (q) parsed.query = q;
+        if (isRegex) parsed.isRegex = true;
+        if (ps) parsed.pageSize = parseInt(ps, 10) || undefined;
+        if (ar === 'on') parsed.autoRefreshEnabled = true;
+        parsed.autoRefreshInterval = ari;
+        if (tr === 'custom' && st && et) {
+            parsed.timeRange = 'custom';
+            parsed.startTime = Number(st);
+            parsed.endTime = Number(et);
+        } else if (tr) {
+            parsed.timeRange = tr;
+        }
+        return parsed;
+    };
     const [query, setQuery] = useState('');
     const [isRegex, setIsRegex] = useState(false);
     const [timeRange, setTimeRange] = useState<SearchParams['timeRange']>('24h');
@@ -140,7 +201,7 @@ export default function SearchPage() {
             
             editor.addCommand(monaco.KeyCode.Enter, () => {
                 // Trigger search when Enter is pressed
-                handleSearch();
+                handleSearch(undefined, undefined, true);
             });
 
             // Focus the editor to ensure it's visible and ready for input
@@ -164,11 +225,68 @@ export default function SearchPage() {
         }
     };
 
-    // We don't load initial data on component mount anymore
-    // This prevents the infinite API requests
-    // The user needs to explicitly search to see results
+    // Initialize from URL and handle back/forward navigation
+    useEffect(() => {
+        try {
+            const parsed = parseFromLocation();
+            if (parsed.query !== undefined) setQuery(parsed.query);
+            if (parsed.isRegex !== undefined) setIsRegex(parsed.isRegex);
+            if (parsed.pageSize) {
+                // pageSize is kept in local storage hook; update via setter
+                // avoid 0/NaN
+                // setPageSize is stable
+                setPageSize(Math.max(1, parsed.pageSize));
+            }
+            if (parsed.autoRefreshEnabled) setAutoRefreshEnabled(true);
+            if (parsed.autoRefreshInterval) setAutoRefreshInterval(parsed.autoRefreshInterval);
 
-    const handleSearch = async (e?: React.FormEvent | React.MouseEvent) => {
+            if (parsed.timeRange === 'custom' && parsed.startTime && parsed.endTime) {
+                setTimeRange('custom');
+                setCustomStartTime(parsed.startTime);
+                setCustomEndTime(parsed.endTime);
+                // trigger initial search without adding a new history entry (we already have the URL)
+                handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false);
+            } else if (parsed.timeRange) {
+                setTimeRange(parsed.timeRange);
+                // If we have a query or regex flag, perform initial search without pushing
+                if (parsed.query || parsed.isRegex) {
+                    handleSearch(undefined, undefined, false);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to parse initial URL state', e);
+        }
+
+        const onPop = () => {
+            // When user navigates back/forward, re-parse URL and search accordingly
+            try {
+                const parsed = parseFromLocation();
+                if (parsed.query !== undefined) setQuery(parsed.query);
+                else setQuery('');
+                setIsRegex(!!parsed.isRegex);
+                if (parsed.pageSize) setPageSize(Math.max(1, parsed.pageSize));
+                setAutoRefreshEnabled(!!parsed.autoRefreshEnabled);
+                if (parsed.autoRefreshInterval) setAutoRefreshInterval(parsed.autoRefreshInterval);
+
+                if (parsed.timeRange === 'custom' && parsed.startTime && parsed.endTime) {
+                    setTimeRange('custom');
+                    setCustomStartTime(parsed.startTime);
+                    setCustomEndTime(parsed.endTime);
+                    handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false);
+                } else {
+                    setTimeRange((parsed.timeRange as any) || '24h');
+                    handleSearch(undefined, undefined, false);
+                }
+            } catch (e) {
+                console.warn('Failed to handle popstate', e);
+            }
+        };
+
+        window.addEventListener('popstate', onPop);
+        return () => window.removeEventListener('popstate', onPop);
+    }, []);
+
+    const handleSearch = async (e?: React.FormEvent | React.MouseEvent, overrideRange?: { start: number; end: number }, pushHistory: boolean = true) => {
         // If this is a form submission event, prevent the default behavior
         if (e && 'preventDefault' in e) {
             e.preventDefault();
@@ -200,7 +318,10 @@ export default function SearchPage() {
             let startTime: number;
             let endTime: number;
             
-            if (timeRange === 'custom' && customStartTime && customEndTime) {
+            if (overrideRange) {
+                startTime = overrideRange.start;
+                endTime = overrideRange.end;
+            } else if (timeRange === 'custom' && customStartTime && customEndTime) {
                 startTime = customStartTime;
                 endTime = customEndTime;
             } else {
@@ -235,7 +356,7 @@ export default function SearchPage() {
             const params = new URLSearchParams();
             if (currentEditorValue.trim()) params.set('query', currentEditorValue.trim());
             if (isRegex) params.set('isRegex', 'true');
-            if (timeRange !== 'custom') params.set('timeRange', timeRange || '24h');
+            if (!overrideRange && timeRange !== 'custom') params.set('timeRange', timeRange || '24h');
             else {
                 params.set('startTime', String(startTime));
                 params.set('endTime', String(endTime));
@@ -286,6 +407,26 @@ export default function SearchPage() {
                 console.error('SSE error');
                 setIsStreaming(false);
             });
+
+            // Push URL state for history/share if requested
+            try {
+                if (pushHistory) {
+                    const sp = serializeToParams({
+                        query: currentEditorValue || '',
+                        isRegex,
+                        timeRange: (overrideRange ? 'custom' : timeRange) as SearchParams['timeRange'],
+                        startTime: overrideRange ? startTime : (timeRange === 'custom' ? startTime : undefined),
+                        endTime: overrideRange ? endTime : (timeRange === 'custom' ? endTime : undefined),
+                        pageSize,
+                        autoRefreshEnabled,
+                        autoRefreshInterval
+                    });
+                    const newUrl = `${window.location.pathname}?${sp.toString()}`;
+                    window.history.pushState({ type: 'grepwise-search' }, '', newUrl);
+                }
+            } catch (e) {
+                console.warn('URL history push failed', e);
+            }
 
             // Setup auto-refresh if enabled
             setupAutoRefresh();
@@ -495,66 +636,53 @@ export default function SearchPage() {
         setSelectedLog(log);
     };
 
+    const [zoomStack, setZoomStack] = useState<{ timeRange: SearchParams['timeRange']; startTime?: number; endTime?: number; }[]>([]);
+
     const handleTimeSlotClick = (slot: TimeSlot) => {
-        // Get the current value from the editor if available
+        // Double-click zoom handler (single click intentionally does nothing)
         const currentEditorValue = editorRef.current?.getValue() || query;
-        
-        // Update the query state with the current editor value
         if (currentEditorValue !== query) {
             setQuery(currentEditorValue);
         }
-        
-        // Calculate the time range for this slot
-        const slotSizeMs = timeRange === '24h' ? 60 * 60 * 1000 : // 1 hour
-            timeRange === '12h' ? 60 * 60 * 1000 : // 1 hour
-                timeRange === '3h' ? 30 * 60 * 1000 : // 30 minutes
-                    timeRange === '1h' ? 10 * 60 * 1000 : // 10 minutes
-                        60 * 60 * 1000; // default to 1 hour
 
-        // Set custom time range
+        // Determine slot size from neighboring buckets (UTC-aligned by timestamps)
+        const idx = timeSlots.findIndex(s => s.time === slot.time);
+        let slotSizeMs = 60 * 60 * 1000; // fallback 1h
+        if (idx >= 0) {
+            const prev = idx > 0 ? timeSlots[idx - 1] : undefined;
+            const next = idx < timeSlots.length - 1 ? timeSlots[idx + 1] : undefined;
+            if (next) slotSizeMs = Math.max(1000, next.time - slot.time);
+            else if (prev) slotSizeMs = Math.max(1000, slot.time - prev.time);
+        }
+
+        // Stop further zooming if already at second-level granularity
+        if (slotSizeMs <= 1000) {
+            toast({ title: 'Max zoom level', description: 'You are already at second-level resolution (UTC).' });
+            return;
+        }
+
+        // Push current range to zoom stack for "Zoom out"
+        setZoomStack(prev => [
+            ...prev,
+            timeRange === 'custom' && customStartTime && customEndTime
+                ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime }
+                : { timeRange }
+        ]);
+
+        // Update to custom range for selected slot
+        const newStart = slot.time;
+        const newEnd = slot.time + slotSizeMs;
         setTimeRange('custom');
-        setCustomStartTime(slot.time);
-        setCustomEndTime(slot.time + slotSizeMs);
+        setCustomStartTime(newStart);
+        setCustomEndTime(newEnd);
 
-        // Trigger search with the new time range
-        const searchParams: SearchParams = {
-            query: currentEditorValue.trim(),
-            isRegex,
-            startTime: slot.time,
-            endTime: slot.time + slotSizeMs
-        };
+        // Restart search/stream within the new range to keep auto-refresh behavior using override to avoid setState race
+        handleSearch(undefined, { start: newStart, end: newEnd }, true);
 
-        setIsSearching(true);
-        setIsLoadingTimeSlots(true);
-
-        // Fetch logs with the new time range
-        searchLogs(searchParams)
-            .then(results => {
-                setSearchResults(results);
-                return getTimeAggregation({
-                    ...searchParams,
-                    slots: 6 // Use 6 slots for the zoomed-in view
-                });
-            })
-            .then(slots => {
-                setTimeSlots(slots);
-                toast({
-                    title: 'Time range updated',
-                    description: `Showing logs from ${new Date(slot.time).toLocaleTimeString()} to ${new Date(slot.time + slotSizeMs).toLocaleTimeString()}`,
-                });
-            })
-            .catch(error => {
-                console.error('Error updating time range:', error);
-                toast({
-                    title: 'Error',
-                    description: 'Failed to update time range',
-                    variant: 'destructive',
-                });
-            })
-            .finally(() => {
-                setIsSearching(false);
-                setIsLoadingTimeSlots(false);
-            });
+        toast({
+            title: 'Zoomed in',
+            description: `UTC ${new Date(newStart).toUTCString()} → ${new Date(newEnd).toUTCString()}`,
+        });
     };
 
     return (
@@ -566,7 +694,7 @@ export default function SearchPage() {
                 </p>
             </div>
 
-            <form onSubmit={handleSearch} className="h-[20px]">
+            <form onSubmit={(e) => handleSearch(e, undefined, true)} className="h-[20px]">
                 <div className="flex h-full gap-2">
                     <div className="flex-1 h-full w-96">
                         <Editor
@@ -645,7 +773,7 @@ export default function SearchPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={handleSearch}
+                            onClick={(e) => handleSearch(e, undefined, true)}
                             disabled={isSearching}
                             className="px-3"
                         >
@@ -721,22 +849,61 @@ export default function SearchPage() {
                 <div className="mt-6 mb-8 border border-input rounded-md p-4 bg-background">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Time Distribution</h3>
-                        {autoRefreshEnabled && (
-                            <div className="text-xs text-muted-foreground flex items-center">
-                                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                Auto-refreshing every {autoRefreshInterval}
-                            </div>
-                        )}
-                        {isStreaming && (
-                            <div className="text-xs text-muted-foreground ml-2">
-                                Computing histogram…
-                            </div>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {autoRefreshEnabled && (
+                                <div className="text-xs text-muted-foreground flex items-center">
+                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                    Auto-refreshing every {autoRefreshInterval}
+                                </div>
+                            )}
+                            {zoomStack.length > 0 && (
+                                <button
+                                  className="text-xs text-blue-600 hover:underline"
+                                  onClick={() => {
+                                      const prev = zoomStack[zoomStack.length - 1];
+                                      setZoomStack(z => z.slice(0, z.length - 1));
+                                      if (prev.timeRange === 'custom' && prev.startTime && prev.endTime) {
+                                          setTimeRange('custom');
+                                          setCustomStartTime(prev.startTime);
+                                          setCustomEndTime(prev.endTime);
+                                      } else {
+                                          setTimeRange(prev.timeRange || '24h');
+                                      }
+                                      handleSearch(undefined, undefined, true);
+                                  }}
+                                >
+                                  Zoom out
+                                </button>
+                            )}
+                            {isStreaming && (
+                                <div className="text-xs text-muted-foreground">
+                                    Computing histogram…
+                                </div>
+                            )}
+                        </div>
                     </div>
                     
                     {histogramData.length > 0 ? (
                         <div className="w-full h-64">
-                            <MUIBarsChart data={histogramData} />
+                            <MUIBarsChart
+                              data={histogramData}
+                              onBarDoubleClick={(start, end) => {
+                                  // Push current to zoom stack
+                                  setZoomStack(prev => [
+                                      ...prev,
+                                      timeRange === 'custom' && customStartTime && customEndTime
+                                          ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime }
+                                          : { timeRange }
+                                  ]);
+                                  // Prevent zoom beyond seconds
+                                  if (end - start <= 1000) return;
+                                  setTimeRange('custom');
+                                  setCustomStartTime(start);
+                                  setCustomEndTime(end);
+                                  handleSearch(undefined, { start, end }, true);
+                                  toast({ title: 'Zoomed in', description: `UTC ${new Date(start).toUTCString()} → ${new Date(end).toUTCString()}` });
+                              }}
+                            />
                         </div>
                     ) : (
                         <LogBarChart

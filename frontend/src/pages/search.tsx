@@ -567,6 +567,56 @@ export default function SearchPage() {
         setShowFilters(prev => !prev);
     };
 
+    // Build regex for highlighting based on query and isRegex
+    const highlightRegex = useMemo(() => {
+        if (!query || !query.trim()) return null;
+        try {
+            if (isRegex) {
+                return new RegExp(query, 'gi');
+            }
+            // Escape special regex chars for plain text search
+            const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(escaped, 'gi');
+        } catch (e) {
+            // If regex is invalid, disable highlighting to avoid runtime errors
+            return null;
+        }
+    }, [query, isRegex]);
+
+    // Render helper to highlight matched parts in a given text
+    const renderHighlighted = (text: string) => {
+        if (!text) return '';
+        if (!highlightRegex) return text;
+        const parts: (string | JSX.Element)[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+        // Reset lastIndex for safety when regex has global flag
+        highlightRegex.lastIndex = 0;
+        while ((match = highlightRegex.exec(text)) !== null) {
+            const start = match.index;
+            const end = start + (match[0]?.length || 0);
+            if (start > lastIndex) {
+                parts.push(text.slice(lastIndex, start));
+            }
+            if (end > start) {
+                parts.push(
+                    <mark key={parts.length} className="bg-yellow-200 dark:bg-yellow-700 px-0.5 rounded">
+                        {text.slice(start, end)}
+                    </mark>
+                );
+            }
+            lastIndex = end;
+            // Avoid infinite loop on zero-width matches
+            if (match[0]?.length === 0) {
+                highlightRegex.lastIndex++;
+            }
+        }
+        if (lastIndex < text.length) {
+            parts.push(text.slice(lastIndex));
+        }
+        return <>{parts}</>;
+    };
+
     // Apply sorting and filtering to search results
     const processedResults = useMemo(() => {
         let results = [...searchResults];
@@ -1095,7 +1145,7 @@ export default function SearchPage() {
                           {log.level}
                         </span>
                                         </td>
-                                        <td className="px-4 py-2 text-sm">{log.message}</td>
+                                        <td className="px-4 py-2 text-sm">{renderHighlighted(log.message)}</td>
                                         <td className="px-4 py-2 text-sm">{log.source}</td>
                                     </tr>
                                 ))}

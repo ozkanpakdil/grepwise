@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TimeSlot } from '@/api/logSearch';
+import { BarChart } from '@mui/x-charts/BarChart';
 
 interface LogBarChartProps {
   timeSlots: TimeSlot[];
@@ -68,83 +69,24 @@ const LogBarChart: React.FC<LogBarChartProps> = ({
   return (
     <div className="mt-6 mb-8">
       <h3 className="text-lg font-medium mb-2">Log Distribution</h3>
-
       {timeSlots.length === 0 ? (
         <div className="text-center py-4 text-muted-foreground">
           No data available for the selected time range
         </div>
       ) : (
-        <div className={`relative ${screenWidth < 480 ? 'h-36' : 'h-40'}`}>
-          {/* Tooltip for hovered bar */}
-          {hoveredSlot && (
-            <div 
-              className={`absolute bg-background border rounded-md shadow-md p-2 z-10 ${screenWidth < 640 ? 'text-[10px]' : 'text-sm'}`}
-              style={{ 
-                left: `${(timeSlots.indexOf(hoveredSlot) / timeSlots.length) * 100}%`,
-                bottom: '100%',
-                transform: 'translateX(-50%)',
-                marginBottom: '8px',
-                maxWidth: screenWidth < 480 ? '120px' : '200px'
-              }}
-            >
-              <div className="font-medium truncate">{formatTime(hoveredSlot.time)}</div>
-              <div>{hoveredSlot.count} log{hoveredSlot.count !== 1 ? 's' : ''}</div>
-            </div>
-          )}
-
-          {/* Bar chart */}
-          <div className={`flex items-end ${screenWidth < 480 ? 'h-28' : 'h-32'} ${screenWidth < 640 ? 'gap-0.5' : 'gap-1'} border-b border-l relative`}>
-            {timeSlots.map((slot, index) => {
-              const height = slot.count > 0 ? (slot.count / maxCount) * 100 : 0;
-              
-              // Calculate how many labels to show based on screen width
-              const labelDivisor = screenWidth < 480 ? 10 : 
-                                 screenWidth < 640 ? 8 : 
-                                 screenWidth < 768 ? 6 : 5;
-              
-              // Determine if this bar should show a label
-              const showLabel = index === 0 || 
-                               index === timeSlots.length - 1 || 
-                               index % Math.ceil(timeSlots.length / labelDivisor) === 0;
-
-              return (
-                <div 
-                  key={index}
-                  className="flex-1 flex flex-col items-center"
-                  onMouseEnter={() => setHoveredSlot(slot)}
-                  onMouseLeave={() => setHoveredSlot(null)}
-                  onDoubleClick={() => onTimeSlotClick(slot)}
-                >
-                  <div 
-                    className={`w-full ${height > 0 ? 'bg-primary/80 hover:bg-primary cursor-pointer' : ''}`}
-                    style={{ height: `${height}%` }}
-                    title={`${formatTime(slot.time)}: ${slot.count} logs`}
-                  />
-
-                  {/* Only show some x-axis labels to avoid overcrowding */}
-                  {showLabel && (
-                    <div 
-                      className={`${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground mt-1 ${screenWidth < 640 ? 'transform -rotate-45 origin-top-left' : ''} whitespace-nowrap`}
-                    >
-                      {screenWidth < 480 && formatTime(slot.time).length > 6 
-                        ? formatTime(slot.time).substring(0, 6) + '...' 
-                        : formatTime(slot.time)}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Y-axis labels */}
-            <div className={`absolute ${screenWidth < 480 ? '-left-6' : '-left-8'} bottom-0 h-full flex flex-col justify-between ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-muted-foreground`}>
-              <div>Max: {screenWidth < 480 ? formatCompactNumber(maxCount) : maxCount}</div>
-              <div>0</div>
-            </div>
-          </div>
-
-          <div className={`mt-2 ${screenWidth < 640 ? 'text-[10px]' : 'text-xs'} text-center text-muted-foreground`}>
-            {screenWidth < 480 ? 'Double-tap to zoom' : 'Double-click on a bar to zoom into that time period'}
-          </div>
+        <div className="w-full h-64">
+          <BarChart
+            height={240}
+            series={[{ data: timeSlots.map(s => s.count), label: 'Logs' }]}
+            xAxis={[{
+              scaleType: 'band',
+              data: timeSlots.map(s => new Date(s.time).toISOString()),
+              valueFormatter: v => new Date(String(v)).toUTCString().split(' ')[4]
+            }]}
+            yAxis={[{ min: 0, max: Math.max(1, ...timeSlots.map(s => s.count)) }]}
+            slotProps={{ legend: { hidden: true } }}
+            margin={{ top: 10, right: 10, bottom: 40, left: 50 }}
+          />
         </div>
       )}
     </div>

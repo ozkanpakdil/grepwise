@@ -5,7 +5,6 @@ import {
     exportLogsAsCsv,
     exportLogsAsJson,
     getTimeAggregation,
-    getHistogram,
     HistogramData,
     LogEntry,
     searchLogs,
@@ -16,9 +15,11 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/c
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import LogBarChart from '@/components/LogBarChart';
+import MUIBarsChart from '@/components/MUIBarsChart';
 import Editor, {Monaco} from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import {Search, RefreshCw, Clock, Regex} from 'lucide-react';
+import useLocalStorage from "@/components/LocalStorage.ts";
 
 // Type definitions for sorting and filtering
 type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
@@ -43,6 +44,11 @@ export default function SearchPage() {
     const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
     // Add state for editor loading
     const [isEditorLoading, setIsEditorLoading] = useState(true);
+    // Page size and totals
+    const [pageSize, setPageSize] = useLocalStorage<number>("grepwise.dashboard.pagesize",100);
+    const [totalCount, setTotalCount] = useState<number | null>(null);
+    const eventSourceRef = useRef<EventSource | null>(null);
+    const [isStreaming, setIsStreaming] = useState(false);
     
     // Auto-refresh settings
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
@@ -180,6 +186,16 @@ export default function SearchPage() {
         setIsLoadingTimeSlots(true);
 
         try {
+            // Close any previous stream
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+            setSearchResults([]);
+            setTimeSlots([]);
+            setHistogramData([]);
+            setTotalCount(null);
+
             // Calculate time range
             let startTime: number;
             let endTime: number;
@@ -207,62 +223,70 @@ export default function SearchPage() {
                 }
             }
 
-            // Build search parameters
-            const searchParams: SearchParams = {
-                query: currentEditorValue.trim(),
-                isRegex,
-                timeRange: timeRange === 'custom' ? undefined : timeRange,
-                startTime,
-                endTime
-            };
-
-            // Fetch logs
-            const results = await searchLogs(searchParams);
-            setSearchResults(results);
-
             // Determine appropriate interval based on time range
             let interval: string;
             const timeRangeMs = endTime - startTime;
-            
-            if (timeRangeMs <= 60 * 60 * 1000) { // 1 hour or less
-                interval = '1m';
-            } else if (timeRangeMs <= 3 * 60 * 60 * 1000) { // 3 hours or less
-                interval = '5m';
-            } else if (timeRangeMs <= 12 * 60 * 60 * 1000) { // 12 hours or less
-                interval = '15m';
-            } else { // 24 hours or less
-                interval = '30m';
+            if (timeRangeMs <= 60 * 60 * 1000) interval = '1m';
+            else if (timeRangeMs <= 3 * 60 * 60 * 1000) interval = '5m';
+            else if (timeRangeMs <= 12 * 60 * 60 * 1000) interval = '15m';
+            else interval = '30m';
+
+            // Start SSE stream
+            const params = new URLSearchParams();
+            if (currentEditorValue.trim()) params.set('query', currentEditorValue.trim());
+            if (isRegex) params.set('isRegex', 'true');
+            if (timeRange !== 'custom') params.set('timeRange', timeRange || '24h');
+            else {
+                params.set('startTime', String(startTime));
+                params.set('endTime', String(endTime));
             }
+            params.set('interval', interval);
+            params.set('pageSize', String(pageSize));
 
-            // Fetch histogram data
-            const histogramResult = await getHistogram({
-                query: currentEditorValue.trim(),
-                isRegex,
-                from: startTime,
-                to: endTime,
-                interval
+            const url = `http://localhost:8080/api/logs/search/stream?${params.toString()}`;
+            const es = new EventSource(url);
+            eventSourceRef.current = es;
+            setIsStreaming(true);
+
+            es.addEventListener('init', (ev: MessageEvent) => {
+                try {
+                    const data = JSON.parse((ev as any).data);
+                    const buckets: { timestamp: string; count: number }[] = data.buckets || [];
+                    setHistogramData(buckets);
+                } catch (e) { console.error('init parse error', e); }
             });
-            setHistogramData(histogramResult);
 
-            // Also fetch time slots for backward compatibility
-            const slots = await getTimeAggregation({
-                ...searchParams,
-                slots: timeRange === '24h' ? 24 : timeRange === '12h' ? 12 : timeRange === '3h' ? 6 : timeRange === '1h' ? 6 : 24
+            es.addEventListener('page', (ev: MessageEvent) => {
+                try {
+                    const logs: LogEntry[] = JSON.parse((ev as any).data);
+                    setSearchResults(logs);
+                } catch (e) { console.error('page parse error', e); }
             });
-            setTimeSlots(slots);
 
-            if (results.length === 0) {
-                toast({
-                    title: 'No results',
-                    description: `No logs found matching your search criteria`,
-                });
-            } else {
-                toast({
-                    title: 'Search completed',
-                    description: `Found ${results.length} matching logs`,
-                });
-            }
-            
+            es.addEventListener('hist', (ev: MessageEvent) => {
+                try {
+                    const snapshot: HistogramData[] = JSON.parse((ev as any).data);
+                    setHistogramData(snapshot);
+                } catch (e) { console.error('hist parse error', e); }
+            });
+
+            es.addEventListener('done', (ev: MessageEvent) => {
+                try {
+                    const d = JSON.parse((ev as any).data);
+                    setTotalCount(d.total ?? null);
+                } catch (e) { console.error('done parse error', e); }
+                finally {
+                    setIsStreaming(false);
+                    es.close();
+                    eventSourceRef.current = null;
+                }
+            });
+
+            es.addEventListener('error', () => {
+                console.error('SSE error');
+                setIsStreaming(false);
+            });
+
             // Setup auto-refresh if enabled
             setupAutoRefresh();
         } catch (error) {
@@ -345,51 +369,8 @@ export default function SearchPage() {
                 setCustomEndTime(endTime);
             }
             
-            // Fetch new logs
-            const results = await searchLogs({
-                query: currentEditorValue.trim(),
-                isRegex,
-                timeRange,
-                startTime,
-                endTime
-            });
-            
-            // Determine appropriate interval based on time range
-            let interval: string;
-            const timeRangeMs = endTime - startTime;
-            
-            if (timeRangeMs <= 60 * 60 * 1000) { // 1 hour or less
-                interval = '1m';
-            } else if (timeRangeMs <= 3 * 60 * 60 * 1000) { // 3 hours or less
-                interval = '5m';
-            } else if (timeRangeMs <= 12 * 60 * 60 * 1000) { // 12 hours or less
-                interval = '15m';
-            } else { // 24 hours or less
-                interval = '30m';
-            }
-            
-            // Fetch new histogram data
-            const histogramResult = await getHistogram({
-                query: currentEditorValue.trim(),
-                isRegex,
-                from: startTime,
-                to: endTime,
-                interval
-            });
-            
-            // Update state with new data
-            setSearchResults(results);
-            setHistogramData(histogramResult);
-            
-            // Also update time slots for backward compatibility
-            const slots = await getTimeAggregation({
-                query: currentEditorValue.trim(),
-                isRegex,
-                startTime,
-                endTime,
-                slots: timeRange === '24h' ? 24 : timeRange === '12h' ? 12 : timeRange === '3h' ? 6 : timeRange === '1h' ? 6 : 24
-            });
-            setTimeSlots(slots);
+            // For auto-refresh, just restart the stream
+            await handleSearch();
             
             console.log('Auto-refreshed data at', new Date().toLocaleTimeString());
         } catch (error) {
@@ -642,6 +623,19 @@ export default function SearchPage() {
                         </div>
                     </div>
                     <div className="flex flex-col gap-2">
+                        <div className="flex items-center space-x-2">
+                            <Label htmlFor="pageSize" className="text-sm">Page size</Label>
+                            <input
+                                id="pageSize"
+                                type="number"
+                                min={1}
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Math.max(1, parseInt(e.target.value || '1', 10)))}
+                                className="h-8 w-[90px] rounded-md border border-input bg-background px-2 text-sm"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
                         <Button type="submit" size="sm" disabled={isSearching} className="px-3">
                             {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
                         </Button>
@@ -733,60 +727,16 @@ export default function SearchPage() {
                                 Auto-refreshing every {autoRefreshInterval}
                             </div>
                         )}
+                        {isStreaming && (
+                            <div className="text-xs text-muted-foreground ml-2">
+                                Computing histogram…
+                            </div>
+                        )}
                     </div>
                     
                     {histogramData.length > 0 ? (
-                        <div>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {/* Histogram data visualization */}
-                                <div className="w-full h-64 relative">
-                                    <div className="absolute inset-0 flex items-end">
-                                        {histogramData.map((item, index) => {
-                                            // Find the maximum count for normalization
-                                            const maxCount = Math.max(...histogramData.map(d => d.count));
-                                            // Calculate height percentage
-                                            const heightPercent = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
-                                            // Parse the timestamp
-                                            const timestamp = new Date(item.timestamp);
-                                            
-                                            return (
-                                                <div 
-                                                    key={index} 
-                                                    className="flex-1 flex flex-col items-center group"
-                                                    title={`${timestamp.toLocaleString()}: ${item.count} logs`}
-                                                >
-                                                    <div className="relative w-full">
-                                                        {/* Tooltip */}
-                                                        <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-background border rounded-md p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                                                            <div>{timestamp.toLocaleString()}</div>
-                                                            <div className="font-bold">{item.count} logs</div>
-                                                        </div>
-                                                        
-                                                        {/* Bar */}
-                                                        <div 
-                                                            className={`w-full ${heightPercent > 0 ? 'bg-primary/80 group-hover:bg-primary transition-colors' : ''}`}
-                                                            style={{ height: `${heightPercent}%` }}
-                                                        />
-                                                    </div>
-                                                    
-                                                    {/* Only show some x-axis labels to avoid overcrowding */}
-                                                    {(index === 0 || index === histogramData.length - 1 || index % Math.max(1, Math.floor(histogramData.length / 8)) === 0) && (
-                                                        <div className="text-xs text-muted-foreground mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
-                                                            {timestamp.toLocaleTimeString()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    
-                                    {/* Y-axis labels */}
-                                    <div className="absolute -left-8 bottom-0 h-full flex flex-col justify-between text-xs text-muted-foreground">
-                                        <div>Max: {Math.max(...histogramData.map(d => d.count))}</div>
-                                        <div>0</div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="w-full h-64">
+                            <MUIBarsChart data={histogramData} />
                         </div>
                     ) : (
                         <LogBarChart
@@ -811,7 +761,7 @@ export default function SearchPage() {
                     <div className="flex justify-between items-center">
                         <div>
               <span className="text-sm text-muted-foreground">
-                Showing {processedResults.length} of {searchResults.length} logs
+                Showing {processedResults.length} of {totalCount ?? '…'} logs
               </span>
                         </div>
                         <div className="flex items-center gap-2">

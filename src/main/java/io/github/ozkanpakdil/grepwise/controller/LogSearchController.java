@@ -26,6 +26,12 @@ import java.util.StringJoiner;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * REST controller for searching logs.
@@ -558,7 +564,7 @@ public class LogSearchController {
                 Map<String, Object> item = new java.util.HashMap<>();
                 // Format timestamp as ISO-8601 string
                 String timestamp = Instant.ofEpochMilli(entry.getKey())
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(ZoneId.of("UTC"))
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 item.put("timestamp", timestamp);
                 item.put("count", entry.getValue());
@@ -824,6 +830,151 @@ public class LogSearchController {
         }
         
         return field;
+    }
+    
+    @Operation(
+        summary = "Progressive search stream",
+        description = "Streams initial page of logs and progressive histogram updates via SSE"
+    )
+    @GetMapping(value = "/search/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamSearch(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            @RequestParam(required = false) String timeRange,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false, defaultValue = "100") Integer pageSize,
+            @RequestParam(required = false) String interval
+    ) {
+        // Resolve time range
+        if (timeRange != null && !timeRange.equals("custom")) {
+            long now = System.currentTimeMillis();
+            long hours = switch (timeRange) {
+                case "1h" -> 1;
+                case "3h" -> 3;
+                case "12h" -> 12;
+                case "24h" -> 24;
+                default -> 0;
+            };
+            if (hours > 0) {
+                endTime = now;
+                startTime = now - (hours * 60 * 60 * 1000);
+            }
+        }
+        if (startTime == null || endTime == null) {
+            endTime = System.currentTimeMillis();
+            startTime = endTime - (24 * 60 * 60 * 1000);
+        }
+
+        // Determine interval if not provided
+        long rangeMs = endTime - startTime;
+        final long fStartTime = startTime;
+        final long fEndTime = endTime;
+        if (interval == null || interval.isBlank()) {
+            if (rangeMs <= 60 * 60 * 1000) interval = "1m";
+            else if (rangeMs <= 3 * 60 * 60 * 1000) interval = "5m";
+            else if (rangeMs <= 12 * 60 * 60 * 1000) interval = "15m";
+            else interval = "30m";
+        }
+        long intervalMs = switch (interval) {
+            case "1m" -> 60_000L;
+            case "5m" -> 300_000L;
+            case "15m" -> 900_000L;
+            case "30m" -> 1_800_000L;
+            case "1h" -> 3_600_000L;
+            case "3h" -> 10_800_000L;
+            case "6h" -> 21_600_000L;
+            case "12h" -> 43_200_000L;
+            case "24h" -> 86_400_000L;
+            default -> 300_000L;
+        };
+
+        SseEmitter emitter = new SseEmitter(300000L);
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        final long fIntervalMs = intervalMs;
+        final long fRangeMs = rangeMs;
+        final long fs = fStartTime;
+        final long fe = fEndTime;
+        final String fInterval = interval;
+
+        exec.submit(() -> {
+            try {
+                // Initialize bucket map
+                long buckets = (long) Math.ceil((double) fRangeMs / fIntervalMs);
+                Map<Long, Integer> countsByTs = new TreeMap<>();
+                for (int i = 0; i < buckets; i++) {
+                    long ts = fs + (i * fIntervalMs);
+                    countsByTs.put(ts, 0);
+                }
+
+                // Send init with UTC bucket starts
+                List<Map<String, Object>> initBuckets = new ArrayList<>();
+                for (Long ts : countsByTs.keySet()) {
+                    Map<String, Object> b = new HashMap<>();
+                    String iso = Instant.ofEpochMilli(ts).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    b.put("timestamp", iso);
+                    b.put("count", 0);
+                    initBuckets.add(b);
+                }
+                emitter.send(SseEmitter.event().name("init").data(Map.of(
+                        "from", fs,
+                        "to", fe,
+                        "interval", fInterval,
+                        "buckets", initBuckets
+                )));
+
+                // Fetch all matching logs (synchronously for now)
+                List<LogEntry> logs = luceneService.search(query, isRegex, fs, fe);
+
+                // Send first page quickly
+                int ps = Math.max(1, pageSize == null ? 100 : pageSize);
+                List<LogEntry> firstPage = logs.subList(0, Math.min(ps, logs.size()));
+                emitter.send(SseEmitter.event().name("page").data(firstPage));
+
+                // Progressively aggregate
+                int batch = 200; // update cadence
+                int processed = 0;
+                for (LogEntry log : logs) {
+                    long t = log.recordTime() != null ? log.recordTime() : log.timestamp();
+                    int idx = (int) ((t - fs) / fIntervalMs);
+                    if (idx >= 0 && idx < buckets) {
+                        long bucketTs = fs + (idx * fIntervalMs);
+                        countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                    }
+                    processed++;
+                    if (processed % batch == 0) {
+                        // send partial snapshot
+                        List<Map<String, Object>> snapshot = countsByTs.entrySet().stream().map(e -> {
+                            Map<String, Object> m = new HashMap<>();
+                            String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                            m.put("timestamp", iso);
+                            m.put("count", e.getValue());
+                            return m;
+                        }).collect(Collectors.toList());
+                        emitter.send(SseEmitter.event().name("hist").data(snapshot));
+                    }
+                }
+
+                // Final snapshot and done
+                List<Map<String, Object>> finalSnapshot = countsByTs.entrySet().stream().map(e -> {
+                    Map<String, Object> m = new HashMap<>();
+                    String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    m.put("timestamp", iso);
+                    m.put("count", e.getValue());
+                    return m;
+                }).collect(Collectors.toList());
+                emitter.send(SseEmitter.event().name("hist").data(finalSnapshot));
+                emitter.send(SseEmitter.event().name("done").data(Map.of("total", logs.size())));
+                emitter.complete();
+            } catch (Exception ex) {
+                try { emitter.send(SseEmitter.event().name("error").data(ex.getMessage())); } catch (IOException ignored) {}
+                emitter.completeWithError(ex);
+            } finally {
+                exec.shutdown();
+            }
+        });
+
+        return emitter;
     }
     
 }

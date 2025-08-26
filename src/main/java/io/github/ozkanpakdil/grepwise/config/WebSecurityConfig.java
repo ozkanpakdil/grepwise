@@ -130,6 +130,13 @@ public class WebSecurityConfig {
                         // Settings endpoints - require admin role
                         .requestMatchers("/api/settings/**").hasAuthority("ROLE_ADMIN")
 
+                        // Allow CORS preflight for all API endpoints
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+
+                        // Configuration endpoints - allow for now (development/setup)
+                        .requestMatchers("/api/config/**").permitAll()
+
                         // Require authentication for all other endpoints
                         .anyRequest().authenticated()
                 );

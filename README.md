@@ -68,13 +68,7 @@ Required for the frontend:
    cd path/to/GrepWise
    ```
 
-2. Build and run the application using the Maven wrapper (no Maven installation required):
-   ```
-   ./mvnw spring-boot:run
-   ```
-   On Windows, use `mvnw.cmd spring-boot:run` instead.
-
-   Alternatively, if you have Maven installed globally, you can use:
+2. Use:
    ```
    mvn spring-boot:run
    ```

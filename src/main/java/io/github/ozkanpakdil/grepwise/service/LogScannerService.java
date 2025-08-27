@@ -37,13 +37,9 @@ public class LogScannerService {
     private final LogBufferService logBufferService;
     private final NginxLogParser nginxLogParser;
     private final ApacheLogParser apacheLogParser;
-    private final LogPatternRecognitionService patternRecognitionService;
     
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
-    
-    @Value("${grepwise.log-scanner.analyze-patterns:true}")
-    private boolean analyzePatterns;
 
     public LogScannerService(LogDirectoryConfigRepository configRepository, 
                             LuceneService luceneService,
@@ -56,7 +52,7 @@ public class LogScannerService {
         this.logBufferService = logBufferService;
         this.nginxLogParser = nginxLogParser;
         this.apacheLogParser = apacheLogParser;
-        this.patternRecognitionService = patternRecognitionService;
+        // patternRecognitionService and realTimeUpdateService are not required here anymore
         logger.info("LogScannerService initialized");
     }
 
@@ -113,34 +109,17 @@ public class LogScannerService {
         }
 
         int totalProcessed = 0;
-        List<LogEntry> processedEntries = new ArrayList<>();
         
         for (Path logFile : logFiles) {
             try {
                 int processed = processLogFile(logFile.toFile());
                 totalProcessed += processed;
                 logger.info("Processed {} log entries from file: {}", processed, logFile);
-                
-                // If pattern analysis is enabled, collect log entries for analysis
-                if (analyzePatterns && processed > 0) {
-                    try {
-                        // Get the most recent log entries from this file
-                        List<LogEntry> entries = luceneService.findBySource(logFile.getFileName().toString());
-                        processedEntries.addAll(entries);
-                    } catch (IOException e) {
-                        logger.error("Error retrieving log entries for pattern analysis: {}", logFile, e);
-                    }
-                }
             } catch (Exception e) {
                 logger.error("Error processing log file: {}", logFile, e);
             }
         }
         
-        // Analyze patterns in the processed log entries
-        if (analyzePatterns && !processedEntries.isEmpty()) {
-            analyzeLogPatterns(processedEntries);
-        }
-
         return totalProcessed;
     }
 
@@ -274,13 +253,15 @@ public class LogScannerService {
         };
 
         // Try to extract timestamp if possible
-        Long RECORDTIME = DateTimeRegexPatterns.extractDateTimeToTimestamp(DateTimeRegexPatterns.extractFirstDateTime(line));
+        long entryTime = System.currentTimeMillis();
+        Long extracted = DateTimeRegexPatterns.extractDateTimeToTimestamp(DateTimeRegexPatterns.extractFirstDateTime(line));
+        Long recordTime = (extracted != null && extracted > 0) ? extracted : entryTime; // fallback to entry time
 
         // Create a log entry with the entire line as the message and raw content
         return new LogEntry(
                 UUID.randomUUID().toString(),
-                System.currentTimeMillis(), // Entry time (when the log was scanned)
-                RECORDTIME, // Record time (extracted if possible)
+                entryTime, // Entry time (when the log was scanned)
+                recordTime, // Record time (extracted if possible, else entry time)
                 LOGLEVEL, // Level (extracted if possible)
                 line, // Message is the whole line
                 source, // Source is the filename
@@ -289,52 +270,6 @@ public class LogScannerService {
         );
     }
 
-    /**
-     * Parse a timestamp string into a Unix timestamp (milliseconds since epoch).
-     *
-     * @param timestamp The timestamp string
-     * @return The Unix timestamp
-     */
-    private long parseTimestamp(String timestamp) {
-        try {
-            // Try to parse different timestamp formats
-            if (timestamp.matches("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}")) {
-                // Format: 2023-01-01 12:34:56,789
-                String[] parts = timestamp.split(",");
-                String datePart = parts[0];
-                String millisPart = parts[1];
-
-                java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(
-                        datePart.replace(" ", "T"),
-                        java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                );
-
-                long millis = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-                millis += Integer.parseInt(millisPart);
-
-                logger.debug("Parsed timestamp: {} to {}", timestamp, millis);
-                return millis;
-            } else if (timestamp.matches("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}")) {
-                // Format: 2023-01-01 12:34:56
-                java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(
-                        timestamp.replace(" ", "T"),
-                        java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                );
-
-                long millis = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-
-                logger.debug("Parsed timestamp: {} to {}", timestamp, millis);
-                return millis;
-            }
-
-            // If we couldn't parse the timestamp, use the current time
-            logger.warn("Could not parse timestamp: {}, using current time instead", timestamp);
-            return System.currentTimeMillis();
-        } catch (Exception e) {
-            logger.error("Error parsing timestamp: {}", timestamp, e);
-            return System.currentTimeMillis();
-        }
-    }
 
     /**
      * Get all log directory configurations.
@@ -387,31 +322,4 @@ public class LogScannerService {
         return configRepository.count();
     }
     
-    /**
-     * Analyze patterns in a batch of log entries.
-     * This method uses the LogPatternRecognitionService to identify common patterns
-     * in the log entries and logs the results.
-     *
-     * @param logEntries The log entries to analyze
-     */
-    private void analyzeLogPatterns(List<LogEntry> logEntries) {
-        if (!analyzePatterns || logEntries.isEmpty()) {
-            return;
-        }
-        
-        try {
-            logger.info("Analyzing patterns in {} log entries", logEntries.size());
-            
-            // Get the most common patterns (top 10)
-            Map<String, Integer> commonPatterns = patternRecognitionService.getMostCommonPatterns(null, null, 10);
-            
-            // Log the results
-            logger.info("Found {} distinct log patterns", commonPatterns.size());
-            for (Map.Entry<String, Integer> entry : commonPatterns.entrySet()) {
-                logger.info("Pattern: '{}' - Count: {}", entry.getKey(), entry.getValue());
-            }
-        } catch (Exception e) {
-            logger.error("Error analyzing log patterns", e);
-        }
-    }
 }

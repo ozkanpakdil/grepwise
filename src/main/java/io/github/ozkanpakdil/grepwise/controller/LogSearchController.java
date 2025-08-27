@@ -1164,8 +1164,9 @@ public class LogSearchController {
             }
         }
         if (startTime == null || endTime == null) {
+            // Align default range with SSE stream (last 30 days) to keep totals and pages consistent
             endTime = System.currentTimeMillis();
-            startTime = endTime - (24 * 60 * 60 * 1000);
+            startTime = endTime - (30L * 24 * 60 * 60 * 1000);
         }
 
         try {

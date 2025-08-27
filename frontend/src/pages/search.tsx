@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, Fragment} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {useToast} from '@/components/ui/use-toast';
 import {Button} from '@/components/ui/button';
@@ -93,7 +93,7 @@ export default function SearchPage() {
     const [customEndTime, setCustomEndTime] = useState<number | undefined>(undefined);
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<LogEntry[]>([]);
-    const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
     const [histogramData, setHistogramData] = useState<HistogramData[]>([]);
     const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
@@ -313,9 +313,9 @@ export default function SearchPage() {
                 setCustomStartTime(undefined);
                 setCustomEndTime(undefined);
                 setSearchResults([]);
-                setSelectedLog(null);
                 setTimeSlots([]);
                 setHistogramData([]);
+                setExpandedLogId(null);
                 setTotalCount(null);
                 setCurrentPage(1);
                 setSortColumn(null);
@@ -373,6 +373,7 @@ export default function SearchPage() {
             setSearchResults([]);
             setTimeSlots([]);
             setHistogramData([]);
+            setExpandedLogId(null);
             setTotalCount(null);
             setCurrentPage(1);
 
@@ -566,6 +567,7 @@ export default function SearchPage() {
     // Fetch a specific page from the server (non-SSE)
     const fetchPage = async (page: number) => {
         try {
+            setExpandedLogId(null);
             if (totalCount === null) return;
             const trimmed = (editorRef.current?.getValue() || query).trim();
             const sp = new URLSearchParams();
@@ -817,7 +819,7 @@ export default function SearchPage() {
     }, [searchResults, sortColumn, sortDirection, filterValues]);
 
     const handleLogClick = (log: LogEntry) => {
-        setSelectedLog(log);
+        setExpandedLogId((prev) => (prev === log.id ? null : log.id));
     };
 
     const [zoomStack, setZoomStack] = useState<{
@@ -1275,20 +1277,57 @@ export default function SearchPage() {
                                 </thead>
                                 <tbody>
                                 {processedResults.map((log) => (
-                                    <tr
-                                        key={log.id}
-                                        className="border-b hover:bg-muted/50 cursor-pointer"
-                                        onClick={() => handleLogClick(log)}
-                                    >
-                                        <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
-                                        <td className="px-4 py-2 text-sm">
-                        <span className={getLevelClass(log.level)}>
-                          {log.level}
-                        </span>
-                                        </td>
-                                        <td className="px-4 py-2 text-sm">{renderHighlighted(log.message)}</td>
-                                        <td className="px-4 py-2 text-sm">{log.source}</td>
-                                    </tr>
+                                    <Fragment key={log.id}>
+                                        <tr
+                                            className="border-b hover:bg-muted/50 cursor-pointer"
+                                            onClick={() => handleLogClick(log)}
+                                        >
+                                            <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
+                                            <td className="px-4 py-2 text-sm">
+                                                <span className={getLevelClass(log.level)}>
+                                                    {log.level}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-2 text-sm">{renderHighlighted(log.message)}</td>
+                                            <td className="px-4 py-2 text-sm">{log.source}</td>
+                                        </tr>
+                                        {expandedLogId === log.id && (
+                                            <tr className="border-b bg-muted/20">
+                                                <td colSpan={4} className="px-4 py-3">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h3 className="text-sm font-medium">Log Details</h3>
+                                                        <Button variant="ghost" size="sm" onClick={() => setExpandedLogId(null)}>Close</Button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-xs font-medium">Timestamp</p>
+                                                            <p className="text-xs">{formatTimestamp(log.timestamp)}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-medium">Level</p>
+                                                            <p className={`text-xs ${getLevelClass(log.level)}`}>{log.level}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-medium">Source</p>
+                                                            <p className="text-xs">{log.source}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-medium">ID</p>
+                                                            <p className="text-xs">{log.id}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-3">
+                                                        <p className="text-xs font-medium">Message</p>
+                                                        <p className="text-xs mt-1 p-2 bg-background rounded-md">{log.message}</p>
+                                                    </div>
+                                                    <div className="mt-3">
+                                                        <p className="text-xs font-medium">Metadata</p>
+                                                        <pre className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">{JSON.stringify(log.metadata, null, 2)}</pre>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </Fragment>
                                 ))}
                                 </tbody>
                             </table>
@@ -1324,55 +1363,6 @@ export default function SearchPage() {
                 </div>
             )}
 
-            {selectedLog && (
-                <div className="rounded-md border p-4 bg-muted/20">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-medium">Log Details</h3>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedLog(null)}
-                        >
-                            Close
-                        </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-sm font-medium">Timestamp</p>
-                            <p className="text-sm">{formatTimestamp(selectedLog.timestamp)}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">Level</p>
-                            <p className={`text-sm ${getLevelClass(selectedLog.level)}`}>
-                                {selectedLog.level}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">Source</p>
-                            <p className="text-sm">{selectedLog.source}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">ID</p>
-                            <p className="text-sm">{selectedLog.id}</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-4">
-                        <p className="text-sm font-medium">Message</p>
-                        <p className="text-sm mt-1 p-2 bg-background rounded-md">
-                            {selectedLog.message}
-                        </p>
-                    </div>
-
-                    <div className="mt-4">
-                        <p className="text-sm font-medium">Metadata</p>
-                        <pre className="text-sm mt-1 p-2 bg-background rounded-md overflow-x-auto">
-              {JSON.stringify(selectedLog.metadata, null, 2)}
-            </pre>
-                    </div>
-                </div>
-            )}
 
             {searchResults.length === 0 && !isSearching && query && (
                 <div className="text-center py-8">

@@ -37,7 +37,7 @@ export default function Layout() {
                 <MenuIcon className="h-5 w-5" />
               </Button>
             </div>
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/?home=1" className="flex items-center gap-2">
               <span className="font-bold text-xl">GrepWise</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 text-sm">

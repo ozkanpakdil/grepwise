@@ -16,22 +16,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.StringJoiner;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.UUID;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for searching logs.
@@ -55,47 +49,47 @@ public class LogSearchController {
     /**
      * Search logs by query with advanced options.
      *
-     * @param query The search query
-     * @param isRegex Whether the query is a regex pattern
+     * @param query     The search query
+     * @param isRegex   Whether the query is a regex pattern
      * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
      * @param startTime Custom start time (for custom time range)
-     * @param endTime Custom end time (for custom time range)
+     * @param endTime   Custom end time (for custom time range)
      * @return A list of matching log entries
      */
     @Operation(
-        summary = "Search logs",
-        description = "Search logs using a query string with support for regex and time range filtering"
+            summary = "Search logs",
+            description = "Search logs using a query string with support for regex and time range filtering"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successful search operation",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = LogEntry.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successful search operation",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LogEntry.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error during search operation",
+                    content = @Content
             )
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error during search operation",
-            content = @Content
-        )
     })
     @GetMapping("/search")
     public ResponseEntity<List<LogEntry>> searchLogs(
-            @Parameter(description = "Search query string") 
+            @Parameter(description = "Search query string")
             @RequestParam(required = false) String query,
-            
-            @Parameter(description = "Whether to treat the query as a regular expression") 
+
+            @Parameter(description = "Whether to treat the query as a regular expression")
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
-            
-            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)")
             @RequestParam(required = false) String timeRange,
-            
-            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)") 
+
+            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)")
             @RequestParam(required = false) Long startTime,
-            
-            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)") 
+
+            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)")
             @RequestParam(required = false) Long endTime) {
 
         // Calculate time range if a predefined range is specified
@@ -142,40 +136,40 @@ public class LogSearchController {
      * @return Query results (either log entries or statistics)
      */
     @Operation(
-        summary = "Execute SPL query",
-        description = "Execute a Splunk Processing Language (SPL) query to search and analyze logs. " +
-                "Supports commands like 'search', 'stats', 'where', 'eval', etc."
+            summary = "Execute SPL query",
+            description = "Execute a Splunk Processing Language (SPL) query to search and analyze logs. " +
+                    "Supports commands like 'search', 'stats', 'where', 'eval', etc."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successful query execution",
-            content = @Content(
-                mediaType = "application/json"
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successful query execution",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid SPL query syntax",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error during query execution",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid SPL query syntax",
-            content = @Content(
-                mediaType = "application/json"
-            )
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error during query execution",
-            content = @Content(
-                mediaType = "application/json"
-            )
-        )
     })
     @PostMapping("/spl")
     public ResponseEntity<?> executeSplQuery(
             @Parameter(
-                description = "SPL query string (e.g., \"search error | stats count by level\")",
-                required = true,
-                example = "search error | stats count by level"
-            ) 
+                    description = "SPL query string (e.g., \"search error | stats count by level\")",
+                    required = true,
+                    example = "search error | stats count by level"
+            )
             @RequestBody String splQuery) {
         try {
             SplQueryService.SplQueryResult result = splQueryService.executeSplQuery(splQuery);
@@ -313,52 +307,52 @@ public class LogSearchController {
 
     /**
      * Get log count aggregation by time slots.
-     * 
-     * @param query The search query
-     * @param isRegex Whether the query is a regex pattern
+     *
+     * @param query     The search query
+     * @param isRegex   Whether the query is a regex pattern
      * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
      * @param startTime Custom start time (for custom time range)
-     * @param endTime Custom end time (for custom time range)
-     * @param slots Number of time slots to divide the range into
+     * @param endTime   Custom end time (for custom time range)
+     * @param slots     Number of time slots to divide the range into
      * @return A map of time slots to log counts
      */
     @Operation(
-        summary = "Get log count by time slots",
-        description = "Aggregates log counts into time slots for visualization. " +
-                "This endpoint is useful for creating time-based charts and graphs."
+            summary = "Get log count by time slots",
+            description = "Aggregates log counts into time slots for visualization. " +
+                    "This endpoint is useful for creating time-based charts and graphs."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successful aggregation",
-            content = @Content(
-                mediaType = "application/json"
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successful aggregation",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error during aggregation",
+                    content = @Content
             )
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error during aggregation",
-            content = @Content
-        )
     })
     @GetMapping("/time-aggregation")
     public ResponseEntity<Map<Long, Integer>> getLogCountByTimeSlots(
-            @Parameter(description = "Search query string") 
+            @Parameter(description = "Search query string")
             @RequestParam(required = false) String query,
-            
-            @Parameter(description = "Whether to treat the query as a regular expression") 
+
+            @Parameter(description = "Whether to treat the query as a regular expression")
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
-            
-            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)")
             @RequestParam(required = false) String timeRange,
-            
-            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)") 
+
+            @Parameter(description = "Custom start time in milliseconds since epoch (for custom time range)")
             @RequestParam(required = false) Long startTime,
-            
-            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)") 
+
+            @Parameter(description = "Custom end time in milliseconds since epoch (for custom time range)")
             @RequestParam(required = false) Long endTime,
-            
-            @Parameter(description = "Number of time slots to divide the range into (default: 24)") 
+
+            @Parameter(description = "Number of time slots to divide the range into (default: 24)")
             @RequestParam(required = false, defaultValue = "24") int slots) {
 
         // Calculate time range if a predefined range is specified
@@ -432,64 +426,64 @@ public class LogSearchController {
 
         return ResponseEntity.ok(result);
     }
-    
+
     /**
      * Get histogram data for logs.
      * This endpoint provides time-based histogram data for logs matching the given query and time range.
      * It groups logs into time intervals and returns the count for each interval.
      *
-     * @param query Search query string
-     * @param isRegex Whether to treat the query as a regular expression
-     * @param from Start time in milliseconds since epoch
-     * @param to End time in milliseconds since epoch
+     * @param query    Search query string
+     * @param isRegex  Whether to treat the query as a regular expression
+     * @param from     Start time in milliseconds since epoch
+     * @param to       End time in milliseconds since epoch
      * @param interval Time interval (e.g., 1m, 5m, 1h)
      * @return List of timestamp-count pairs
      */
     @Operation(
-        summary = "Get log histogram data",
-        description = "Provides time-based histogram data for logs matching the given query and time range"
+            summary = "Get log histogram data",
+            description = "Provides time-based histogram data for logs matching the given query and time range"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successful histogram generation",
-            content = @Content(
-                mediaType = "application/json"
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successful histogram generation",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid parameters",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid parameters",
-            content = @Content
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content
-        )
     })
     @GetMapping("/histogram")
     public ResponseEntity<List<Map<String, Object>>> getLogHistogram(
-            @Parameter(description = "Search query string") 
+            @Parameter(description = "Search query string")
             @RequestParam(required = false) String query,
-            
-            @Parameter(description = "Whether to treat the query as a regular expression") 
+
+            @Parameter(description = "Whether to treat the query as a regular expression")
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
-            
-            @Parameter(description = "Start time in milliseconds since epoch") 
+
+            @Parameter(description = "Start time in milliseconds since epoch")
             @RequestParam(required = true) Long from,
-            
-            @Parameter(description = "End time in milliseconds since epoch") 
+
+            @Parameter(description = "End time in milliseconds since epoch")
             @RequestParam(required = true) Long to,
-            
-            @Parameter(description = "Time interval (1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 24h)") 
+
+            @Parameter(description = "Time interval (1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 24h)")
             @RequestParam(required = true) String interval) {
 
         // Validate parameters
         if (from >= to) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         // Parse interval string to milliseconds
         long intervalMs;
         switch (interval) {
@@ -523,7 +517,7 @@ public class LogSearchController {
             default:
                 return ResponseEntity.badRequest().build();
         }
-        
+
         // Get logs matching the query and time range
         List<LogEntry> logs;
         try {
@@ -531,47 +525,47 @@ public class LogSearchController {
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
-        
+
         // Calculate number of intervals
         long timeRangeMs = to - from;
         int intervals = (int) Math.ceil((double) timeRangeMs / intervalMs);
-        
+
         // Initialize the result map with all intervals (even empty ones)
         Map<Long, Integer> countsByTimestamp = new TreeMap<>();
         for (int i = 0; i < intervals; i++) {
             long intervalStartTime = from + (i * intervalMs);
             countsByTimestamp.put(intervalStartTime, 0);
         }
-        
+
         // Count logs in each interval
         for (LogEntry log : logs) {
             // Use record time if available, otherwise use entry time
             long timeToCheck = log.recordTime() != null ? log.recordTime() : log.timestamp();
-            
+
             // Find which interval this log belongs to
             int intervalIndex = (int) ((timeToCheck - from) / intervalMs);
-            
+
             // Ensure the interval index is valid
             if (intervalIndex >= 0 && intervalIndex < intervals) {
                 long intervalStartTime = from + (intervalIndex * intervalMs);
                 countsByTimestamp.put(intervalStartTime, countsByTimestamp.get(intervalStartTime) + 1);
             }
         }
-        
+
         // Convert to the required output format
         List<Map<String, Object>> result = countsByTimestamp.entrySet().stream()
-            .map(entry -> {
-                Map<String, Object> item = new java.util.HashMap<>();
-                // Format timestamp as ISO-8601 string
-                String timestamp = Instant.ofEpochMilli(entry.getKey())
-                    .atZone(ZoneId.of("UTC"))
-                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                item.put("timestamp", timestamp);
-                item.put("count", entry.getValue());
-                return item;
-            })
-            .collect(Collectors.toList());
-        
+                .map(entry -> {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    // Format timestamp as ISO-8601 string
+                    String timestamp = Instant.ofEpochMilli(entry.getKey())
+                            .atZone(ZoneId.of("UTC"))
+                            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    item.put("timestamp", timestamp);
+                    item.put("count", entry.getValue());
+                    return item;
+                })
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(result);
     }
 
@@ -583,20 +577,20 @@ public class LogSearchController {
      * @return Cache statistics
      */
     @Operation(
-        summary = "Get search cache statistics",
-        description = "Provides information about the search cache performance, including cache size, hit ratio, and other metrics"
+            summary = "Get search cache statistics",
+            description = "Provides information about the search cache performance, including cache size, hit ratio, and other metrics"
     )
     @ApiResponse(
-        responseCode = "200", 
-        description = "Cache statistics retrieved successfully",
-        content = @Content(mediaType = "application/json")
+            responseCode = "200",
+            description = "Cache statistics retrieved successfully",
+            content = @Content(mediaType = "application/json")
     )
     @GetMapping("/cache/stats")
     public ResponseEntity<Map<String, Object>> getCacheStats() {
         Map<String, Object> stats = searchCacheService.getCacheStats();
         return ResponseEntity.ok(stats);
     }
-    
+
     /**
      * Clear the search cache.
      * This endpoint clears all entries from the search cache.
@@ -604,13 +598,13 @@ public class LogSearchController {
      * @return A message indicating the cache was cleared
      */
     @Operation(
-        summary = "Clear search cache",
-        description = "Clears all entries from the search cache"
+            summary = "Clear search cache",
+            description = "Clears all entries from the search cache"
     )
     @ApiResponse(
-        responseCode = "200", 
-        description = "Cache cleared successfully",
-        content = @Content(mediaType = "application/json")
+            responseCode = "200",
+            description = "Cache cleared successfully",
+            content = @Content(mediaType = "application/json")
     )
     @PostMapping("/cache/clear")
     public ResponseEntity<Map<String, String>> clearCache() {
@@ -618,204 +612,204 @@ public class LogSearchController {
         Map<String, String> response = Map.of("message", "Search cache cleared successfully");
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Update search cache configuration.
      * This endpoint allows updating the cache configuration parameters.
      *
-     * @param enabled Whether the cache is enabled
-     * @param maxSize Maximum cache size
+     * @param enabled      Whether the cache is enabled
+     * @param maxSize      Maximum cache size
      * @param expirationMs Cache entry expiration time in milliseconds
      * @return The updated cache configuration
      */
     @Operation(
-        summary = "Update search cache configuration",
-        description = "Updates the search cache configuration parameters such as enabled status, maximum size, and expiration time"
+            summary = "Update search cache configuration",
+            description = "Updates the search cache configuration parameters such as enabled status, maximum size, and expiration time"
     )
     @ApiResponse(
-        responseCode = "200", 
-        description = "Cache configuration updated successfully",
-        content = @Content(mediaType = "application/json")
+            responseCode = "200",
+            description = "Cache configuration updated successfully",
+            content = @Content(mediaType = "application/json")
     )
     @PostMapping("/cache/config")
     public ResponseEntity<Map<String, Object>> updateCacheConfig(
-            @Parameter(description = "Whether the cache is enabled") 
+            @Parameter(description = "Whether the cache is enabled")
             @RequestParam(required = false) Boolean enabled,
-            
-            @Parameter(description = "Maximum cache size (number of entries)") 
+
+            @Parameter(description = "Maximum cache size (number of entries)")
             @RequestParam(required = false) Integer maxSize,
-            
-            @Parameter(description = "Cache entry expiration time in milliseconds") 
+
+            @Parameter(description = "Cache entry expiration time in milliseconds")
             @RequestParam(required = false) Integer expirationMs) {
-        
+
         if (enabled != null) {
             searchCacheService.setCacheEnabled(enabled);
         }
-        
+
         if (maxSize != null && maxSize > 0) {
             searchCacheService.setMaxCacheSize(maxSize);
         }
-        
+
         if (expirationMs != null && expirationMs > 0) {
             searchCacheService.setExpirationMs(expirationMs);
         }
-        
+
         return ResponseEntity.ok(searchCacheService.getCacheStats());
     }
-    
+
     /**
      * Export logs as CSV.
      * This endpoint exports logs matching the search criteria in CSV format.
      *
-     * @param query The search query
-     * @param isRegex Whether the query is a regular expression
+     * @param query     The search query
+     * @param isRegex   Whether the query is a regular expression
      * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
      * @param startTime Custom start time (epoch milliseconds)
-     * @param endTime Custom end time (epoch milliseconds)
+     * @param endTime   Custom end time (epoch milliseconds)
      * @return CSV file containing the logs
      */
     @Operation(
-        summary = "Export logs as CSV",
-        description = "Exports logs matching the search criteria in CSV format"
+            summary = "Export logs as CSV",
+            description = "Exports logs matching the search criteria in CSV format"
     )
     @ApiResponse(
-        responseCode = "200", 
-        description = "Logs exported successfully",
-        content = @Content(mediaType = "text/csv")
+            responseCode = "200",
+            description = "Logs exported successfully",
+            content = @Content(mediaType = "text/csv")
     )
     @GetMapping(value = "/export/csv", produces = "text/csv")
     public ResponseEntity<String> exportLogsAsCsv(
-            @Parameter(description = "Search query") 
+            @Parameter(description = "Search query")
             @RequestParam(required = false, defaultValue = "") String query,
-            
-            @Parameter(description = "Whether the query is a regular expression") 
+
+            @Parameter(description = "Whether the query is a regular expression")
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
-            
-            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)")
             @RequestParam(required = false) String timeRange,
-            
-            @Parameter(description = "Custom start time (epoch milliseconds)") 
+
+            @Parameter(description = "Custom start time (epoch milliseconds)")
             @RequestParam(required = false) Long startTime,
-            
-            @Parameter(description = "Custom end time (epoch milliseconds)") 
+
+            @Parameter(description = "Custom end time (epoch milliseconds)")
             @RequestParam(required = false) Long endTime) {
-        
+
         try {
             // Use the existing searchLogs method to get the logs
             ResponseEntity<List<LogEntry>> searchResponse = searchLogs(query, isRegex, timeRange, startTime, endTime);
-            
+
             if (searchResponse.getStatusCode().isError() || searchResponse.getBody() == null) {
                 return ResponseEntity.internalServerError().build();
             }
-            
+
             List<LogEntry> logs = searchResponse.getBody();
-            
+
             // Convert logs to CSV
             StringBuilder csvBuilder = new StringBuilder();
-            
+
             // Add CSV header
             csvBuilder.append("ID,Timestamp,DateTime,Level,Source,Message,RawContent\n");
-            
+
             // Format for timestamp conversion
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault());
-            
+                    .withZone(ZoneId.systemDefault());
+
             // Add each log as a CSV row
             for (LogEntry log : logs) {
                 String timestamp = formatter.format(Instant.ofEpochMilli(log.timestamp()));
-                
+
                 // Escape fields that might contain commas or quotes
                 String message = escapeCSV(log.message());
                 String source = escapeCSV(log.source());
                 String rawContent = escapeCSV(log.rawContent());
-                
+
                 csvBuilder.append(log.id()).append(",")
-                    .append(log.timestamp()).append(",")
-                    .append(timestamp).append(",")
-                    .append(log.level()).append(",")
-                    .append(source).append(",")
-                    .append(message).append(",")
-                    .append(rawContent).append("\n");
+                        .append(log.timestamp()).append(",")
+                        .append(timestamp).append(",")
+                        .append(log.level()).append(",")
+                        .append(source).append(",")
+                        .append(message).append(",")
+                        .append(rawContent).append("\n");
             }
-            
+
             // Set headers for file download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType("text/csv"));
             headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".csv");
-            
+
             return ResponseEntity.ok()
-                .headers(headers)
-                .body(csvBuilder.toString());
-                
+                    .headers(headers)
+                    .body(csvBuilder.toString());
+
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     /**
      * Export logs as JSON.
      * This endpoint exports logs matching the search criteria in JSON format.
      *
-     * @param query The search query
-     * @param isRegex Whether the query is a regular expression
+     * @param query     The search query
+     * @param isRegex   Whether the query is a regular expression
      * @param timeRange Predefined time range (1h, 3h, 12h, 24h, custom)
      * @param startTime Custom start time (epoch milliseconds)
-     * @param endTime Custom end time (epoch milliseconds)
+     * @param endTime   Custom end time (epoch milliseconds)
      * @return JSON file containing the logs
      */
     @Operation(
-        summary = "Export logs as JSON",
-        description = "Exports logs matching the search criteria in JSON format"
+            summary = "Export logs as JSON",
+            description = "Exports logs matching the search criteria in JSON format"
     )
     @ApiResponse(
-        responseCode = "200", 
-        description = "Logs exported successfully",
-        content = @Content(mediaType = "application/json")
+            responseCode = "200",
+            description = "Logs exported successfully",
+            content = @Content(mediaType = "application/json")
     )
     @GetMapping(value = "/export/json", produces = "application/json")
     public ResponseEntity<List<LogEntry>> exportLogsAsJson(
-            @Parameter(description = "Search query") 
+            @Parameter(description = "Search query")
             @RequestParam(required = false, defaultValue = "") String query,
-            
-            @Parameter(description = "Whether the query is a regular expression") 
+
+            @Parameter(description = "Whether the query is a regular expression")
             @RequestParam(required = false, defaultValue = "false") boolean isRegex,
-            
-            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)") 
+
+            @Parameter(description = "Predefined time range (1h, 3h, 12h, 24h, custom)")
             @RequestParam(required = false) String timeRange,
-            
-            @Parameter(description = "Custom start time (epoch milliseconds)") 
+
+            @Parameter(description = "Custom start time (epoch milliseconds)")
             @RequestParam(required = false) Long startTime,
-            
-            @Parameter(description = "Custom end time (epoch milliseconds)") 
+
+            @Parameter(description = "Custom end time (epoch milliseconds)")
             @RequestParam(required = false) Long endTime) {
-        
+
         try {
             // Use the existing searchLogs method to get the logs
             ResponseEntity<List<LogEntry>> searchResponse = searchLogs(query, isRegex, timeRange, startTime, endTime);
-            
+
             if (searchResponse.getStatusCode().isError() || searchResponse.getBody() == null) {
                 return ResponseEntity.internalServerError().build();
             }
-            
+
             List<LogEntry> logs = searchResponse.getBody();
-            
+
             // Set headers for file download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".json");
-            
+
             return ResponseEntity.ok()
-                .headers(headers)
-                .body(logs);
-                
+                    .headers(headers)
+                    .body(logs);
+
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     /**
      * Helper method to escape special characters in CSV fields.
-     * 
+     *
      * @param field The field to escape
      * @return The escaped field
      */
@@ -823,18 +817,18 @@ public class LogSearchController {
         if (field == null) {
             return "";
         }
-        
+
         // If the field contains commas, quotes, or newlines, wrap it in quotes and escape any quotes
         if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
             return "\"" + field.replace("\"", "\"\"") + "\"";
         }
-        
+
         return field;
     }
-    
+
     @Operation(
-        summary = "Progressive search stream",
-        description = "Streams initial page of logs and progressive histogram updates via SSE"
+            summary = "Progressive search stream",
+            description = "Streams initial page of logs and progressive histogram updates via SSE"
     )
     @GetMapping(value = "/search/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamSearch(
@@ -846,7 +840,7 @@ public class LogSearchController {
             @RequestParam(required = false, defaultValue = "100") Integer pageSize,
             @RequestParam(required = false) String interval
     ) {
-        // Resolve time range
+        // Resolve time range. If no explicit range, default histogram window to last 30 days (as per requirements)
         if (timeRange != null && !timeRange.equals("custom")) {
             long now = System.currentTimeMillis();
             long hours = switch (timeRange) {
@@ -862,8 +856,9 @@ public class LogSearchController {
             }
         }
         if (startTime == null || endTime == null) {
+            // Default histogram range to last 30 days
             endTime = System.currentTimeMillis();
-            startTime = endTime - (24 * 60 * 60 * 1000);
+            startTime = endTime - (30L * 24 * 60 * 60 * 1000);
         }
 
         // Determine interval if not provided
@@ -871,10 +866,15 @@ public class LogSearchController {
         final long fStartTime = startTime;
         final long fEndTime = endTime;
         if (interval == null || interval.isBlank()) {
-            if (rangeMs <= 60 * 60 * 1000) interval = "1m";
+            // Choose interval to target ~30 buckets and daily buckets for 30-day range
+            long dayMs = 24L * 60 * 60 * 1000;
+            if (rangeMs >= 25L * dayMs) {
+                interval = "24h"; // daily for ~last 30 days
+            } else if (rangeMs <= 60 * 60 * 1000) interval = "1m";
             else if (rangeMs <= 3 * 60 * 60 * 1000) interval = "5m";
             else if (rangeMs <= 12 * 60 * 60 * 1000) interval = "15m";
-            else interval = "30m";
+            else if (rangeMs <= 24 * 60 * 60 * 1000) interval = "30m";
+            else interval = "1h";
         }
         long intervalMs = switch (interval) {
             case "1m" -> 60_000L;
@@ -924,7 +924,9 @@ public class LogSearchController {
                 )));
 
                 // Fetch all matching logs (synchronously for now)
-                List<LogEntry> logs = luceneService.search(query, isRegex, fs, fe);
+                // Treat literal "*" as match-all
+                String effectiveQuery = (query != null && query.trim().equals("*")) ? null : query;
+                List<LogEntry> logs = luceneService.search(effectiveQuery, isRegex, fs, fe);
 
                 // Send first page quickly
                 int ps = Math.max(1, pageSize == null ? 100 : pageSize);
@@ -934,6 +936,11 @@ public class LogSearchController {
                 // Progressively aggregate
                 int batch = 200; // update cadence
                 int processed = 0;
+                // Process logs in descending time order (latest to earliest) to fill bars from last seen backwards
+                logs.sort((a, b) -> Long.compare(
+                        b.recordTime() != null ? b.recordTime() : b.timestamp(),
+                        a.recordTime() != null ? a.recordTime() : a.timestamp()
+                ));
                 for (LogEntry log : logs) {
                     long t = log.recordTime() != null ? log.recordTime() : log.timestamp();
                     int idx = (int) ((t - fs) / fIntervalMs);
@@ -967,7 +974,10 @@ public class LogSearchController {
                 emitter.send(SseEmitter.event().name("done").data(Map.of("total", logs.size())));
                 emitter.complete();
             } catch (Exception ex) {
-                try { emitter.send(SseEmitter.event().name("error").data(ex.getMessage())); } catch (IOException ignored) {}
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(ex.getMessage()));
+                } catch (IOException ignored) {
+                }
                 emitter.completeWithError(ex);
             } finally {
                 exec.shutdown();
@@ -976,5 +986,210 @@ public class LogSearchController {
 
         return emitter;
     }
-    
+
+    @Operation(
+            summary = "Progressive timetable stream",
+            description = "Streams progressive histogram (time table) updates via SSE without log pages"
+    )
+    @GetMapping(value = "/search/timetable/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamTimeTable(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            @RequestParam(required = false) String timeRange,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false) String interval
+    ) {
+        // Resolve time range similar to streamSearch. If no explicit range, default to last 30 days
+        if (timeRange != null && !timeRange.equals("custom")) {
+            long now = System.currentTimeMillis();
+            long hours = switch (timeRange) {
+                case "1h" -> 1;
+                case "3h" -> 3;
+                case "12h" -> 12;
+                case "24h" -> 24;
+                default -> 0;
+            };
+            if (hours > 0) {
+                endTime = now;
+                startTime = now - (hours * 60 * 60 * 1000);
+            }
+        }
+        if (startTime == null || endTime == null) {
+            endTime = System.currentTimeMillis();
+            startTime = endTime - (30L * 24 * 60 * 60 * 1000);
+        }
+
+        long rangeMs = endTime - startTime;
+        final long fs = startTime;
+        final long fe = endTime;
+        if (interval == null || interval.isBlank()) {
+            long dayMs = 24L * 60 * 60 * 1000;
+            if (rangeMs >= 25L * dayMs) {
+                interval = "24h";
+            } else if (rangeMs <= 60 * 60 * 1000) interval = "1m";
+            else if (rangeMs <= 3 * 60 * 60 * 1000) interval = "5m";
+            else if (rangeMs <= 12 * 60 * 60 * 1000) interval = "15m";
+            else if (rangeMs <= 24 * 60 * 60 * 1000) interval = "30m";
+            else interval = "1h";
+        }
+        long intervalMs = switch (interval) {
+            case "1m" -> 60_000L;
+            case "5m" -> 300_000L;
+            case "15m" -> 900_000L;
+            case "30m" -> 1_800_000L;
+            case "1h" -> 3_600_000L;
+            case "3h" -> 10_800_000L;
+            case "6h" -> 21_600_000L;
+            case "12h" -> 43_200_000L;
+            case "24h" -> 86_400_000L;
+            default -> 300_000L;
+        };
+
+        SseEmitter emitter = new SseEmitter(300000L);
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        final long fIntervalMs = intervalMs;
+        final long fRangeMs = rangeMs;
+        final String fInterval = interval;
+
+        exec.submit(() -> {
+            try {
+                // Initialize buckets
+                long buckets = (long) Math.ceil((double) fRangeMs / fIntervalMs);
+                Map<Long, Integer> countsByTs = new TreeMap<>();
+                for (int i = 0; i < buckets; i++) {
+                    long ts = fs + (i * fIntervalMs);
+                    countsByTs.put(ts, 0);
+                }
+
+                // Send init with zeroed buckets (UTC ISO timestamps)
+                List<Map<String, Object>> initBuckets = new ArrayList<>();
+                for (Long ts : countsByTs.keySet()) {
+                    Map<String, Object> b = new HashMap<>();
+                    String iso = Instant.ofEpochMilli(ts).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    b.put("timestamp", iso);
+                    b.put("count", 0);
+                    initBuckets.add(b);
+                }
+                emitter.send(SseEmitter.event().name("init").data(Map.of(
+                        "from", fs,
+                        "to", fe,
+                        "interval", fInterval,
+                        "buckets", initBuckets
+                )));
+
+                // Query logs and progressively aggregate only histogram
+                String effectiveQuery = (query != null && query.trim().equals("*")) ? null : query;
+                List<LogEntry> logs = luceneService.search(effectiveQuery, isRegex, fs, fe);
+
+                // Latest-to-earliest to fill from rightmost backwards visually
+                logs.sort((a, b) -> Long.compare(
+                        b.recordTime() != null ? b.recordTime() : b.timestamp(),
+                        a.recordTime() != null ? a.recordTime() : a.timestamp()
+                ));
+
+                int batch = 200;
+                int processed = 0;
+                for (LogEntry log : logs) {
+                    long t = log.recordTime() != null ? log.recordTime() : log.timestamp();
+                    int idx = (int) ((t - fs) / fIntervalMs);
+                    if (idx >= 0 && idx < buckets) {
+                        long bucketTs = fs + (idx * fIntervalMs);
+                        countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                    }
+                    processed++;
+                    if (processed % batch == 0) {
+                        List<Map<String, Object>> snapshot = countsByTs.entrySet().stream().map(e -> {
+                            Map<String, Object> m = new HashMap<>();
+                            String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                            m.put("timestamp", iso);
+                            m.put("count", e.getValue());
+                            return m;
+                        }).collect(Collectors.toList());
+                        emitter.send(SseEmitter.event().name("hist").data(snapshot));
+                    }
+                }
+
+                // Final snapshot & done
+                List<Map<String, Object>> finalSnapshot = countsByTs.entrySet().stream().map(e -> {
+                    Map<String, Object> m = new HashMap<>();
+                    String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    m.put("timestamp", iso);
+                    m.put("count", e.getValue());
+                    return m;
+                }).collect(Collectors.toList());
+                emitter.send(SseEmitter.event().name("hist").data(finalSnapshot));
+                emitter.send(SseEmitter.event().name("done").data(Map.of("total", logs.size())));
+                emitter.complete();
+            } catch (Exception ex) {
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(ex.getMessage()));
+                } catch (IOException ignored) {
+                }
+                emitter.completeWithError(ex);
+            } finally {
+                exec.shutdown();
+            }
+        });
+
+        return emitter;
+    }
+
+    /**
+     * Paged search endpoint to support pagination in UI.
+     */
+    @GetMapping("/search/page")
+    public ResponseEntity<Map<String, Object>> searchLogsPaged(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            @RequestParam(required = false) String timeRange,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "100") Integer pageSize
+    ) {
+        // Resolve time range similar to other endpoints
+        if (timeRange != null && !timeRange.equals("custom")) {
+            long now = System.currentTimeMillis();
+            long hours = switch (timeRange) {
+                case "1h" -> 1;
+                case "3h" -> 3;
+                case "12h" -> 12;
+                case "24h" -> 24;
+                default -> 0;
+            };
+            if (hours > 0) {
+                endTime = now;
+                startTime = now - (hours * 60 * 60 * 1000);
+            }
+        }
+        if (startTime == null || endTime == null) {
+            endTime = System.currentTimeMillis();
+            startTime = endTime - (24 * 60 * 60 * 1000);
+        }
+
+        try {
+            // Treat blank query as null (match all)
+            if (query != null && query.trim().equals("*")) {
+                query = null;
+            }
+            List<LogEntry> logs = luceneService.search(query, isRegex, startTime, endTime);
+            int total = logs.size();
+            int ps = Math.max(1, pageSize == null ? 100 : pageSize);
+            int p = Math.max(1, page == null ? 1 : page);
+            int fromIndex = Math.min((p - 1) * ps, total);
+            int toIndex = Math.min(fromIndex + ps, total);
+            List<LogEntry> items = logs.subList(fromIndex, toIndex);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("items", items);
+            body.put("total", total);
+            body.put("page", p);
+            body.put("pageSize", ps);
+            return ResponseEntity.ok(body);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 }

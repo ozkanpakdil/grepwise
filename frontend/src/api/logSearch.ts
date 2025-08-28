@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api/logs';
+import { apiUrl, config } from '@/config';
+const API_URL = apiUrl(config.apiPaths.logs);
 
 export interface LogEntry {
   id: string;

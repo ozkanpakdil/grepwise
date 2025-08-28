@@ -1,8 +1,12 @@
-/**
- * Global configuration constants for the application
- */
+export const config = {
+    apiBaseUrl: 'http://localhost:8080',
+    apiPaths: {
+        logs: '/api/logs',
+    },
+    defaults: {
+        pageSize: 100,
+        refreshInterval: '30s',
+    },
+};
 
-/**
- * Base URL for API requests
- */
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const apiUrl = (path: string) => `${config.apiBaseUrl}${path}`;

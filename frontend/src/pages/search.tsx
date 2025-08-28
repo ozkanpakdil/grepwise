@@ -1,21 +1,20 @@
-import {Fragment, useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import {useEffect, useMemo, useReducer, useRef} from 'react';
 import {useUrlState} from '@/hooks/useUrlState';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useToast} from '@/components/ui/use-toast';
-import {Button} from '@/components/ui/button';
 import {HistogramData, LogEntry, SearchParams, TimeSlot} from '@/api/logSearch';
 import SearchHistogram from '@/components/search/SearchHistogram';
-import SearchFilters from '@/components/search/SearchFilters';
 import {Monaco} from '@monaco-editor/react';
 import {useTimeRange} from '@/hooks/useTimeRange';
 import * as monaco from 'monaco-editor';
 import {RefreshCw} from 'lucide-react';
 import useLocalStorage from "@/components/LocalStorage.ts";
 import {useAutoRefresh} from '@/hooks/useAutoRefresh';
-import SearchPagination from '@/components/search/SearchPagination';
+import SearchResults from '@/components/search/SearchResults';
 import TimeRangePicker from '@/components/search/TimeRangePicker';
 import SearchBar from '@/components/search/SearchBar';
 import {SearchService} from '@/services/SearchService';
+import {apiUrl, config} from '@/config';
 import {StreamingService} from '@/services/StreamingService';
 import {initialSearchState, searchReducer} from '@/state/searchReducer';
 
@@ -35,14 +34,19 @@ export default function SearchPage() {
     // Keeping a thin wrapper for backwards-compatibility within this file
     // URL state helpers from custom hook
     const {serialize: serializeToParams, parse: parseFromLocation, push: pushUrl} = useUrlState();
-    const [query, setQuery] = useState('');
-    const [isRegex, setIsRegex] = useState(false);
-    const [timeRange, setTimeRange] = useState<SearchParams['timeRange']>('24h');
-    const [customStartTime, setCustomStartTime] = useState<number | undefined>(undefined);
-    const [customEndTime, setCustomEndTime] = useState<number | undefined>(undefined);
     const {computeRange, pickInterval} = useTimeRange();
     const [pageSize, setPageSize] = useLocalStorage<number>("grepwise.dashboard.pagesize", 100);
     const [s, dispatch] = useReducer(searchReducer, {...initialSearchState, pageSize});
+    const query = s.query;
+    const setQuery = (v: string) => dispatch({type: 'SET_QUERY', query: v});
+    const isRegex = s.isRegex;
+    const setIsRegex = (v: boolean) => dispatch({type: 'SET_REGEX', isRegex: v});
+    const timeRange = s.timeRange;
+    const setTimeRange = (v: SearchParams['timeRange']) => dispatch({type: 'SET_TIME_RANGE', timeRange: v});
+    const customStartTime = s.customStartTime;
+    const setCustomStartTime = (v?: number) => dispatch({type: 'SET_CUSTOM_RANGE', start: v, end: s.customEndTime});
+    const customEndTime = s.customEndTime;
+    const setCustomEndTime = (v?: number) => dispatch({type: 'SET_CUSTOM_RANGE', start: s.customStartTime, end: v});
     const isSearching = s.isSearching;
     const setIsSearching = (v: boolean) => dispatch({type: 'SET_SEARCHING', value: v});
     const searchResults = s.searchResults;
@@ -354,9 +358,9 @@ export default function SearchPage() {
                 pageSize
             });
 
-            const logsUrl = `http://localhost:8080/api/logs/search/stream?${params.toString()}`;
+            const logsUrl = `${apiUrl(`${config.apiPaths.logs}/search/stream`)}?${params.toString()}`;
             const histParams = SearchService.buildHistogramParamsFrom(params);
-            const histUrl = `http://localhost:8080/api/logs/search/timetable/stream?${histParams.toString()}`;
+            const histUrl = `${apiUrl(`${config.apiPaths.logs}/search/timetable/stream`)}?${histParams.toString()}`;
             setIsStreaming(true);
             const streaming = new StreamingService();
             streamingRef.current = streaming;
@@ -581,6 +585,30 @@ export default function SearchPage() {
     // Toggle filter visibility
     const toggleFilters = () => {
         setShowFilters(prev => !prev);
+    };
+
+    // Build current search params for export and other utilities
+    const buildCurrentSearchParams = (): SearchParams => {
+        const params: SearchParams = {
+            query: query.trim() === '*' ? undefined : query,
+            isRegex,
+            timeRange,
+        };
+        if (timeRange === 'custom') {
+            params.startTime = customStartTime;
+            params.endTime = customEndTime;
+        }
+        return params;
+    };
+
+    const onExportCsv = (params: SearchParams) => {
+        const exportUrl = SearchService.exportCsvUrl(params);
+        window.open(exportUrl, '_blank');
+    };
+
+    const onExportJson = (params: SearchParams) => {
+        const exportUrl = SearchService.exportJsonUrl(params);
+        window.open(exportUrl, '_blank');
     };
 
     // Build regex for highlighting based on query and isRegex
@@ -882,201 +910,29 @@ export default function SearchPage() {
             ) : null}
 
             {searchResults.length > 0 && (
-                <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                        <div>
-              <span className="text-sm text-muted-foreground">
-                Showing {processedResults.length} of {totalCount ?? '…'} logs
-              </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    // Create search params from current state
-                                    const params: SearchParams = {
-                                        query: query.trim() === '*' ? undefined : query,
-                                        isRegex: isRegex,
-                                        timeRange: timeRange
-                                    };
-
-                                    // Add custom time range if selected
-                                    if (timeRange === 'custom') {
-                                        params.startTime = customStartTime;
-                                        params.endTime = customEndTime;
-                                    }
-
-                                    // Generate export URL and open in new tab
-                                    const exportUrl = SearchService.exportCsvUrl(params);
-                                    window.open(exportUrl, '_blank');
-                                }}
-                                className="flex items-center gap-1"
-                            >
-                                Export CSV
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    // Create search params from current state
-                                    const params: SearchParams = {
-                                        query: query.trim() === '*' ? undefined : query,
-                                        isRegex: isRegex,
-                                        timeRange: timeRange
-                                    };
-
-                                    // Add custom time range if selected
-                                    if (timeRange === 'custom') {
-                                        params.startTime = customStartTime;
-                                        params.endTime = customEndTime;
-                                    }
-
-                                    // Generate export URL and open in new tab
-                                    const exportUrl = SearchService.exportJsonUrl(params);
-                                    window.open(exportUrl, '_blank');
-                                }}
-                                className="flex items-center gap-1"
-                            >
-                                Export JSON
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={toggleFilters}
-                                className="flex items-center gap-1"
-                            >
-                                {showFilters ? 'Hide Filters' : 'Show Filters'}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <SearchFilters
-                        visible={showFilters}
-                        values={filterValues}
-                        onChange={(field, value) => handleFilterChange(field, value)}
-                    />
-
-                    <div className="rounded-md border">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                <tr className="border-b bg-muted/50">
-                                    <th
-                                        className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
-                                        onClick={() => handleSortClick('timestamp')}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            Timestamp
-                                            {sortColumn === 'timestamp' && (
-                                                <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
-                                        onClick={() => handleSortClick('level')}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            Level
-                                            {sortColumn === 'level' && (
-                                                <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
-                                        onClick={() => handleSortClick('message')}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            Message
-                                            {sortColumn === 'message' && (
-                                                <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70"
-                                        onClick={() => handleSortClick('source')}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            Source
-                                            {sortColumn === 'source' && (
-                                                <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                                            )}
-                                        </div>
-                                    </th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {processedResults.map((log) => (
-                                    <Fragment key={log.id}>
-                                        <tr
-                                            className="border-b hover:bg-muted/50 cursor-pointer"
-                                            onClick={() => handleLogClick(log)}
-                                        >
-                                            <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
-                                            <td className="px-4 py-2 text-sm">
-                                                <span className={getLevelClass(log.level)}>
-                                                    {log.level}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-sm">{renderHighlighted(log.message)}</td>
-                                            <td className="px-4 py-2 text-sm">{log.source}</td>
-                                        </tr>
-                                        {expandedLogId === log.id && (
-                                            <tr className="border-b bg-muted/20">
-                                                <td colSpan={4} className="px-4 py-3">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <h3 className="text-sm font-medium">Log Details</h3>
-                                                        <Button variant="ghost" size="sm"
-                                                                onClick={() => setExpandedLogId(null)}>Close</Button>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <p className="text-xs font-medium">Timestamp</p>
-                                                            <p className="text-xs">{formatTimestamp(log.timestamp)}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-medium">Level</p>
-                                                            <p className={`text-xs ${getLevelClass(log.level)}`}>{log.level}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-medium">Source</p>
-                                                            <p className="text-xs">{log.source}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-medium">ID</p>
-                                                            <p className="text-xs">{log.id}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-3">
-                                                        <p className="text-xs font-medium">Message</p>
-                                                        <p className="text-xs mt-1 p-2 bg-background rounded-md">{log.message}</p>
-                                                    </div>
-                                                    <div className="mt-3">
-                                                        <p className="text-xs font-medium">Metadata</p>
-                                                        <pre
-                                                            className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">{JSON.stringify(log.metadata, null, 2)}</pre>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </Fragment>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Pagination controls */}
-                    <SearchPagination
-                        totalCount={totalCount}
-                        pageSize={pageSize}
-                        currentPage={currentPage}
-                        onPageChange={(page) => fetchPage(page)}
-                    />
-                </div>
+                <SearchResults
+                    results={searchResults}
+                    processedResults={processedResults}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    currentPage={currentPage}
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={(col) => handleSortClick(col)}
+                    expandedLogId={expandedLogId}
+                    onRowClick={(id) => setExpandedLogId(expandedLogId === id ? null : id)}
+                    renderHighlighted={renderHighlighted}
+                    getLevelClass={getLevelClass}
+                    formatTimestamp={formatTimestamp}
+                    showFilters={showFilters}
+                    filterValues={filterValues as any}
+                    onFilterChange={(field: any, value: string) => handleFilterChange(field, value)}
+                    onToggleFilters={toggleFilters}
+                    currentSearchParams={buildCurrentSearchParams()}
+                    onExportCsv={onExportCsv}
+                    onExportJson={onExportJson}
+                    onPageChange={(page) => fetchPage(page)}
+                />
             )}
 
 

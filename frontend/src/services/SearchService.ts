@@ -1,4 +1,5 @@
 import { SearchParams, exportLogsAsCsv, exportLogsAsJson } from '@/api/logSearch';
+import { apiUrl, config } from '@/config';
 
 export type PageResponse<T> = {
   items: T[];
@@ -61,7 +62,7 @@ export const SearchService = {
     buildSearchQuery(sp, opts);
     sp.set('page', String(opts.page));
     sp.set('pageSize', String(opts.pageSize));
-    const res = await fetch(`http://localhost:8080/api/logs/search/page?${sp.toString()}`);
+    const res = await fetch(`${apiUrl(`${config.apiPaths.logs}/search/page`)}?${sp.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch page');
     return res.json();
   },

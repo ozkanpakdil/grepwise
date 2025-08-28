@@ -1,17 +1,23 @@
-import {useEffect, useMemo, useRef, useState, Fragment} from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import {Fragment, useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import {useUrlState} from '@/hooks/useUrlState';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useToast} from '@/components/ui/use-toast';
 import {Button} from '@/components/ui/button';
-import {exportLogsAsCsv, exportLogsAsJson, HistogramData, LogEntry, SearchParams, TimeSlot} from '@/api/logSearch';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Checkbox} from '@/components/ui/checkbox';
-import {Label} from '@/components/ui/label';
-import LogBarChart from '@/components/LogBarChart';
-import MUIBarsChart from '@/components/MUIBarsChart';
-import Editor, {Monaco} from '@monaco-editor/react';
+import {HistogramData, LogEntry, SearchParams, TimeSlot} from '@/api/logSearch';
+import SearchHistogram from '@/components/search/SearchHistogram';
+import SearchFilters from '@/components/search/SearchFilters';
+import {Monaco} from '@monaco-editor/react';
+import {useTimeRange} from '@/hooks/useTimeRange';
 import * as monaco from 'monaco-editor';
-import {Clock, RefreshCw, Regex, Search} from 'lucide-react';
+import {RefreshCw} from 'lucide-react';
 import useLocalStorage from "@/components/LocalStorage.ts";
+import {useAutoRefresh} from '@/hooks/useAutoRefresh';
+import SearchPagination from '@/components/search/SearchPagination';
+import TimeRangePicker from '@/components/search/TimeRangePicker';
+import SearchBar from '@/components/search/SearchBar';
+import {SearchService} from '@/services/SearchService';
+import {StreamingService} from '@/services/StreamingService';
+import {initialSearchState, searchReducer} from '@/state/searchReducer';
 
 // Type definitions for sorting and filtering
 type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
@@ -25,124 +31,83 @@ type FilterValues = {
 export default function SearchPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    // Helper: serialize current UI state to URLSearchParams
-    const serializeToParams = (state: {
-        query: string;
-        isRegex: boolean;
-        timeRange: SearchParams['timeRange'];
-        startTime?: number;
-        endTime?: number;
-        pageSize: number;
-        autoRefreshEnabled: boolean;
-        autoRefreshInterval: string;
-    }) => {
-        const sp = new URLSearchParams();
-        if (state.query?.trim()) sp.set('query', state.query.trim());
-        if (state.isRegex) sp.set('isRegex', 'true');
-        sp.set('pageSize', String(state.pageSize));
-        if (state.autoRefreshEnabled) {
-            sp.set('autoRefresh', 'on');
-            sp.set('autoRefreshInterval', state.autoRefreshInterval);
-        }
-        if (state.timeRange === 'custom' && state.startTime && state.endTime) {
-            sp.set('timeRange', 'custom');
-            sp.set('startTime', String(state.startTime));
-            sp.set('endTime', String(state.endTime));
-        } else {
-            sp.set('timeRange', state.timeRange || '24h');
-        }
-        return sp;
-    };
-
-    // Helper: parse URL into UI state
-    const parseFromLocation = () => {
-        const sp = new URLSearchParams(window.location.search);
-        const parsed: Partial<SearchParams> & {
-            pageSize?: number;
-            autoRefreshEnabled?: boolean;
-            autoRefreshInterval?: string;
-            query?: string;
-            isRegex?: boolean;
-        } = {};
-        const q = sp.get('query') || '';
-        const isRegex = sp.get('isRegex') === 'true';
-        const tr = (sp.get('timeRange') as SearchParams['timeRange']) || undefined;
-        const st = sp.get('startTime');
-        const et = sp.get('endTime');
-        const ps = sp.get('pageSize');
-        const ar = sp.get('autoRefresh');
-        const ari = sp.get('autoRefreshInterval') || '10s';
-        if (q) parsed.query = q;
-        if (isRegex) parsed.isRegex = true;
-        if (ps) parsed.pageSize = parseInt(ps, 10) || undefined;
-        if (ar === 'on') parsed.autoRefreshEnabled = true;
-        parsed.autoRefreshInterval = ari;
-        if (tr === 'custom' && st && et) {
-            parsed.timeRange = 'custom';
-            parsed.startTime = Number(st);
-            parsed.endTime = Number(et);
-        } else if (tr) {
-            parsed.timeRange = tr;
-        }
-        return parsed;
-    };
+    // Helper: serialize current UI state to URLSearchParams (moved to useUrlState hook)
+    // Keeping a thin wrapper for backwards-compatibility within this file
+    // URL state helpers from custom hook
+    const {serialize: serializeToParams, parse: parseFromLocation, push: pushUrl} = useUrlState();
     const [query, setQuery] = useState('');
     const [isRegex, setIsRegex] = useState(false);
     const [timeRange, setTimeRange] = useState<SearchParams['timeRange']>('24h');
     const [customStartTime, setCustomStartTime] = useState<number | undefined>(undefined);
     const [customEndTime, setCustomEndTime] = useState<number | undefined>(undefined);
-    const [isSearching, setIsSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState<LogEntry[]>([]);
-    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
-    const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-    const [histogramData, setHistogramData] = useState<HistogramData[]>([]);
-    const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
-    // Add state for editor loading
-    const [isEditorLoading, setIsEditorLoading] = useState(true);
-    // Page size and totals
+    const {computeRange, pickInterval} = useTimeRange();
     const [pageSize, setPageSize] = useLocalStorage<number>("grepwise.dashboard.pagesize", 100);
-    const [totalCount, setTotalCount] = useState<number | null>(null);
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const eventSourceRef = useRef<EventSource | null>(null);
-    const histEventSourceRef = useRef<EventSource | null>(null);
-    const [isStreaming, setIsStreaming] = useState(false);
+    const [s, dispatch] = useReducer(searchReducer, {...initialSearchState, pageSize});
+    const isSearching = s.isSearching;
+    const setIsSearching = (v: boolean) => dispatch({type: 'SET_SEARCHING', value: v});
+    const searchResults = s.searchResults;
+    const setSearchResults = (v: LogEntry[]) => dispatch({type: 'SET_RESULTS', results: v});
+    const expandedLogId = s.expandedLogId;
+    const setExpandedLogId = (v: string | null) => dispatch({type: 'SET_EXPANDED', id: v});
+    const timeSlots = s.timeSlots;
+    const setTimeSlots = (v: TimeSlot[]) => dispatch({type: 'SET_TIMESLOTS', slots: v});
+    const histogramData = s.histogramData;
+    const setHistogramData = (v: HistogramData[]) => dispatch({type: 'SET_HISTOGRAM', data: v});
+    const isLoadingTimeSlots = s.isLoadingTimeSlots;
+    const setIsLoadingTimeSlots = (v: boolean) => dispatch({type: 'SET_LOADING_TIMESLOTS', value: v});
+    // Add state for editor loading
+    const isEditorLoading = s.isEditorLoading;
+    const setIsEditorLoading = (v: boolean) => dispatch({type: 'SET_EDITOR_LOADING', value: v});
+    // Page size and totals
+    const totalCount = s.totalCount;
+    const setTotalCount = (v: number | null) => dispatch({type: 'SET_TOTAL', total: v});
+    const currentPage = s.currentPage;
+    const setCurrentPage = (v: number) => dispatch({type: 'SET_PAGE', page: v});
+    const streamingRef = useRef<StreamingService | null>(null);
+    const isStreaming = s.isStreaming;
+    const setIsStreaming = (v: boolean) => dispatch({type: 'SET_STREAMING', value: v});
 
     // Auto-refresh settings
-    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-    const [autoRefreshInterval, setAutoRefreshInterval] = useState<string>("10s");
-    const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Effect to handle auto-refresh changes and cleanup
-    useEffect(() => {
-        // Setup auto-refresh when enabled
-        if (autoRefreshEnabled) {
-            setupAutoRefresh();
-        } else if (autoRefreshTimerRef.current) {
-            // Clear timer when disabled
-            clearInterval(autoRefreshTimerRef.current);
-            autoRefreshTimerRef.current = null;
-        }
-
-        // Cleanup function to clear timer when component unmounts
-        return () => {
-            if (autoRefreshTimerRef.current) {
-                clearInterval(autoRefreshTimerRef.current);
-                autoRefreshTimerRef.current = null;
-            }
-        };
-    }, [autoRefreshEnabled, autoRefreshInterval]);
+    const autoRefreshEnabled = s.autoRefreshEnabled;
+    const setAutoRefreshEnabled = (v: boolean) => dispatch({type: 'SET_AUTO_REFRESH', enabled: v});
+    const autoRefreshInterval = s.autoRefreshInterval;
+    const setAutoRefreshInterval = (v: string) => dispatch({
+        type: 'SET_AUTO_REFRESH',
+        enabled: s.autoRefreshEnabled,
+        interval: v
+    });
+    // Auto-refresh handled by custom hook
+    const {timerRef: autoRefreshTimerRef} = useAutoRefresh(autoRefreshEnabled, autoRefreshInterval, () => {
+        refreshData();
+    });
 
     // Sorting state
-    const [sortColumn, setSortColumn] = useState<SortColumn>(null);
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+    const sortColumn = s.sortColumn;
+    const setSortColumn = (v: SortColumn) => dispatch({type: 'SET_SORT', column: v, direction: s.sortDirection});
+    const sortDirection = s.sortDirection;
+    const setSortDirection = (v: SortDirection) => dispatch({type: 'SET_SORT', column: s.sortColumn, direction: v});
 
     // Filtering state
-    const [filterValues, setFilterValues] = useState<FilterValues>({
-        level: '',
-        source: '',
-        message: ''
-    });
-    const [showFilters, setShowFilters] = useState(false);
+    const filterValues = s.filterValues;
+    const setFilterValues = (updater: any) => {
+        // supports prev => ({...prev, ...}) and object directly
+        if (typeof updater === 'function') {
+            const next = updater(s.filterValues);
+            dispatch({type: 'SET_FILTERS', filters: next});
+        } else {
+            dispatch({type: 'SET_FILTERS', filters: updater});
+        }
+    };
+    const showFilters = s.showFilters;
+    const setShowFilters = (vOrUpdater: any) => {
+        if (typeof vOrUpdater === 'function') {
+            const next = !!vOrUpdater(s.showFilters);
+            if (next !== s.showFilters) dispatch({type: 'TOGGLE_FILTERS'});
+        } else {
+            const next = !!vOrUpdater;
+            if (next !== s.showFilters) dispatch({type: 'TOGGLE_FILTERS'});
+        }
+    };
 
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const {toast} = useToast();
@@ -292,13 +257,9 @@ export default function SearchPage() {
             // When navigating to root/search without params or explicit reset requested, clear the UI state
             if ((location.pathname === '/' || location.pathname === '/search') && (resetFlag || !hasSearchParams)) {
                 // Stop streaming and timers
-                if (eventSourceRef.current) {
-                    try { eventSourceRef.current.close(); } catch {}
-                    eventSourceRef.current = null;
-                }
-                if (histEventSourceRef.current) {
-                    try { histEventSourceRef.current.close(); } catch {}
-                    histEventSourceRef.current = null;
+                if (streamingRef.current) {
+                    streamingRef.current.stopAll();
+                    streamingRef.current = null;
                 }
                 if (autoRefreshTimerRef.current) {
                     clearInterval(autoRefreshTimerRef.current);
@@ -320,18 +281,21 @@ export default function SearchPage() {
                 setCurrentPage(1);
                 setSortColumn(null);
                 setSortDirection('desc');
-                setFilterValues({ level: '', source: '', message: '' });
+                setFilterValues({level: '', source: '', message: ''});
                 setShowFilters(false);
                 setIsSearching(false);
                 setIsLoadingTimeSlots(false);
                 setAutoRefreshEnabled(false);
                 setAutoRefreshInterval('10s');
                 // Clear editor content if mounted
-                try { editorRef.current?.setValue(''); } catch {}
+                try {
+                    editorRef.current?.setValue('');
+                } catch {
+                }
 
                 // If we used a reset flag in the URL, clean it up to a nice URL
                 if (resetFlag && (location.search?.length ?? 0) > 0) {
-                    navigate(location.pathname, { replace: true });
+                    navigate(location.pathname, {replace: true});
                 }
             }
         } catch (e) {
@@ -362,13 +326,9 @@ export default function SearchPage() {
 
         try {
             // Close any previous stream
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-            if (histEventSourceRef.current) {
-                histEventSourceRef.current.close();
-                histEventSourceRef.current = null;
+            if (streamingRef.current) {
+                streamingRef.current.stopAll();
+                streamingRef.current = null;
             }
             setSearchResults([]);
             setTimeSlots([]);
@@ -377,136 +337,76 @@ export default function SearchPage() {
             setTotalCount(null);
             setCurrentPage(1);
 
-            // Calculate time range
-            let startTime: number;
-            let endTime: number;
-
-            if (overrideRange) {
-                startTime = overrideRange.start;
-                endTime = overrideRange.end;
-            } else if (timeRange === 'custom' && customStartTime && customEndTime) {
-                startTime = customStartTime;
-                endTime = customEndTime;
-            } else {
-                endTime = Date.now();
-
-                switch (timeRange) {
-                    case '1h':
-                        startTime = endTime - (60 * 60 * 1000);
-                        break;
-                    case '3h':
-                        startTime = endTime - (3 * 60 * 60 * 1000);
-                        break;
-                    case '12h':
-                        startTime = endTime - (12 * 60 * 60 * 1000);
-                        break;
-                    case '24h':
-                    default:
-                        startTime = endTime - (24 * 60 * 60 * 1000);
-                        break;
-                }
-            }
-
+            // Calculate time range using hook util functions
+            const {startTime, endTime} = computeRange(timeRange, customStartTime, customEndTime, overrideRange);
             // Determine appropriate interval based on time range
-            let interval: string;
-            const timeRangeMs = endTime - startTime;
-            if (timeRangeMs <= 60 * 60 * 1000) interval = '1m';
-            else if (timeRangeMs <= 3 * 60 * 60 * 1000) interval = '5m';
-            else if (timeRangeMs <= 12 * 60 * 60 * 1000) interval = '15m';
-            else interval = '30m';
+            const interval = pickInterval(startTime, endTime);
 
             // Start SSE stream
-            const params = new URLSearchParams();
             const trimmed = currentEditorValue.trim();
-            // Treat "*" as match-all by omitting query param
-            if (trimmed && trimmed !== '*') params.set('query', trimmed);
-            if (isRegex) params.set('isRegex', 'true');
-            if (!overrideRange && timeRange !== 'custom') {
-                // Use backend default of last 30 days unless user chose a specific range different than 24h
-                if (timeRange && timeRange !== '24h') {
-                    params.set('timeRange', timeRange);
-                }
-            } else {
-                params.set('startTime', String(startTime));
-                params.set('endTime', String(endTime));
-            }
-            // Let backend pick interval (daily for 30d) when not using custom explicit range
-            if (overrideRange || timeRange === 'custom' || (timeRange && timeRange !== '24h')) {
-                params.set('interval', interval);
-            }
-            params.set('pageSize', String(pageSize));
-
-            const url = `http://localhost:8080/api/logs/search/stream?${params.toString()}`;
-            const es = new EventSource(url);
-            eventSourceRef.current = es;
-
-            // logs stream: only care about page and done
-            es.addEventListener('page', (ev: MessageEvent) => {
-                try {
-                    const logs: LogEntry[] = JSON.parse((ev as any).data);
-                    setSearchResults(logs);
-                    setCurrentPage(1);
-                } catch (e) {
-                    console.error('page parse error', e);
-                }
+            const params = SearchService.buildStreamParams({
+                query: trimmed,
+                isRegex,
+                timeRange: (!overrideRange ? timeRange : 'custom') as SearchParams['timeRange'],
+                startTime: overrideRange ? startTime : (timeRange === 'custom' ? startTime : undefined),
+                endTime: overrideRange ? endTime : (timeRange === 'custom' ? endTime : undefined),
+                interval: (overrideRange || timeRange === 'custom' || (timeRange && timeRange !== '24h')) ? interval : undefined,
+                pageSize
             });
 
-            es.addEventListener('done', (ev: MessageEvent) => {
-                try {
-                    const d = JSON.parse((ev as any).data);
-                    setTotalCount(d.total ?? null);
-                } catch (e) {
-                    console.error('done parse error', e);
-                } finally {
-                    setIsStreaming(false);
-                    es.close();
-                    eventSourceRef.current = null;
-                }
-            });
-
-            es.addEventListener('error', () => {
-                console.error('SSE error (logs stream)');
-            });
-
-            // Start separate histogram SSE
-            const histParams = new URLSearchParams(params.toString());
-            // Do not send pageSize for timetable
-            histParams.delete('pageSize');
+            const logsUrl = `http://localhost:8080/api/logs/search/stream?${params.toString()}`;
+            const histParams = SearchService.buildHistogramParamsFrom(params);
             const histUrl = `http://localhost:8080/api/logs/search/timetable/stream?${histParams.toString()}`;
-            const esHist = new EventSource(histUrl);
-            histEventSourceRef.current = esHist;
             setIsStreaming(true);
-
-            esHist.addEventListener('init', (ev: MessageEvent) => {
-                try {
-                    const data = JSON.parse((ev as any).data);
-                    const buckets: { timestamp: string; count: number }[] = data.buckets || [];
-                    setHistogramData(buckets);
-                } catch (e) {
-                    console.error('timetable init parse error', e);
+            const streaming = new StreamingService();
+            streamingRef.current = streaming;
+            streaming.start(logsUrl, histUrl, {
+                onLogsPage: (json) => {
+                    try {
+                        const logs: LogEntry[] = JSON.parse(json);
+                        setSearchResults(logs);
+                        setCurrentPage(1);
+                    } catch (e) {
+                        console.error('page parse error', e);
+                    }
+                },
+                onLogsDone: (json) => {
+                    try {
+                        const d = JSON.parse(json);
+                        setTotalCount(d.total ?? null);
+                    } catch (e) {
+                        console.error('done parse error', e);
+                    } finally {
+                        setIsStreaming(false);
+                    }
+                },
+                onLogsError: () => {
+                    console.error('SSE error (logs stream)');
+                },
+                onHistInit: (json) => {
+                    try {
+                        const data = JSON.parse(json);
+                        const buckets: { timestamp: string; count: number }[] = data.buckets || [];
+                        setHistogramData(buckets);
+                    } catch (e) {
+                        console.error('timetable init parse error', e);
+                    }
+                },
+                onHistUpdate: (json) => {
+                    try {
+                        const snapshot: HistogramData[] = JSON.parse(json);
+                        setHistogramData(snapshot);
+                    } catch (e) {
+                        console.error('timetable hist parse error', e);
+                    }
+                },
+                onHistDone: () => {
+                    setIsStreaming(false);
+                },
+                onHistError: () => {
+                    console.error('SSE error (timetable stream)');
+                    setIsStreaming(false);
                 }
-            });
-
-            esHist.addEventListener('hist', (ev: MessageEvent) => {
-                try {
-                    const snapshot: HistogramData[] = JSON.parse((ev as any).data);
-                    setHistogramData(snapshot);
-                } catch (e) {
-                    console.error('timetable hist parse error', e);
-                }
-            });
-
-            esHist.addEventListener('done', () => {
-                setIsStreaming(false);
-                try { esHist.close(); } catch {}
-                histEventSourceRef.current = null;
-            });
-
-            esHist.addEventListener('error', () => {
-                console.error('SSE error (timetable stream)');
-                setIsStreaming(false);
-                try { esHist.close(); } catch {}
-                histEventSourceRef.current = null;
             });
 
             // Push URL state for history/share if requested
@@ -522,8 +422,8 @@ export default function SearchPage() {
                         autoRefreshEnabled,
                         autoRefreshInterval
                     });
-                    const newUrl = `${window.location.pathname}?${sp.toString()}`;
-                    window.history.pushState({type: 'grepwise-search'}, '', newUrl);
+                    // useUrlState push
+                    pushUrl(sp);
                 }
             } catch (e) {
                 console.warn('URL history push failed', e);
@@ -544,24 +444,9 @@ export default function SearchPage() {
         }
     };
 
-    // Setup auto-refresh timer
+    // Setup auto-refresh timer (moved to useAutoRefresh hook)
     const setupAutoRefresh = () => {
-        // Clear any existing timer
-        if (autoRefreshTimerRef.current) {
-            clearInterval(autoRefreshTimerRef.current);
-            autoRefreshTimerRef.current = null;
-        }
-
-        // If auto-refresh is enabled, set up a new timer
-        if (autoRefreshEnabled) {
-            const intervalMs = autoRefreshInterval === '5s' ? 5000 :
-                autoRefreshInterval === '10s' ? 10000 :
-                    autoRefreshInterval === '30s' ? 30000 : 10000;
-
-            autoRefreshTimerRef.current = setInterval(() => {
-                refreshData();
-            }, intervalMs);
-        }
+        // No-op: handled by useAutoRefresh
     };
 
     // Fetch a specific page from the server (non-SSE)
@@ -570,32 +455,27 @@ export default function SearchPage() {
             setExpandedLogId(null);
             if (totalCount === null) return;
             const trimmed = (editorRef.current?.getValue() || query).trim();
-            const sp = new URLSearchParams();
-            if (trimmed && trimmed !== '*') sp.set('query', trimmed);
-            if (isRegex) sp.set('isRegex', 'true');
-            if (timeRange !== 'custom' && (!customStartTime || !customEndTime)) {
-                // Use backend default of last 30 days unless user chose a specific range different than 24h
-                if (timeRange && timeRange !== '24h') {
-                    sp.set('timeRange', timeRange);
-                }
-            } else {
-                // ensure we pass concrete times
-                const st = customStartTime ?? (Date.now() - 24 * 60 * 60 * 1000);
-                const et = customEndTime ?? Date.now();
-                sp.set('startTime', String(st));
-                sp.set('endTime', String(et));
-            }
-            sp.set('page', String(page));
-            sp.set('pageSize', String(pageSize));
-            const res = await fetch(`http://localhost:8080/api/logs/search/page?${sp.toString()}`);
-            if (!res.ok) throw new Error('Failed to fetch page');
-            const data = await res.json();
+            const st = customStartTime;
+            const et = customEndTime;
+            const data = await SearchService.fetchPage<LogEntry>({
+                query: trimmed,
+                isRegex,
+                timeRange,
+                startTime: st,
+                endTime: et,
+                page,
+                pageSize
+            });
             setSearchResults(data.items || []);
             setTotalCount(data.total ?? totalCount);
             setCurrentPage(data.page || page);
         } catch (e) {
             console.error('Pagination error', e);
-            toast({ title: 'Pagination error', description: 'Failed to load the requested page', variant: 'destructive' });
+            toast({
+                title: 'Pagination error',
+                description: 'Failed to load the requested page',
+                variant: 'destructive'
+            });
         }
     };
 
@@ -822,11 +702,20 @@ export default function SearchPage() {
         setExpandedLogId((prev) => (prev === log.id ? null : log.id));
     };
 
-    const [zoomStack, setZoomStack] = useState<{
-        timeRange: SearchParams['timeRange'];
-        startTime?: number;
-        endTime?: number;
-    }[]>([]);
+    const zoomStack = s.zoomStack;
+    const setZoomStack = (updater: any) => {
+        const next = typeof updater === 'function' ? updater(s.zoomStack) : updater;
+        // figure out operation by comparing length change
+        if (next.length === s.zoomStack.length + 1) {
+            const last = next[next.length - 1];
+            dispatch({type: 'PUSH_ZOOM', state: last});
+        } else if (next.length === s.zoomStack.length - 1) {
+            dispatch({type: 'POP_ZOOM'});
+        } else {
+            // bulk update
+            dispatch({type: 'BULK_UPDATE', payload: {zoomStack: next}});
+        }
+    };
 
     const handleTimeSlotClick = (slot: TimeSlot) => {
         // Double-click zoom handler (single click intentionally does nothing)
@@ -884,155 +773,38 @@ export default function SearchPage() {
                 </p>
             </div>
 
-            <form onSubmit={(e) => handleSearch(e, undefined, true)} className="h-[20px]">
-                <div className="flex h-full gap-2">
-                    <div className="flex-1 h-full w-96">
-                        <Editor
-                            defaultLanguage="spl"
-                            defaultValue={query}
-                            onChange={(value) => setQuery(value || '')}
-                            onMount={handleEditorDidMount}
-                            options={{
-                                minimap: {enabled: false},
-                                lineNumbers: 'off',
-                                folding: false,
-                                scrollBeyondLastLine: false,
-                                wordWrap: 'on',
-                                automaticLayout: true,
-                                suggestOnTriggerCharacters: true,
-                                fontSize: 14,
-                                tabSize: 2,
-                                readOnly: isEditorLoading
-                            }}
-                            className="monaco-editor-container h-full overflow-hidden"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center space-x-1">
-                            <Checkbox
-                                id="regex"
-                                checked={isRegex}
-                                onCheckedChange={(checked: boolean | 'indeterminate') => setIsRegex(checked as boolean)}
-                                className="h-4 w-4"
-                            />
-                            <Label htmlFor="regex" className="text-sm flex items-center">
-                                <Regex className="h-4 w-4 mr-1"/>
-                            </Label>
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center space-x-1">
-                            <Label htmlFor="timeRange" className="text-sm flex items-center">
-                                <Clock className="h-4 w-4"/>
-                            </Label>
-                            <Select value={timeRange}
-                                    onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
-                                <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange">
-                                    <SelectValue placeholder="Time range"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1h">Last 1 hour</SelectItem>
-                                    <SelectItem value="3h">Last 3 hours</SelectItem>
-                                    <SelectItem value="12h">Last 12 hours</SelectItem>
-                                    <SelectItem value="24h">Last 24 hours</SelectItem>
-                                    <SelectItem value="custom">Custom range</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center space-x-2">
-                            <Label htmlFor="pageSize" className="text-sm">Page size</Label>
-                            <input
-                                id="pageSize"
-                                type="number"
-                                min={1}
-                                value={pageSize}
-                                onChange={(e) => setPageSize(Math.max(1, parseInt(e.target.value || '1', 10)))}
-                                className="h-8 w-[90px] rounded-md border border-input bg-background px-2 text-sm"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <Button type="submit" size="sm" disabled={isSearching} className="px-3">
-                            {isSearching ? 'Searching...' : <Search className="h-4 w-4"/>}
-                        </Button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => handleSearch(e, undefined, true)}
-                            disabled={isSearching}
-                            className="px-3"
-                        >
-                            <RefreshCw className="h-4 w-4"/>
-                        </Button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center space-x-1">
-                            <Label htmlFor="autoRefresh" className="text-sm flex items-center">
-                                Auto-refresh
-                            </Label>
-                            <Select
-                                value={autoRefreshEnabled ? autoRefreshInterval : "off"}
-                                onValueChange={(value) => {
-                                    if (value === "off") {
-                                        setAutoRefreshEnabled(false);
-                                    } else {
-                                        setAutoRefreshEnabled(true);
-                                        setAutoRefreshInterval(value);
-                                        // Trigger setup of auto-refresh
-                                        setupAutoRefresh();
-                                    }
-                                }}
-                            >
-                                <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh">
-                                    <SelectValue placeholder="Off"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="off">Off</SelectItem>
-                                    <SelectItem value="5s">5s</SelectItem>
-                                    <SelectItem value="10s">10s</SelectItem>
-                                    <SelectItem value="30s">30s</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                </div>
+            <SearchBar
+                query={query}
+                setQuery={setQuery}
+                isRegex={isRegex}
+                setIsRegex={setIsRegex}
+                timeRange={timeRange}
+                setTimeRange={setTimeRange}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+                isSearching={isSearching}
+                onSearch={(e) => handleSearch(e, undefined, true)}
+                onRefresh={(e) => handleSearch(e as any, undefined, true)}
+                autoRefreshEnabled={autoRefreshEnabled}
+                autoRefreshInterval={autoRefreshInterval}
+                setAutoRefreshEnabled={setAutoRefreshEnabled}
+                setAutoRefreshInterval={setAutoRefreshInterval}
+                setupAutoRefresh={setupAutoRefresh}
+                handleEditorDidMount={handleEditorDidMount}
+                isEditorLoading={isEditorLoading}
+            />
 
-                <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-6">
 
-                    {timeRange === 'custom' && (
-                        <div className="flex items-center space-x-2">
-                            <Label htmlFor="startTime">From:</Label>
-                            <input
-                                type="datetime-local"
-                                id="startTime"
-                                value={customStartTime ? new Date(customStartTime).toISOString().slice(0, 16) : ''}
-                                onChange={(e) => {
-                                    const date = new Date(e.target.value);
-                                    setCustomStartTime(date.getTime());
-                                }}
-                                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            />
-
-                            <Label htmlFor="endTime">To:</Label>
-                            <input
-                                type="datetime-local"
-                                id="endTime"
-                                value={customEndTime ? new Date(customEndTime).toISOString().slice(0, 16) : ''}
-                                onChange={(e) => {
-                                    const date = new Date(e.target.value);
-                                    setCustomEndTime(date.getTime());
-                                }}
-                                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            />
-                        </div>
-                    )}
-                </div>
-            </form>
+                <TimeRangePicker
+                    timeRange={timeRange}
+                    setTimeRange={(tr) => setTimeRange(tr)}
+                    customStartTime={customStartTime}
+                    customEndTime={customEndTime}
+                    setCustomStartTime={setCustomStartTime}
+                    setCustomEndTime={setCustomEndTime}
+                />
+            </div>
 
             {/* Bar chart visualization */}
             {(histogramData.length > 0 || timeSlots.length > 0) && !isLoadingTimeSlots ? (
@@ -1051,7 +823,7 @@ export default function SearchPage() {
                                     className="text-xs text-blue-600 hover:underline"
                                     onClick={() => {
                                         const prev = zoomStack[zoomStack.length - 1];
-                                        setZoomStack(z => z.slice(0, z.length - 1));
+                                        setZoomStack((z: string | any[]) => z.slice(0, z.length - 1));
                                         if (prev.timeRange === 'custom' && prev.startTime && prev.endTime) {
                                             setTimeRange('custom');
                                             setCustomStartTime(prev.startTime);
@@ -1073,38 +845,31 @@ export default function SearchPage() {
                         </div>
                     </div>
 
-                    {histogramData.length > 0 ? (
-                        <div className="w-full h-64">
-                            <MUIBarsChart
-                                data={histogramData}
-                                onBarDoubleClick={(start, end) => {
-                                    // Push current to zoom stack
-                                    setZoomStack(prev => [
-                                        ...prev,
-                                        timeRange === 'custom' && customStartTime && customEndTime
-                                            ? {timeRange: 'custom', startTime: customStartTime, endTime: customEndTime}
-                                            : {timeRange}
-                                    ]);
-                                    // Prevent zoom beyond seconds
-                                    if (end - start <= 1000) return;
-                                    setTimeRange('custom');
-                                    setCustomStartTime(start);
-                                    setCustomEndTime(end);
-                                    handleSearch(undefined, {start, end}, true);
-                                    toast({
-                                        title: 'Zoomed in',
-                                        description: `UTC ${new Date(start).toUTCString()} → ${new Date(end).toUTCString()}`
-                                    });
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <LogBarChart
-                            timeSlots={timeSlots}
-                            timeRange={timeRange}
-                            onTimeSlotClick={handleTimeSlotClick}
-                        />
-                    )}
+                    <SearchHistogram
+                        histogramData={histogramData}
+                        timeSlots={timeSlots}
+                        timeRange={timeRange}
+                        isStreaming={isStreaming}
+                        isLoading={isLoadingTimeSlots}
+                        onZoom={(start, end) => {
+                            setZoomStack((prev: any) => [
+                                ...prev,
+                                timeRange === 'custom' && customStartTime && customEndTime
+                                    ? {timeRange: 'custom', startTime: customStartTime, endTime: customEndTime}
+                                    : {timeRange}
+                            ]);
+                            if (end - start <= 1000) return;
+                            setTimeRange('custom');
+                            setCustomStartTime(start);
+                            setCustomEndTime(end);
+                            handleSearch(undefined, {start, end}, true);
+                            toast({
+                                title: 'Zoomed in',
+                                description: `UTC ${new Date(start).toUTCString()} → ${new Date(end).toUTCString()}`
+                            });
+                        }}
+                        onTimeSlotClick={handleTimeSlotClick}
+                    />
                 </div>
             ) : isLoadingTimeSlots ? (
                 <div className="mt-6 mb-8 text-center py-4 border border-input rounded-md bg-background">
@@ -1143,7 +908,7 @@ export default function SearchPage() {
                                     }
 
                                     // Generate export URL and open in new tab
-                                    const exportUrl = exportLogsAsCsv(params);
+                                    const exportUrl = SearchService.exportCsvUrl(params);
                                     window.open(exportUrl, '_blank');
                                 }}
                                 className="flex items-center gap-1"
@@ -1168,7 +933,7 @@ export default function SearchPage() {
                                     }
 
                                     // Generate export URL and open in new tab
-                                    const exportUrl = exportLogsAsJson(params);
+                                    const exportUrl = SearchService.exportJsonUrl(params);
                                     window.open(exportUrl, '_blank');
                                 }}
                                 className="flex items-center gap-1"
@@ -1186,43 +951,11 @@ export default function SearchPage() {
                         </div>
                     </div>
 
-                    {showFilters && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border">
-                            <div>
-                                <Label htmlFor="levelFilter" className="text-sm">Filter by Level</Label>
-                                <input
-                                    id="levelFilter"
-                                    type="text"
-                                    value={filterValues.level}
-                                    onChange={(e) => handleFilterChange('level', e.target.value)}
-                                    placeholder="Filter by level..."
-                                    className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="messageFilter" className="text-sm">Filter by Message</Label>
-                                <input
-                                    id="messageFilter"
-                                    type="text"
-                                    value={filterValues.message}
-                                    onChange={(e) => handleFilterChange('message', e.target.value)}
-                                    placeholder="Filter by message..."
-                                    className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="sourceFilter" className="text-sm">Filter by Source</Label>
-                                <input
-                                    id="sourceFilter"
-                                    type="text"
-                                    value={filterValues.source}
-                                    onChange={(e) => handleFilterChange('source', e.target.value)}
-                                    placeholder="Filter by source..."
-                                    className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                            </div>
-                        </div>
-                    )}
+                    <SearchFilters
+                        visible={showFilters}
+                        values={filterValues}
+                        onChange={(field, value) => handleFilterChange(field, value)}
+                    />
 
                     <div className="rounded-md border">
                         <div className="overflow-x-auto">
@@ -1296,7 +1029,8 @@ export default function SearchPage() {
                                                 <td colSpan={4} className="px-4 py-3">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <h3 className="text-sm font-medium">Log Details</h3>
-                                                        <Button variant="ghost" size="sm" onClick={() => setExpandedLogId(null)}>Close</Button>
+                                                        <Button variant="ghost" size="sm"
+                                                                onClick={() => setExpandedLogId(null)}>Close</Button>
                                                     </div>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
@@ -1322,7 +1056,8 @@ export default function SearchPage() {
                                                     </div>
                                                     <div className="mt-3">
                                                         <p className="text-xs font-medium">Metadata</p>
-                                                        <pre className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">{JSON.stringify(log.metadata, null, 2)}</pre>
+                                                        <pre
+                                                            className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">{JSON.stringify(log.metadata, null, 2)}</pre>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1335,31 +1070,12 @@ export default function SearchPage() {
                     </div>
 
                     {/* Pagination controls */}
-                    {totalCount !== null && totalCount > pageSize && (
-                        <div className="flex items-center justify-between mt-3">
-                            <div className="text-sm text-muted-foreground">
-                                Page {currentPage} of {Math.ceil(totalCount / pageSize)}
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage <= 1}
-                                    onClick={() => fetchPage(Math.max(1, currentPage - 1))}
-                                >
-                                    Previous
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage >= Math.ceil(totalCount / pageSize)}
-                                    onClick={() => fetchPage(Math.min(Math.ceil(totalCount! / pageSize), currentPage + 1))}
-                                >
-                                    Next
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    <SearchPagination
+                        totalCount={totalCount}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={(page) => fetchPage(page)}
+                    />
                 </div>
             )}
 

@@ -109,6 +109,21 @@ Required for the frontend:
 
 4. The frontend will be available at http://localhost:3000
 
+### End-to-End Tests (Playwright)
+
+1. Start backend (8080) as above.
+2. In another terminal, run E2E tests (this will auto-start the frontend dev server at 3000 by default):
+```
+cd path/to/GrepWise/playwright
+npm install
+npm run install-browsers
+npm test
+```
+
+To point tests to an already running frontend at a custom URL:
+```
+PW_NO_SERVER=1 BASE_URL=http://localhost:3000 npm test
+```
 ## Project Structure
 
 - `src/main/java` - Backend Java code

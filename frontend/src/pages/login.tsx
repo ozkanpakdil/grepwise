@@ -81,7 +81,7 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6" data-testid="login-form">
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="username" className="block text-sm font-medium">
@@ -89,6 +89,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="username"
+                data-testid="username"
                 name="username"
                 type="text"
                 autoComplete="username"
@@ -106,6 +107,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="password"
+                data-testid="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
@@ -123,6 +125,7 @@ export default function LoginPage() {
               type="submit"
               className="w-full"
               disabled={isLoading}
+              data-testid="sign-in"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>

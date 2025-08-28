@@ -15,7 +15,7 @@ interface Props {
 
 export default function SearchHistogram({ histogramData, timeSlots, timeRange, isStreaming, isLoading, onZoom, onTimeSlotClick }: Props) {
   return (
-    <div className="mt-6">
+    <div className="mt-6" data-testid="histogram-section">
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-medium">Time distribution</div>
         <div className="text-xs text-muted-foreground">

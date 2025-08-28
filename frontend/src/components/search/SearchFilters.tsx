@@ -16,7 +16,7 @@ interface Props {
 export default function SearchFilters({ visible, values, onChange }: Props) {
   if (!visible) return null;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border" data-testid="filters-panel">
       <div>
         <Label htmlFor="levelFilter" className="text-sm">Filter by Level</Label>
         <input
@@ -26,6 +26,7 @@ export default function SearchFilters({ visible, values, onChange }: Props) {
           onChange={(e) => onChange('level', e.target.value)}
           placeholder="Filter by level..."
           className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          data-testid="filter-level"
         />
       </div>
       <div>
@@ -37,6 +38,7 @@ export default function SearchFilters({ visible, values, onChange }: Props) {
           onChange={(e) => onChange('message', e.target.value)}
           placeholder="Filter by message..."
           className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          data-testid="filter-message"
         />
       </div>
       <div>
@@ -48,6 +50,7 @@ export default function SearchFilters({ visible, values, onChange }: Props) {
           onChange={(e) => onChange('source', e.target.value)}
           placeholder="Filter by source..."
           className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          data-testid="filter-source"
         />
       </div>
     </div>

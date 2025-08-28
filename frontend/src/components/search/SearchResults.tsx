@@ -56,21 +56,21 @@ export default function SearchResults(props: Props) {
   } = props;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="results-section">
       <div className="flex justify-between items-center">
         <div>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground" data-testid="results-summary">
             Showing {processedResults.length} of {totalCount ?? '…'} logs
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => onExportCsv(currentSearchParams)} className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={() => onExportCsv(currentSearchParams)} className="flex items-center gap-1" data-testid="export-csv">
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => onExportJson(currentSearchParams)} className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={() => onExportJson(currentSearchParams)} className="flex items-center gap-1" data-testid="export-json">
             Export JSON
           </Button>
-          <Button variant="outline" size="sm" onClick={onToggleFilters} className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={onToggleFilters} className="flex items-center gap-1" data-testid="toggle-filters">
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </Button>
         </div>
@@ -78,30 +78,30 @@ export default function SearchResults(props: Props) {
 
       <SearchFilters visible={showFilters} values={filterValues} onChange={(field, value) => onFilterChange(field as any, value)} />
 
-      <div className="rounded-md border">
+      <div className="rounded-md border" data-testid="results-table-container">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" data-testid="results-table">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('timestamp')}>
+                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('timestamp')} data-testid="col-timestamp">
                   <div className="flex items-center gap-1">
                     Timestamp
                     {sortColumn === 'timestamp' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
                   </div>
                 </th>
-                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('level')}>
+                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('level')} data-testid="col-level">
                   <div className="flex items-center gap-1">
                     Level
                     {sortColumn === 'level' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
                   </div>
                 </th>
-                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('message')}>
+                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('message')} data-testid="col-message">
                   <div className="flex items-center gap-1">
                     Message
                     {sortColumn === 'message' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
                   </div>
                 </th>
-                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('source')}>
+                <th className="px-4 py-2 text-left font-medium cursor-pointer hover:bg-muted/70" onClick={() => onSort('source')} data-testid="col-source">
                   <div className="flex items-center gap-1">
                     Source
                     {sortColumn === 'source' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
@@ -112,7 +112,7 @@ export default function SearchResults(props: Props) {
             <tbody>
               {processedResults.map((log) => (
                 <Fragment key={log.id}>
-                  <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => onRowClick(log.id)}>
+                  <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => onRowClick(log.id)} data-testid="result-row">
                     <td className="px-4 py-2 text-sm">{formatTimestamp(log.timestamp)}</td>
                     <td className="px-4 py-2 text-sm">
                       <span className={getLevelClass(log.level)}>{log.level}</span>
@@ -121,7 +121,7 @@ export default function SearchResults(props: Props) {
                     <td className="px-4 py-2 text-sm">{log.source}</td>
                   </tr>
                   {expandedLogId === log.id && (
-                    <tr className="border-b bg-muted/20">
+                    <tr className="border-b bg-muted/20" data-testid="result-row-expanded">
                       <td colSpan={4} className="px-4 py-3">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-sm font-medium">Log Details</h3>

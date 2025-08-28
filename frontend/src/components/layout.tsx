@@ -145,6 +145,7 @@ export default function Layout() {
                   size="icon"
                   onClick={logout}
                   title="Logout"
+                  data-testid="logout"
                 >
                   <LogOutIcon className="h-5 w-5" />
                   <span className="sr-only">Logout</span>

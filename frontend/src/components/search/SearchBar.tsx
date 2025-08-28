@@ -49,9 +49,9 @@ export default function SearchBar({
   isEditorLoading,
 }: Props) {
   return (
-    <form onSubmit={(e) => onSearch(e)} className="h-[20px]">
+    <form onSubmit={(e) => onSearch(e)} className="min-h-[120px]" data-testid="search-form">
       <div className="flex h-full gap-2">
-        <div className="flex-1 h-full w-96">
+        <div className="flex-1 h-full w-96" data-testid="query-editor">
           <Editor
             defaultLanguage="spl"
             defaultValue={query}
@@ -79,6 +79,7 @@ export default function SearchBar({
               checked={isRegex}
               onCheckedChange={(checked: boolean | 'indeterminate') => setIsRegex(!!checked)}
               className="h-4 w-4"
+              data-testid="regex-toggle"
             />
             <Label htmlFor="regex" className="text-sm flex items-center">
               <Regex className="h-4 w-4 mr-1" />
@@ -91,7 +92,7 @@ export default function SearchBar({
               <Clock className="h-4 w-4" />
             </Label>
             <Select value={timeRange} onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
-              <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange">
+              <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange" data-testid="time-range">
                 <SelectValue placeholder="Time range" />
               </SelectTrigger>
               <SelectContent>
@@ -114,11 +115,12 @@ export default function SearchBar({
               value={pageSize}
               onChange={(e) => setPageSize(Math.max(1, parseInt(e.target.value || '1', 10)))}
               className="h-8 w-[90px] rounded-md border border-input bg-background px-2 text-sm"
+              data-testid="page-size"
             />
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Button type="submit" size="sm" disabled={isSearching} className="px-3">
+          <Button type="submit" size="sm" disabled={isSearching} className="px-3" data-testid="run-search">
             {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
           </Button>
         </div>
@@ -130,6 +132,7 @@ export default function SearchBar({
             onClick={(e) => onRefresh(e)}
             disabled={isSearching}
             className="px-3"
+            data-testid="refresh"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -151,7 +154,7 @@ export default function SearchBar({
                 }
               }}
             >
-              <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh">
+              <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh" data-testid="auto-refresh">
                 <SelectValue placeholder="Off" />
               </SelectTrigger>
               <SelectContent>

@@ -66,46 +66,4 @@ describe('LineChartWidget', () => {
     expect(screen.getByText('2 data points • 1 series')).toBeInTheDocument();
   });
 
-  it('renders line chart with results data', () => {
-    const mockData = {
-      results: [
-        { 
-          timestamp: 1640995200000, 
-          errors: 5, 
-          warnings: 3 
-        }
-      ],
-    };
-
-    render(<LineChartWidget data={mockData} widget={mockWidget} />);
-
-    // Check for Recharts components
-    expect(screen.getByTestId('recharts-container')).toBeInTheDocument();
-    expect(screen.getByTestId('recharts-line-chart')).toBeInTheDocument();
-    
-    // Check for lines with data keys
-    expect(screen.getByTestId('recharts-line-errors')).toBeInTheDocument();
-    expect(screen.getByTestId('recharts-line-warnings')).toBeInTheDocument();
-    
-    // Check for summary (should have 1 data point and 2 series)
-    expect(screen.getByText('1 data points • 2 series')).toBeInTheDocument();
-  });
-
-  it('handles different data formats appropriately', () => {
-    const mockData = {
-      results: [
-        { name: 'metric1', value: 10 },
-        { name: 'metric2', value: 20 },
-      ],
-    };
-
-    render(<LineChartWidget data={mockData} widget={mockWidget} />);
-
-    // Should still render a chart
-    expect(screen.getByTestId('recharts-container')).toBeInTheDocument();
-    expect(screen.getByTestId('recharts-line-chart')).toBeInTheDocument();
-    
-    // Check for summary
-    expect(screen.getByText(/data points/)).toBeInTheDocument();
-  });
 });

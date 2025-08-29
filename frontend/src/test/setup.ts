@@ -35,3 +35,18 @@ Object.defineProperty(window, 'scrollTo', {
   value: vi.fn(),
   writable: true,
 });
+// Mock scrollIntoView
+Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+  value: vi.fn(),
+});
+
+// JSDOM doesn't implement Pointer Events APIs used by some UI libs (Radix)
+Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+  value: () => false,
+});
+Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+  value: () => {},
+});
+Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+  value: () => {},
+});

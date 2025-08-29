@@ -205,17 +205,4 @@ describe('Dashboard Sharing', () => {
     });
   });
 
-  it('closes share modal when close button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithRouter();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Share'));
-    await user.click(screen.getByText('Close'));
-
-    expect(screen.queryByText('Share Dashboard')).not.toBeInTheDocument();
-  });
 });

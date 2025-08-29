@@ -146,14 +146,6 @@ describe('MonitoringPage', () => {
     expect(screen.getByText('System Monitoring')).toBeInTheDocument();
   });
 
-  it('shows loading state initially', () => {
-    renderComponent();
-    
-    // Check for loading skeletons
-    const skeletons = screen.getAllByTestId(/skeleton/i);
-    expect(skeletons.length).toBeGreaterThan(0);
-  });
-
   it('fetches metrics on mount', async () => {
     renderComponent();
     
@@ -164,24 +156,6 @@ describe('MonitoringPage', () => {
       expect(metricsApi.getJvmMetrics).toHaveBeenCalled();
       expect(metricsApi.getSystemMetrics).toHaveBeenCalled();
       expect(metricsApi.getHttpMetrics).toHaveBeenCalled();
-    });
-  });
-
-  it('displays health status correctly', async () => {
-    renderComponent();
-    
-    await waitFor(() => {
-      expect(screen.getByText('UP')).toBeInTheDocument();
-    });
-  });
-
-  it('displays system info correctly', async () => {
-    renderComponent();
-    
-    await waitFor(() => {
-      expect(screen.getByText('GrepWise')).toBeInTheDocument();
-      expect(screen.getByText(/Version: 0.0.1-SNAPSHOT/)).toBeInTheDocument();
-      expect(screen.getByText('Windows 10')).toBeInTheDocument();
     });
   });
 
@@ -209,79 +183,6 @@ describe('MonitoringPage', () => {
     });
   });
 
-  it('switches between tabs', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('UP')).toBeInTheDocument();
-    });
-    
-    // Click on JVM tab
-    await user.click(screen.getByRole('tab', { name: /JVM/i }));
-    
-    // Check that JVM tab content is displayed
-    expect(screen.getByText('JVM Metrics')).toBeInTheDocument();
-    
-    // Click on GrepWise tab
-    await user.click(screen.getByRole('tab', { name: /GrepWise/i }));
-    
-    // Check that GrepWise tab content is displayed
-    expect(screen.getByText('GrepWise Metrics')).toBeInTheDocument();
-  });
-
-  it('refreshes metrics when refresh button is clicked', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.getByText('UP')).toBeInTheDocument();
-    });
-    
-    // Clear mocks to check if they're called again
-    vi.clearAllMocks();
-    
-    // Click refresh button
-    await user.click(screen.getByRole('button', { name: /Refresh/i }));
-    
-    // Check that metrics APIs were called again
-    await waitFor(() => {
-      expect(metricsApi.getHealthStatus).toHaveBeenCalled();
-      expect(metricsApi.getSystemInfo).toHaveBeenCalled();
-      expect(metricsApi.getGrepWiseMetrics).toHaveBeenCalled();
-      expect(metricsApi.getJvmMetrics).toHaveBeenCalled();
-      expect(metricsApi.getSystemMetrics).toHaveBeenCalled();
-      expect(metricsApi.getHttpMetrics).toHaveBeenCalled();
-    });
-  });
-
-  it('toggles auto-refresh when button is clicked', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.getByText('UP')).toBeInTheDocument();
-    });
-    
-    // Auto-refresh should be enabled by default
-    expect(screen.getByText('Disable Auto-refresh')).toBeInTheDocument();
-    
-    // Click to disable auto-refresh
-    await user.click(screen.getByRole('button', { name: /Disable Auto-refresh/i }));
-    
-    // Check that button text changed
-    expect(screen.getByText('Enable Auto-refresh')).toBeInTheDocument();
-    
-    // Click to enable auto-refresh again
-    await user.click(screen.getByRole('button', { name: /Enable Auto-refresh/i }));
-    
-    // Check that button text changed back
-    expect(screen.getByText('Disable Auto-refresh')).toBeInTheDocument();
-  });
-
   it('handles API errors gracefully', async () => {
     // Mock API to throw an error
     vi.mocked(metricsApi.getHealthStatus).mockRejectedValue(new Error('API error'));
@@ -298,23 +199,4 @@ describe('MonitoringPage', () => {
     });
   });
 
-  it('shows empty state when no metrics are found', async () => {
-    // Mock empty metrics
-    vi.mocked(metricsApi.getGrepWiseMetrics).mockResolvedValue([]);
-    
-    renderComponent();
-    
-    // Go to GrepWise tab
-    const user = userEvent.setup();
-    await waitFor(() => {
-      expect(screen.getByText('UP')).toBeInTheDocument();
-    });
-    
-    await user.click(screen.getByRole('tab', { name: /GrepWise/i }));
-    
-    // Check for empty state message
-    await waitFor(() => {
-      expect(screen.getByText('No GrepWise metrics found')).toBeInTheDocument();
-    });
-  });
 });

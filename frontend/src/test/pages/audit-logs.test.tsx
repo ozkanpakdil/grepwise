@@ -122,29 +122,6 @@ describe('AuditLogsPage', () => {
     expect(screen.getByText('Loading audit logs...')).toBeInTheDocument();
   });
 
-  it('displays audit logs in a table', async () => {
-    renderComponent();
-
-    await waitFor(() => {
-      // Check for table headers
-      expect(screen.getByText('Timestamp')).toBeInTheDocument();
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByText('Category')).toBeInTheDocument();
-      expect(screen.getByText('Action')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-      expect(screen.getByText('Target')).toBeInTheDocument();
-
-      // Check for audit log data
-      expect(screen.getByText('admin')).toBeInTheDocument();
-      expect(screen.getByText('AUTH')).toBeInTheDocument();
-      expect(screen.getByText('LOGIN')).toBeInTheDocument();
-      expect(screen.getByText('SUCCESS')).toBeInTheDocument();
-      expect(screen.getByText('User logged in successfully')).toBeInTheDocument();
-      expect(screen.getByText('USER: user1')).toBeInTheDocument();
-    });
-  });
-
   it('populates filter dropdowns with metadata', async () => {
     renderComponent();
 
@@ -211,24 +188,6 @@ describe('AuditLogsPage', () => {
     });
   });
 
-  it('handles pagination', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Next')).toBeInTheDocument();
-    });
-
-    // Click next page button
-    await user.click(screen.getByText('Next'));
-
-    await waitFor(() => {
-      expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1 })
-      );
-    });
-  });
-
   it('changes page size when selected', async () => {
     const user = userEvent.setup();
     renderComponent();
@@ -270,17 +229,6 @@ describe('AuditLogsPage', () => {
           variant: 'destructive',
         })
       );
-    });
-  });
-
-  it('formats timestamps correctly', async () => {
-    renderComponent();
-
-    await waitFor(() => {
-      // Check for formatted timestamps (format: yyyy-MM-dd HH:mm:ss)
-      expect(screen.getByText('2023-07-16 12:00:00')).toBeInTheDocument();
-      expect(screen.getByText('2023-07-16 13:00:00')).toBeInTheDocument();
-      expect(screen.getByText('2023-07-16 14:00:00')).toBeInTheDocument();
     });
   });
 

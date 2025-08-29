@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider, useTheme } from '@/components/theme-provider';
-import React from 'react';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -35,7 +34,16 @@ Object.defineProperty(document.documentElement, 'classList', {
 });
 
 // Mock window.matchMedia for system theme detection
-const matchMediaMock = vi.fn();
+const matchMediaMock = vi.fn().mockReturnValue({
+  matches: false,
+  media: '(prefers-color-scheme: no-preference)',
+  onchange: null,
+  addListener: vi.fn(), // deprecated
+  removeListener: vi.fn(), // deprecated
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+});
 Object.defineProperty(window, 'matchMedia', { value: matchMediaMock });
 
 // Test component that uses the theme hook
@@ -57,6 +65,17 @@ describe('ThemeProvider', () => {
     localStorageMock.clear();
     documentElementClassListMock.add.mockClear();
     documentElementClassListMock.remove.mockClear();
+    // Ensure matchMedia returns a valid object by default after clearing mocks
+    matchMediaMock.mockReturnValue({
+      matches: false,
+      media: '(prefers-color-scheme: no-preference)',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    });
   });
 
   afterEach(() => {

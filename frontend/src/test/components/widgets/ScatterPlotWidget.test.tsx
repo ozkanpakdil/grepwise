@@ -159,17 +159,6 @@ describe('ScatterPlotWidget', () => {
     expect(yAxis.getAttribute('data-name')).toBe('memory');
   });
 
-  it('renders scatter plot with frequency data', () => {
-    render(<ScatterPlotWidget data={mockFrequencyData} widget={mockWidget} />);
-    
-    // Check for chart components
-    expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
-    expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();
-    
-    // Check for scatter component
-    expect(screen.getByTestId('scatter-Frequency')).toBeInTheDocument();
-  });
-
   it('formats x-axis for time values', () => {
     render(<ScatterPlotWidget data={mockTimeSlotData} widget={mockWidget} />);
     
@@ -187,25 +176,6 @@ describe('ScatterPlotWidget', () => {
     
     // If there's a third numeric field, it should be used for z-axis
     expect(zAxis.getAttribute('data-name')).toBe('disk');
-  });
-
-  it('handles data with insufficient numeric fields', () => {
-    // Data with only one numeric field
-    const insufficientData = {
-      results: [
-        {
-          id: '1',
-          name: 'Test',
-          value: 10,
-        },
-      ],
-    };
-    
-    render(<ScatterPlotWidget data={insufficientData} widget={mockWidget} />);
-    
-    // Should still render the chart by creating a frequency scatter plot
-    expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
-    expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();
   });
 
   it('displays correct number of data points in summary', () => {

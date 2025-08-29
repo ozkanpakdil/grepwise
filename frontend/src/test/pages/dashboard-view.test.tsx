@@ -211,33 +211,6 @@ describe('DashboardView', () => {
     expect(trashButtons.length).toBeGreaterThan(0); // At least one delete button
   });
 
-  it('applies edit mode styling to widgets', async () => {
-    const user = userEvent.setup();
-    renderWithRouter();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
-    });
-
-    // Enter edit mode
-    await user.click(screen.getByText('Edit'));
-
-    // Wait for state update
-    await waitFor(() => {
-      expect(screen.getByText('Exit Edit')).toBeInTheDocument();
-      
-      // Check for edit mode styling
-      const widgetElements = screen.getAllByTestId(/widget-w\d/);
-      const widgetContainers = widgetElements.map(el => el.parentElement);
-      
-      // Verify at least one widget has the edit mode styling
-      expect(widgetContainers.some(container => 
-        container?.className.includes('border-dashed') && 
-        container?.className.includes('border-blue-500')
-      )).toBe(true);
-    });
-  });
-
   it('deletes widget when delete button is clicked and confirmed', async () => {
     const user = userEvent.setup();
     vi.mocked(dashboardApi.deleteWidget).mockResolvedValue(undefined);

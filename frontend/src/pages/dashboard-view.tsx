@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Plus, Trash2, Share2, Copy, Check, Download, FileText, Image, Database, Save, Menu, X as XIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Plus, Trash2, Share2, Copy, Check, Download, FileText, Image, Database, Menu, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { dashboardApi, Dashboard, DashboardWidget } from '@/api/dashboard';
+import { dashboardApi, Dashboard } from '@/api/dashboard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+// Using MUI Grid instead of react-grid-layout
+import Grid from '@mui/material/Grid';
 import { useSwipeable } from 'react-swipeable';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 // Widget components
 import WidgetRenderer from '@/components/WidgetRenderer';
@@ -28,8 +26,7 @@ const DashboardView: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [layouts, setLayouts] = useState<{ [key: string]: Array<any> }>({});
-  const [layoutChanged, setLayoutChanged] = useState(false);
+  // Using simple MUI Grid layout (no drag/drop), so no layouts state
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   
   // Reference to the dashboard content for export
@@ -80,42 +77,9 @@ const DashboardView: React.FC = () => {
     }
   }, [id]);
   
-  // Initialize responsive layouts from dashboard widgets
+  // Using MUI Grid: no responsive layout calculation needed
   useEffect(() => {
-    if (dashboard && dashboard.widgets) {
-      // Create base layout
-      const baseLayout = dashboard.widgets.map(widget => ({
-        i: widget.id,
-        x: widget.positionX || 0,
-        y: widget.positionY || 0,
-        w: widget.width || 4,
-        h: widget.height || 3,
-        minW: 2,
-        minH: 2
-      }));
-      
-      // Create responsive layouts for different breakpoints
-      const responsiveLayouts = {
-        lg: baseLayout,
-        md: baseLayout.map(item => ({
-          ...item,
-          w: Math.min(item.w, 6), // Limit width on medium screens
-          x: 0 // Stack widgets vertically on medium screens
-        })),
-        sm: baseLayout.map(item => ({
-          ...item,
-          w: 6, // Full width on small screens
-          x: 0 // Stack widgets vertically on small screens
-        })),
-        xs: baseLayout.map(item => ({
-          ...item,
-          w: 4, // Full width on extra small screens
-          x: 0 // Stack widgets vertically on extra small screens
-        }))
-      };
-      
-      setLayouts(responsiveLayouts);
-    }
+    // placeholder effect to keep dependency parity if needed
   }, [dashboard]);
 
   const loadDashboard = async () => {
@@ -365,52 +329,12 @@ const DashboardView: React.FC = () => {
     }
   };
   
-  // Handle responsive layout changes
-  const handleLayoutChange = (currentLayout: any, allLayouts: any) => {
-    setLayouts(allLayouts);
-    setLayoutChanged(true);
-  };
   
   // Toggle mobile actions menu
   const toggleMobileActions = () => {
     setMobileActionsOpen(!mobileActionsOpen);
   };
   
-  // Save layout changes to backend
-  const saveLayout = async () => {
-    if (!dashboard || !layouts.lg || !layouts.lg.length) return;
-    
-    try {
-      // Use the large screen layout for saving positions
-      const widgetPositions: Record<string, Record<string, number>> = {};
-      
-      layouts.lg.forEach(item => {
-        widgetPositions[item.i] = {
-          positionX: item.x,
-          positionY: item.y,
-          width: item.w,
-          height: item.h
-        };
-      });
-      
-      await dashboardApi.updateWidgetPositions(dashboard.id, widgetPositions, 'current-user');
-      
-      toast({
-        title: 'Success',
-        description: 'Dashboard layout saved successfully',
-      });
-      
-      setLayoutChanged(false);
-      loadDashboard(); // Reload to get updated positions
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save dashboard layout',
-        variant: 'destructive',
-      });
-      console.error('Layout save error:', error);
-    }
-  };
 
   if (loading) {
     return (
@@ -467,16 +391,6 @@ const DashboardView: React.FC = () => {
             <Share2 className="h-4 w-4 mr-2" />
             {dashboard.isShared ? 'Shared' : 'Share'}
           </Button>
-          {layoutChanged && (
-            <Button
-              variant="default"
-              onClick={saveLayout}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save Layout
-            </Button>
-          )}
           <Button
             variant="outline"
             onClick={() => setShowExportModal(true)}
@@ -495,16 +409,6 @@ const DashboardView: React.FC = () => {
         {/* Mobile actions */}
         <div className="flex md:hidden items-center justify-between">
           <div className="flex space-x-2">
-            {layoutChanged && (
-              <Button
-                variant="default"
-                onClick={saveLayout}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 p-2"
-              >
-                <Save className="h-5 w-5" />
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -577,46 +481,39 @@ const DashboardView: React.FC = () => {
       {/* Dashboard Grid */}
       {dashboard.widgets && dashboard.widgets.length > 0 ? (
         <div ref={dashboardRef} className="w-full h-full">
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={layouts}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480 }}
-            cols={{ lg: 12, md: 8, sm: 6, xs: 4 }}
-            rowHeight={100}
-            margin={[16, 16]}
-            containerPadding={[8, 8]}
-            onLayoutChange={handleLayoutChange}
-            isDraggable={editMode}
-            isResizable={editMode}
-            compactType="vertical"
-            useCSSTransforms={true}
-          >
-            {dashboard.widgets.map((widget) => (
-              <div
-                key={widget.id}
-                className={`relative border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden shadow-sm ${
-                  editMode ? 'border-2 border-dashed border-blue-500' : ''
-                }`}
-              >
-                {editMode && (
-                  <div className="absolute top-2 right-2 z-10 bg-white dark:bg-gray-800 bg-opacity-90 rounded p-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteWidget(widget.id)}
-                      className="text-red-600 hover:text-red-700 p-1"
+          <div data-testid="grid-layout">
+            <Grid container spacing={2}>
+              {dashboard.widgets.map((widget) => {
+                const lg = Math.min(12, widget.width || 4);
+                const md = Math.min(12, Math.max(6, widget.width || 4));
+                return (
+                  <Grid key={widget.id} item xs={12} sm={12} md={md} lg={lg}>
+                    <div
+                      className={`relative border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden shadow-sm ${
+                        editMode ? 'border-2 border-dashed border-blue-500' : ''
+                      }`}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                
-                <div className="h-full overflow-auto p-1">
-                  <WidgetRenderer widget={widget} />
-                </div>
-              </div>
-            ))}
-          </ResponsiveGridLayout>
+                      {editMode && (
+                        <div className="absolute top-2 right-2 z-10 bg-white dark:bg-gray-800 bg-opacity-90 rounded p-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteWidget(widget.id)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="h-full overflow-auto p-1">
+                        <WidgetRenderer widget={widget} />
+                      </div>
+                    </div>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </div>
         </div>
       ) : (
         <div ref={dashboardRef} className="text-center py-12">

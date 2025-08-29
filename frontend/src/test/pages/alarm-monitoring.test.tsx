@@ -196,27 +196,48 @@ describe('AlarmMonitoringPage', () => {
       expect(screen.getByText('Enabled Alarms')).toBeInTheDocument();
       expect(screen.getByText('3')).toBeInTheDocument(); // enabledAlarms value
       expect(screen.getByText('Disabled Alarms')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument(); // disabledAlarms value
       expect(screen.getByText('Recently Triggered')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument(); // recentlyTriggered value
     });
+
+    // Find all elements with text "2" and verify both are present
+    const elementsWithTwo = screen.getAllByText('2');
+    expect(elementsWithTwo).toHaveLength(2);
+
+    // One should be regular styling (disabled alarms), one should be red (recently triggered)
+    const disabledAlarmsValue = elementsWithTwo.find(el => 
+      el.className.includes('text-2xl') && el.className.includes('font-bold') && !el.className.includes('text-red-600')
+    );
+    const recentlyTriggeredValue = elementsWithTwo.find(el => 
+      el.className.includes('text-2xl') && el.className.includes('font-bold') && el.className.includes('text-red-600')
+    );
+
+    expect(disabledAlarmsValue).toBeInTheDocument();
+    expect(recentlyTriggeredValue).toBeInTheDocument();
   });
 
   it('displays alarm events in a table', async () => {
     renderWithRouter();
 
+    // Wait for data to load and check that active events are shown by default
     await waitFor(() => {
       expect(screen.getByText('Database Error Alert')).toBeInTheDocument();
-      expect(screen.getByText('API Timeout Alert')).toBeInTheDocument();
       expect(screen.getByText('Found 12 matching log entries with database errors')).toBeInTheDocument();
     });
 
     // Check for table headers
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Alarm Name')).toBeInTheDocument();
-    expect(screen.getByText('Triggered')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Triggered' })).toBeInTheDocument();
     expect(screen.getByText('Match Count')).toBeInTheDocument();
     expect(screen.getByText('Actions')).toBeInTheDocument();
+
+    // Switch to "all" tab to see all events including "API Timeout Alert"
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: /all/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('API Timeout Alert')).toBeInTheDocument();
+    });
   });
 
   it('filters events based on tab selection', async () => {

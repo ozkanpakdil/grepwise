@@ -15,12 +15,7 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void;
 };
 
-const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
-};
-
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
 export function ThemeProvider({
   children,
@@ -31,6 +26,8 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
+  // Bump to allow re-applying system theme when user selects it again (e.g., after OS preference changed)
+  const [systemTick, setSystemTick] = useState(0);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -47,13 +44,17 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme);
-  }, [theme]);
+  }, [theme, systemTick]);
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (next: Theme) => {
+      localStorage.setItem(storageKey, next);
+      if (next === "system") {
+        // Force re-apply even if value is unchanged
+        setSystemTick((t) => t + 1);
+      }
+      setTheme(next);
     },
   };
 

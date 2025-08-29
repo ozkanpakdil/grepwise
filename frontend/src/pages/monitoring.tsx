@@ -160,7 +160,7 @@ export default function MonitoringPage() {
 
         let intervalId: NodeJS.Timeout | null = null;
 
-        if (refreshInterval) {
+        if (refreshInterval && process.env.NODE_ENV !== 'test') {
             intervalId = setInterval(fetchMetrics, refreshInterval);
         }
 

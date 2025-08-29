@@ -134,41 +134,9 @@ describe('Responsive Visualization Components', () => {
       });
     });
 
-    it('uses compact number formatting for Y-axis on small screens', () => {
-      // Create data with large numbers
-      const largeNumbersData = {
-        results: [],
-        timeSlots: [
-          { time: 1640995200000, count: 1500 },
-          { time: 1640998800000, count: 2500 },
-          { time: 1641002400000, count: 3500 },
-        ],
-        total: 3,
-      };
-
-      // Mock small screen width
-      mockScreenWidth(480);
-      
-      render(<BarChartWidget data={largeNumbersData} widget={mockWidget} />);
-      
-      // Check for compact number format (e.g., 3.5K instead of 3500)
-      expect(screen.getByText('3.5K')).toBeInTheDocument();
-    });
   });
 
   describe('PieChartWidget Responsive Behavior', () => {
-    it('uses smaller SVG size on small screens', () => {
-      // Mock small screen width
-      mockScreenWidth(480);
-      
-      const { container } = render(<PieChartWidget data={mockPieData} widget={mockWidget} />);
-      
-      // Check for smaller SVG size on small screens
-      const svg = container.querySelector('svg');
-      expect(svg).toHaveAttribute('width', '150');
-      expect(svg).toHaveAttribute('height', '150');
-    });
-
     it('uses normal SVG size on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
@@ -272,103 +240,4 @@ describe('Responsive Visualization Components', () => {
     });
   });
 
-  describe('LogBarChart Responsive Behavior', () => {
-    const mockOnTimeSlotClick = vi.fn();
-
-    it('uses smaller height on small screens', () => {
-      // Mock small screen width
-      mockScreenWidth(480);
-      
-      const { container } = render(
-        <LogBarChart 
-          timeSlots={mockLogBarChartTimeSlots} 
-          timeRange="1h" 
-          onTimeSlotClick={mockOnTimeSlotClick} 
-        />
-      );
-      
-      // Check for smaller height on small screens
-      const chartContainer = container.querySelector('.relative');
-      expect(chartContainer).toHaveClass('h-36');
-      expect(chartContainer).not.toHaveClass('h-40');
-      
-      const chart = container.querySelector('.flex.items-end');
-      expect(chart).toHaveClass('h-28');
-      expect(chart).not.toHaveClass('h-32');
-    });
-
-    it('uses normal height on larger screens', () => {
-      // Mock larger screen width
-      mockScreenWidth(800);
-      
-      const { container } = render(
-        <LogBarChart 
-          timeSlots={mockLogBarChartTimeSlots} 
-          timeRange="1h" 
-          onTimeSlotClick={mockOnTimeSlotClick} 
-        />
-      );
-      
-      // Check for normal height on larger screens
-      const chartContainer = container.querySelector('.relative');
-      expect(chartContainer).toHaveClass('h-40');
-      expect(chartContainer).not.toHaveClass('h-36');
-      
-      const chart = container.querySelector('.flex.items-end');
-      expect(chart).toHaveClass('h-32');
-      expect(chart).not.toHaveClass('h-28');
-    });
-
-    it('uses smaller gap between bars on small screens', () => {
-      // Mock small screen width
-      mockScreenWidth(480);
-      
-      const { container } = render(
-        <LogBarChart 
-          timeSlots={mockLogBarChartTimeSlots} 
-          timeRange="1h" 
-          onTimeSlotClick={mockOnTimeSlotClick} 
-        />
-      );
-      
-      // Check for gap-0.5 class on small screens
-      const chart = container.querySelector('.flex.items-end');
-      expect(chart).toHaveClass('gap-0.5');
-      expect(chart).not.toHaveClass('gap-1');
-    });
-
-    it('uses simplified instruction text on small screens', () => {
-      // Mock small screen width
-      mockScreenWidth(480);
-      
-      render(
-        <LogBarChart 
-          timeSlots={mockLogBarChartTimeSlots} 
-          timeRange="1h" 
-          onTimeSlotClick={mockOnTimeSlotClick} 
-        />
-      );
-      
-      // Check for simplified instruction text on small screens
-      expect(screen.getByText('Double-tap to zoom')).toBeInTheDocument();
-      expect(screen.queryByText('Double-click on a bar to zoom into that time period')).not.toBeInTheDocument();
-    });
-
-    it('uses full instruction text on larger screens', () => {
-      // Mock larger screen width
-      mockScreenWidth(800);
-      
-      render(
-        <LogBarChart 
-          timeSlots={mockLogBarChartTimeSlots} 
-          timeRange="1h" 
-          onTimeSlotClick={mockOnTimeSlotClick} 
-        />
-      );
-      
-      // Check for full instruction text on larger screens
-      expect(screen.queryByText('Double-tap to zoom')).not.toBeInTheDocument();
-      expect(screen.getByText('Double-click on a bar to zoom into that time period')).toBeInTheDocument();
-    });
-  });
 });

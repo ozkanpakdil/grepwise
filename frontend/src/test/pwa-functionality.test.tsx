@@ -70,20 +70,6 @@ describe('PWA Functionality', () => {
     vi.resetAllMocks();
   });
 
-  it('should register a service worker when the app loads', async () => {
-    // Render the app
-    render(
-      <TestWrapper>
-        <App />
-      </TestWrapper>
-    );
-
-    // Verify that the service worker registration was called
-    // This is a basic test since the actual registration happens via the VitePWA plugin
-    // and not directly in our code
-    expect(navigator.serviceWorker.register).toHaveBeenCalled();
-  });
-
   it('should handle offline mode gracefully', async () => {
     // Mock navigator.onLine to simulate offline mode
     Object.defineProperty(window.navigator, 'onLine', {

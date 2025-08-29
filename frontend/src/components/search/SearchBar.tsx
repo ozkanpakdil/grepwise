@@ -49,10 +49,11 @@ export default function SearchBar({
   isEditorLoading,
 }: Props) {
   return (
-    <form onSubmit={(e) => onSearch(e)} className="min-h-[120px]" data-testid="search-form">
-      <div className="flex h-full gap-2">
-        <div className="flex-1 h-full w-96" data-testid="query-editor">
+    <form onSubmit={(e) => onSearch(e)} className="min-h-[140px]" data-testid="search-form">
+      <div className="flex gap-2 items-stretch">
+        <div className="flex-1 min-h-[140px]" data-testid="query-editor">
           <Editor
+            height="140px"
             defaultLanguage="spl"
             defaultValue={query}
             onChange={(value) => setQuery(value || '')}
@@ -69,7 +70,7 @@ export default function SearchBar({
               tabSize: 2,
               readOnly: isEditorLoading,
             }}
-            className="monaco-editor-container h-full overflow-hidden"
+            className="monaco-editor-container overflow-hidden"
           />
         </div>
         <div className="flex flex-col gap-2">

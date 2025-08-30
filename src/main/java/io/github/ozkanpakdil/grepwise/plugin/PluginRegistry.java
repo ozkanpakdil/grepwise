@@ -14,21 +14,21 @@ import java.util.stream.Collectors;
  */
 @Component
 public class PluginRegistry {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(PluginRegistry.class);
-    
+
     // Map of plugin ID to plugin instance
     private final Map<String, Plugin> pluginsById = new ConcurrentHashMap<>();
-    
+
     // Map of plugin type to set of plugin IDs
     private final Map<Class<?>, Set<String>> pluginsByType = new ConcurrentHashMap<>();
-    
+
     // Map of plugin ID to plugin configuration
     private final Map<String, Map<String, Object>> pluginConfigurations = new ConcurrentHashMap<>();
-    
+
     // Map of plugin ID to enabled status
     private final Map<String, Boolean> pluginEnabledStatus = new ConcurrentHashMap<>();
-    
+
     /**
      * Registers a plugin with the registry.
      *
@@ -40,25 +40,25 @@ public class PluginRegistry {
             logger.warn("Attempted to register null plugin");
             return false;
         }
-        
+
         String pluginId = plugin.getId();
         if (pluginId == null || pluginId.isEmpty()) {
             logger.warn("Attempted to register plugin with null or empty ID");
             return false;
         }
-        
+
         if (pluginsById.containsKey(pluginId)) {
             logger.warn("Plugin with ID {} is already registered", pluginId);
             return false;
         }
-        
+
         logger.info("Registering plugin: {} ({})", plugin.getName(), pluginId);
         pluginsById.put(pluginId, plugin);
         pluginEnabledStatus.put(pluginId, false);
-        
+
         // Register plugin with all its interfaces and superclasses
         registerPluginTypes(plugin);
-        
+
         // Initialize the plugin
         try {
             plugin.initialize();
@@ -66,10 +66,10 @@ public class PluginRegistry {
             logger.error("Failed to initialize plugin {} ({}): {}", plugin.getName(), pluginId, e.getMessage(), e);
             // Keep the plugin registered even if initialization fails
         }
-        
+
         return true;
     }
-    
+
     /**
      * Unregisters a plugin from the registry.
      * This will stop the plugin if it is running.
@@ -82,15 +82,15 @@ public class PluginRegistry {
             logger.warn("Attempted to unregister plugin with null or empty ID");
             return false;
         }
-        
+
         Plugin plugin = pluginsById.get(pluginId);
         if (plugin == null) {
             logger.warn("Plugin with ID {} is not registered", pluginId);
             return false;
         }
-        
+
         logger.info("Unregistering plugin: {} ({})", plugin.getName(), pluginId);
-        
+
         // Stop the plugin if it's running
         try {
             plugin.stop();
@@ -98,23 +98,23 @@ public class PluginRegistry {
             logger.error("Failed to stop plugin {} ({}): {}", plugin.getName(), pluginId, e.getMessage(), e);
             // Continue with unregistration even if stopping fails
         }
-        
+
         // Remove plugin from all type maps
         for (Map.Entry<Class<?>, Set<String>> entry : pluginsByType.entrySet()) {
             entry.getValue().remove(pluginId);
         }
-        
+
         // Clean up empty type sets
         pluginsByType.entrySet().removeIf(entry -> entry.getValue().isEmpty());
-        
+
         // Remove plugin from other maps
         pluginsById.remove(pluginId);
         pluginConfigurations.remove(pluginId);
         pluginEnabledStatus.remove(pluginId);
-        
+
         return true;
     }
-    
+
     /**
      * Returns a plugin by its ID.
      *
@@ -124,7 +124,7 @@ public class PluginRegistry {
     public Optional<Plugin> getPluginById(String pluginId) {
         return Optional.ofNullable(pluginsById.get(pluginId));
     }
-    
+
     /**
      * Returns all registered plugins.
      *
@@ -133,12 +133,12 @@ public class PluginRegistry {
     public List<Plugin> getAllPlugins() {
         return new ArrayList<>(pluginsById.values());
     }
-    
+
     /**
      * Returns all plugins of the specified type.
      *
      * @param pluginClass The class or interface that plugins should implement
-     * @param <T> The type of plugin to retrieve
+     * @param <T>         The type of plugin to retrieve
      * @return List of plugins of the specified type
      */
     @SuppressWarnings("unchecked")
@@ -146,7 +146,7 @@ public class PluginRegistry {
         if (pluginClass == null) {
             return Collections.emptyList();
         }
-        
+
         Set<String> pluginIds = pluginsByType.getOrDefault(pluginClass, Collections.emptySet());
         return pluginIds.stream()
                 .map(pluginsById::get)
@@ -154,11 +154,11 @@ public class PluginRegistry {
                 .map(plugin -> (T) plugin)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Sets the configuration for a plugin.
      *
-     * @param pluginId The ID of the plugin
+     * @param pluginId      The ID of the plugin
      * @param configuration The configuration to set
      * @return true if the configuration was set successfully, false otherwise
      */
@@ -167,21 +167,21 @@ public class PluginRegistry {
             logger.warn("Attempted to set configuration for plugin with null or empty ID");
             return false;
         }
-        
+
         if (!pluginsById.containsKey(pluginId)) {
             logger.warn("Plugin with ID {} is not registered", pluginId);
             return false;
         }
-        
+
         if (configuration == null) {
             logger.warn("Attempted to set null configuration for plugin {}", pluginId);
             return false;
         }
-        
+
         pluginConfigurations.put(pluginId, new HashMap<>(configuration));
         return true;
     }
-    
+
     /**
      * Returns the configuration for a plugin.
      *
@@ -192,12 +192,12 @@ public class PluginRegistry {
         Map<String, Object> config = pluginConfigurations.get(pluginId);
         return config != null ? Optional.of(new HashMap<>(config)) : Optional.empty();
     }
-    
+
     /**
      * Sets the enabled status for a plugin.
      *
      * @param pluginId The ID of the plugin
-     * @param enabled The enabled status to set
+     * @param enabled  The enabled status to set
      * @return true if the status was set successfully, false otherwise
      */
     public boolean setPluginEnabled(String pluginId, boolean enabled) {
@@ -205,16 +205,16 @@ public class PluginRegistry {
             logger.warn("Attempted to set enabled status for plugin with null or empty ID");
             return false;
         }
-        
+
         if (!pluginsById.containsKey(pluginId)) {
             logger.warn("Plugin with ID {} is not registered", pluginId);
             return false;
         }
-        
+
         pluginEnabledStatus.put(pluginId, enabled);
         return true;
     }
-    
+
     /**
      * Returns whether a plugin is enabled.
      *
@@ -224,7 +224,7 @@ public class PluginRegistry {
     public boolean isPluginEnabled(String pluginId) {
         return pluginEnabledStatus.getOrDefault(pluginId, false);
     }
-    
+
     /**
      * Returns all enabled plugins.
      *
@@ -236,7 +236,7 @@ public class PluginRegistry {
                 .map(entry -> pluginsById.get(entry.getKey()))
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Clears the registry, removing all registered plugins.
      */
@@ -246,7 +246,7 @@ public class PluginRegistry {
         pluginConfigurations.clear();
         pluginEnabledStatus.clear();
     }
-    
+
     /**
      * Registers a plugin with all its interfaces and superclasses.
      *
@@ -255,7 +255,7 @@ public class PluginRegistry {
     private void registerPluginTypes(Plugin plugin) {
         Class<?> pluginClass = plugin.getClass();
         String pluginId = plugin.getId();
-        
+
         // Register with all interfaces and superclasses
         Set<Class<?>> types = getAllTypes(pluginClass);
         for (Class<?> type : types) {
@@ -264,7 +264,7 @@ public class PluginRegistry {
             }
         }
     }
-    
+
     /**
      * Returns all interfaces and superclasses of a class.
      *
@@ -274,20 +274,20 @@ public class PluginRegistry {
     private Set<Class<?>> getAllTypes(Class<?> clazz) {
         Set<Class<?>> types = new HashSet<>();
         types.add(clazz);
-        
+
         // Add all interfaces
         for (Class<?> iface : clazz.getInterfaces()) {
             types.add(iface);
             types.addAll(getAllTypes(iface));
         }
-        
+
         // Add superclass
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null && superclass != Object.class) {
             types.add(superclass);
             types.addAll(getAllTypes(superclass));
         }
-        
+
         return types;
     }
 
@@ -305,7 +305,7 @@ public class PluginRegistry {
      * Returns all plugins of the specified type.
      *
      * @param pluginType The class or interface that plugins should implement
-     * @param <T> The type of plugin to retrieve
+     * @param <T>        The type of plugin to retrieve
      * @return List of plugins of the specified type
      */
     public <T extends Plugin> List<T> getPlugins(Class<T> pluginType) {

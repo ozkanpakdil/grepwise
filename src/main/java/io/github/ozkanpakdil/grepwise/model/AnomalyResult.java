@@ -31,6 +31,7 @@ public record AnomalyResult(
 
     /**
      * Creates a builder for AnomalyResult.
+     *
      * @return a new builder instance
      */
     public static Builder builder() {

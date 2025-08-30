@@ -30,7 +30,7 @@ public class ShardConfigurationRepository {
 
         // Create default shard configuration
         createDefaultShardConfiguration();
-        
+
         logger.info("Initialized ShardConfigurationRepository with {} default configurations", configurations.size());
     }
 
@@ -45,7 +45,7 @@ public class ShardConfigurationRepository {
         defaultConfig.setReplicationEnabled(false);
         defaultConfig.setReplicationFactor(1);
         defaultConfig.setShardingEnabled(false); // Disabled by default
-        
+
         save(defaultConfig);
         logger.debug("Created default shard configuration: {}", defaultConfig);
     }
@@ -86,7 +86,7 @@ public class ShardConfigurationRepository {
 
     /**
      * Find the active shard configuration.
-     * 
+     *
      * @return The active shard configuration, or null if none exists
      */
     public ShardConfiguration findByShardingEnabledTrue() {
@@ -98,7 +98,7 @@ public class ShardConfigurationRepository {
 
     /**
      * Get the default shard configuration.
-     * 
+     *
      * @return The default shard configuration
      */
     public ShardConfiguration getDefaultConfiguration() {

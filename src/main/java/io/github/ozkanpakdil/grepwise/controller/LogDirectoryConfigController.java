@@ -60,7 +60,7 @@ public class LogDirectoryConfigController {
     /**
      * Update an existing log directory configuration.
      *
-     * @param id The ID of the configuration to update
+     * @param id     The ID of the configuration to update
      * @param config The updated configuration
      * @return The updated configuration
      */

@@ -29,14 +29,14 @@ public class UserRepository {
         if (user.getId() == null || user.getId().isEmpty()) {
             user.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (user.getCreatedAt() == 0) {
             user.setCreatedAt(now);
         }
         user.setUpdatedAt(now);
-        
+
         users.put(user.getId(), user);
         return user;
     }
@@ -97,7 +97,7 @@ public class UserRepository {
                 .filter(user -> user.hasRole(roleName))
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Find users by permission.
      *

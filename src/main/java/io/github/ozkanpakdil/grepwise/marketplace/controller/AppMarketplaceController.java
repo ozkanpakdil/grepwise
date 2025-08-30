@@ -20,16 +20,16 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/marketplace")
 public class AppMarketplaceController {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AppMarketplaceController.class);
-    
+
     private final AppMarketplaceService appMarketplaceService;
-    
+
     @Autowired
     public AppMarketplaceController(AppMarketplaceService appMarketplaceService) {
         this.appMarketplaceService = appMarketplaceService;
     }
-    
+
     /**
      * Submits a new app package to the marketplace.
      *
@@ -49,11 +49,11 @@ public class AppMarketplaceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Updates an existing app package in the marketplace.
      *
-     * @param packageId The ID of the app package to update
+     * @param packageId  The ID of the app package to update
      * @param appPackage The updated app package
      * @return The updated app package
      */
@@ -63,7 +63,7 @@ public class AppMarketplaceController {
             if (!packageId.equals(appPackage.getId())) {
                 return ResponseEntity.badRequest().build();
             }
-            
+
             AppPackage updatedPackage = appMarketplaceService.updatePackage(appPackage);
             return ResponseEntity.ok(updatedPackage);
         } catch (IllegalArgumentException e) {
@@ -77,7 +77,7 @@ public class AppMarketplaceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Retrieves an app package by its ID.
      *
@@ -90,7 +90,7 @@ public class AppMarketplaceController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * Lists all app packages in the marketplace.
      *
@@ -100,7 +100,7 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> getAllPackages() {
         return ResponseEntity.ok(appMarketplaceService.getAllPackages());
     }
-    
+
     /**
      * Lists app packages of a specific type.
      *
@@ -111,7 +111,7 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> getPackagesByType(@PathVariable AppPackageType type) {
         return ResponseEntity.ok(appMarketplaceService.getPackagesByType(type));
     }
-    
+
     /**
      * Lists app packages with a specific status.
      *
@@ -122,7 +122,7 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> getPackagesByStatus(@PathVariable AppPackageStatus status) {
         return ResponseEntity.ok(appMarketplaceService.getPackagesByStatus(status));
     }
-    
+
     /**
      * Searches for app packages by name, description, or tags.
      *
@@ -133,12 +133,12 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> searchPackages(@RequestParam String query) {
         return ResponseEntity.ok(appMarketplaceService.searchPackages(query));
     }
-    
+
     /**
      * Changes the status of an app package.
      *
      * @param packageId The ID of the app package
-     * @param status The new status
+     * @param status    The new status
      * @return The updated app package
      */
     @PatchMapping("/packages/{packageId}/status")
@@ -157,7 +157,7 @@ public class AppMarketplaceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Installs an app package.
      *
@@ -180,7 +180,7 @@ public class AppMarketplaceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Uninstalls an app package.
      *
@@ -203,7 +203,7 @@ public class AppMarketplaceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Lists all installed app packages.
      *
@@ -213,7 +213,7 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> getInstalledPackages() {
         return ResponseEntity.ok(appMarketplaceService.getInstalledPackages());
     }
-    
+
     /**
      * Checks for updates to installed app packages.
      *
@@ -223,7 +223,7 @@ public class AppMarketplaceController {
     public ResponseEntity<List<AppPackage>> checkForUpdates() {
         return ResponseEntity.ok(appMarketplaceService.checkForUpdates());
     }
-    
+
     /**
      * Updates an installed app package to the latest version.
      *

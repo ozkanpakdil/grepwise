@@ -142,8 +142,8 @@ public class DashboardWidget {
         if (o == null || getClass() != o.getClass()) return false;
         DashboardWidget widget = (DashboardWidget) o;
         return Objects.equals(id, widget.id) &&
-               Objects.equals(dashboardId, widget.dashboardId) &&
-               Objects.equals(title, widget.title);
+                Objects.equals(dashboardId, widget.dashboardId) &&
+                Objects.equals(title, widget.title);
     }
 
     @Override

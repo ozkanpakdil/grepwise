@@ -1,13 +1,12 @@
 package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,7 @@ public class SearchCacheService {
 
     // Cache structure: key = search parameters hash, value = CacheEntry
     private final Map<String, CacheEntry> cache;
-    
+
     // Cache statistics
     private final AtomicInteger cacheSize;
     private final AtomicLong cacheHits;
@@ -40,45 +39,6 @@ public class SearchCacheService {
 
     @Value("${grepwise.search-cache.enabled:true}")
     private boolean cacheEnabled;
-
-    /**
-     * Inner class to store cache entries with their metadata
-     */
-    private static class CacheEntry {
-        private final List<LogEntry> results;
-        private final long creationTime;
-        private long lastAccessTime;
-        private final AtomicInteger accessCount;
-
-        public CacheEntry(List<LogEntry> results) {
-            this.results = results;
-            this.creationTime = System.currentTimeMillis();
-            this.lastAccessTime = this.creationTime;
-            this.accessCount = new AtomicInteger(0);
-        }
-
-        public List<LogEntry> getResults() {
-            this.lastAccessTime = System.currentTimeMillis();
-            this.accessCount.incrementAndGet();
-            return this.results;
-        }
-
-        public long getCreationTime() {
-            return creationTime;
-        }
-
-        public long getLastAccessTime() {
-            return lastAccessTime;
-        }
-
-        public int getAccessCount() {
-            return accessCount.get();
-        }
-
-        public boolean isExpired(long expirationMs) {
-            return System.currentTimeMillis() - lastAccessTime > expirationMs;
-        }
-    }
 
     public SearchCacheService() {
         this.cache = new ConcurrentHashMap<>();
@@ -98,20 +58,20 @@ public class SearchCacheService {
      * Generate a cache key from search parameters
      */
     private String generateCacheKey(String queryStr, boolean isRegex, Long startTime, Long endTime) {
-        return String.format("%s:%b:%d:%d", 
-                queryStr != null ? queryStr : "", 
-                isRegex, 
-                startTime != null ? startTime : 0, 
+        return String.format("%s:%b:%d:%d",
+                queryStr != null ? queryStr : "",
+                isRegex,
+                startTime != null ? startTime : 0,
                 endTime != null ? endTime : 0);
     }
 
     /**
      * Get search results from cache if available
      *
-     * @param queryStr The search query string
-     * @param isRegex Whether the query is a regex
+     * @param queryStr  The search query string
+     * @param isRegex   Whether the query is a regex
      * @param startTime The start time for time-based filtering
-     * @param endTime The end time for time-based filtering
+     * @param endTime   The end time for time-based filtering
      * @return The cached search results, or null if not in cache
      */
     public List<LogEntry> getFromCache(String queryStr, boolean isRegex, Long startTime, Long endTime) {
@@ -132,7 +92,7 @@ public class SearchCacheService {
                 cacheMisses.incrementAndGet();
                 return null;
             }
-            
+
             // Cache hit
             cacheHits.incrementAndGet();
             logger.debug("Cache hit for key: {}", cacheKey);
@@ -148,11 +108,11 @@ public class SearchCacheService {
     /**
      * Add search results to the cache
      *
-     * @param queryStr The search query string
-     * @param isRegex Whether the query is a regex
+     * @param queryStr  The search query string
+     * @param isRegex   Whether the query is a regex
      * @param startTime The start time for time-based filtering
-     * @param endTime The end time for time-based filtering
-     * @param results The search results to cache
+     * @param endTime   The end time for time-based filtering
+     * @param results   The search results to cache
      */
     public void addToCache(String queryStr, boolean isRegex, Long startTime, Long endTime, List<LogEntry> results) {
         if (!cacheEnabled || results == null) {
@@ -160,12 +120,12 @@ public class SearchCacheService {
         }
 
         String cacheKey = generateCacheKey(queryStr, isRegex, startTime, endTime);
-        
+
         // Check if we need to evict entries to make room
         if (cacheSize.get() >= maxCacheSize) {
             evictOldestEntry();
         }
-        
+
         cache.put(cacheKey, new CacheEntry(results));
         cacheSize.incrementAndGet();
         logger.debug("Added entry to cache for key: {}", cacheKey);
@@ -255,7 +215,7 @@ public class SearchCacheService {
     public void setMaxCacheSize(int maxCacheSize) {
         this.maxCacheSize = maxCacheSize;
         logger.info("Maximum cache size updated to {}", maxCacheSize);
-        
+
         // If the new size is smaller than the current cache size, evict entries
         while (cacheSize.get() > maxCacheSize) {
             evictOldestEntry();
@@ -290,7 +250,7 @@ public class SearchCacheService {
     public void setCacheEnabled(boolean cacheEnabled) {
         this.cacheEnabled = cacheEnabled;
         logger.info("Search cache {} ", cacheEnabled ? "enabled" : "disabled");
-        
+
         // Clear the cache if it's being disabled
         if (!cacheEnabled) {
             clearCache();
@@ -309,12 +269,51 @@ public class SearchCacheService {
         stats.put("hits", cacheHits.get());
         stats.put("misses", cacheMisses.get());
         stats.put("evictions", cacheEvictions.get());
-        
+
         // Calculate hit ratio if there have been any cache accesses
         long totalAccesses = cacheHits.get() + cacheMisses.get();
         double hitRatio = totalAccesses > 0 ? (double) cacheHits.get() / totalAccesses : 0.0;
         stats.put("hitRatio", hitRatio);
-        
+
         return stats;
+    }
+
+    /**
+     * Inner class to store cache entries with their metadata
+     */
+    private static class CacheEntry {
+        private final List<LogEntry> results;
+        private final long creationTime;
+        private final AtomicInteger accessCount;
+        private long lastAccessTime;
+
+        public CacheEntry(List<LogEntry> results) {
+            this.results = results;
+            this.creationTime = System.currentTimeMillis();
+            this.lastAccessTime = this.creationTime;
+            this.accessCount = new AtomicInteger(0);
+        }
+
+        public List<LogEntry> getResults() {
+            this.lastAccessTime = System.currentTimeMillis();
+            this.accessCount.incrementAndGet();
+            return this.results;
+        }
+
+        public long getCreationTime() {
+            return creationTime;
+        }
+
+        public long getLastAccessTime() {
+            return lastAccessTime;
+        }
+
+        public int getAccessCount() {
+            return accessCount.get();
+        }
+
+        public boolean isExpired(long expirationMs) {
+            return System.currentTimeMillis() - lastAccessTime > expirationMs;
+        }
     }
 }

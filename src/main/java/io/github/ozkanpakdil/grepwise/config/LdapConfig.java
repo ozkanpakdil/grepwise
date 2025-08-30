@@ -64,13 +64,13 @@ public class LdapConfig {
     public DefaultSpringSecurityContextSource contextSource() {
         DefaultSpringSecurityContextSource contextSource = new DefaultSpringSecurityContextSource(ldapUrl);
         contextSource.setBase(ldapBaseDn);
-        
+
         // Set manager credentials if provided
         if (ldapManagerDn != null && !ldapManagerDn.isEmpty()) {
             contextSource.setUserDn(ldapManagerDn);
             contextSource.setPassword(ldapManagerPassword);
         }
-        
+
         return contextSource;
     }
 
@@ -85,15 +85,15 @@ public class LdapConfig {
         LdapContextSource contextSource = new LdapContextSource();
         contextSource.setUrl(ldapUrl);
         contextSource.setBase(ldapBaseDn);
-        
+
         // Set manager credentials if provided
         if (ldapManagerDn != null && !ldapManagerDn.isEmpty()) {
             contextSource.setUserDn(ldapManagerDn);
             contextSource.setPassword(ldapManagerPassword);
         }
-        
+
         contextSource.afterPropertiesSet();
-        
+
         LdapTemplate ldapTemplate = new LdapTemplate(contextSource);
         return ldapTemplate;
     }
@@ -106,15 +106,15 @@ public class LdapConfig {
     @Bean
     public LdapAuthenticator ldapAuthenticator() {
         BindAuthenticator authenticator = new BindAuthenticator(contextSource());
-        
+
         // Configure user search
         FilterBasedLdapUserSearch userSearch = new FilterBasedLdapUserSearch(
-            ldapUserSearchBase, 
-            ldapUserSearchFilter, 
-            contextSource()
+                ldapUserSearchBase,
+                ldapUserSearchFilter,
+                contextSource()
         );
         authenticator.setUserSearch(userSearch);
-        
+
         return authenticator;
     }
 
@@ -126,14 +126,14 @@ public class LdapConfig {
     @Bean
     public LdapAuthoritiesPopulator ldapAuthoritiesPopulator() {
         DefaultLdapAuthoritiesPopulator authoritiesPopulator = new DefaultLdapAuthoritiesPopulator(
-            contextSource(), 
-            ldapGroupSearchBase
+                contextSource(),
+                ldapGroupSearchBase
         );
-        
+
         authoritiesPopulator.setGroupSearchFilter(ldapGroupSearchFilter);
         authoritiesPopulator.setGroupRoleAttribute(ldapGroupRoleAttribute);
         authoritiesPopulator.setRolePrefix("ROLE_");
-        
+
         return authoritiesPopulator;
     }
 
@@ -145,10 +145,10 @@ public class LdapConfig {
     @Bean
     public LdapAuthenticationProvider ldapAuthenticationProvider() {
         LdapAuthenticationProvider provider = new LdapAuthenticationProvider(
-            ldapAuthenticator(), 
-            ldapAuthoritiesPopulator()
+                ldapAuthenticator(),
+                ldapAuthoritiesPopulator()
         );
-        
+
         return provider;
     }
 

@@ -30,8 +30,8 @@ public class OpsGenieService {
     /**
      * Send an alert to OpsGenie.
      *
-     * @param alarm The alarm that was triggered
-     * @param apiKey The OpsGenie API key
+     * @param alarm   The alarm that was triggered
+     * @param apiKey  The OpsGenie API key
      * @param message The alert message
      * @return true if the alert was sent successfully, false otherwise
      */
@@ -43,7 +43,7 @@ public class OpsGenieService {
             payload.put("description", message);
             payload.put("priority", "P1");
             payload.put("source", "GrepWise");
-            
+
             // Add details
             Map<String, Object> details = new HashMap<>();
             details.put("alarm_id", alarm.getId());
@@ -54,29 +54,29 @@ public class OpsGenieService {
             details.put("threshold", alarm.getThreshold());
             details.put("time_window_minutes", alarm.getTimeWindowMinutes());
             payload.put("details", details);
-            
+
             // Add tags
             List<String> tags = new ArrayList<>();
             tags.add("GrepWise");
             tags.add("LogMonitoring");
             tags.add("Alarm");
             payload.put("tags", tags);
-            
+
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "GenieKey " + apiKey);
-            
+
             // Create the request entity
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-            
+
             // Send the request
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                OPSGENIE_ALERT_API_URL, 
-                requestEntity, 
-                Map.class
+                    OPSGENIE_ALERT_API_URL,
+                    requestEntity,
+                    Map.class
             );
-            
+
             if (response.getStatusCode().is2xxSuccessful()) {
                 logger.info("Successfully sent alert to OpsGenie for alarm: {}", alarm.getName());
                 return true;
@@ -89,14 +89,14 @@ public class OpsGenieService {
             return false;
         }
     }
-    
+
     /**
      * Send a grouped alert to OpsGenie.
      *
      * @param groupingKey The grouping key
-     * @param apiKey The OpsGenie API key
-     * @param message The grouped alert message
-     * @param alarmCount The number of alarms in the group
+     * @param apiKey      The OpsGenie API key
+     * @param message     The grouped alert message
+     * @param alarmCount  The number of alarms in the group
      * @return true if the alert was sent successfully, false otherwise
      */
     public boolean sendGroupedAlert(String groupingKey, String apiKey, String message, int alarmCount) {
@@ -107,38 +107,38 @@ public class OpsGenieService {
             payload.put("description", message);
             payload.put("priority", "P1");
             payload.put("source", "GrepWise");
-            
+
             // Add details
             Map<String, Object> details = new HashMap<>();
             details.put("grouping_key", groupingKey);
             details.put("alarm_count", alarmCount);
             payload.put("details", details);
-            
+
             // Add tags
             List<String> tags = new ArrayList<>();
             tags.add("GrepWise");
             tags.add("LogMonitoring");
             tags.add("GroupedAlarm");
             payload.put("tags", tags);
-            
+
             // Set alias for deduplication
             payload.put("alias", "GrepWise-GroupedAlarm-" + groupingKey);
-            
+
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "GenieKey " + apiKey);
-            
+
             // Create the request entity
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-            
+
             // Send the request
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                OPSGENIE_ALERT_API_URL, 
-                requestEntity, 
-                Map.class
+                    OPSGENIE_ALERT_API_URL,
+                    requestEntity,
+                    Map.class
             );
-            
+
             if (response.getStatusCode().is2xxSuccessful()) {
                 logger.info("Successfully sent grouped alert to OpsGenie for grouping key: {}", groupingKey);
                 return true;

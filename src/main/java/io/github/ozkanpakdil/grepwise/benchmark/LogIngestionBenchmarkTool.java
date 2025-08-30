@@ -19,12 +19,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * A standalone benchmark tool for measuring log ingestion performance.
  * This tool can be run as a command-line application to benchmark log ingestion
  * with different batch sizes and modes (direct vs. buffered).
- * 
+ * <p>
  * Results are saved to a CSV file for historical comparison.
  */
 public class LogIngestionBenchmarkTool {
@@ -43,20 +38,54 @@ public class LogIngestionBenchmarkTool {
     private static final int MEDIUM_BATCH_SIZE = 1000;
     private static final int LARGE_BATCH_SIZE = 5000;
     private static final int CONCURRENT_THREADS = 4;
-    
+
     // File to save benchmark results
     private static final String BENCHMARK_RESULTS_FILE = "benchmark-results.csv";
-    
+
     // JMX beans for system metrics
     private final OperatingSystemMXBean osBean;
     private final MemoryMXBean memoryBean;
-    
+
     // Services
     private final LuceneService luceneService;
     private final LogBufferService logBufferService;
-    
+
     // Temporary index path
-    private Path testIndexPath;
+    private final Path testIndexPath;
+
+    /**
+     * Constructor to initialize the benchmark tool.
+     */
+    public LogIngestionBenchmarkTool() throws IOException {
+        // Initialize JMX beans for system metrics
+        osBean = ManagementFactory.getOperatingSystemMXBean();
+        memoryBean = ManagementFactory.getMemoryMXBean();
+
+        // Create a temporary directory for the test index
+        testIndexPath = Files.createTempDirectory("test-lucene-index");
+
+        // Initialize services
+        luceneService = new LuceneService();
+        luceneService.setIndexPath(testIndexPath.toString());
+        luceneService.setPartitioningEnabled(false);
+
+        // Create a mock RealTimeUpdateService
+        luceneService.setRealTimeUpdateService(new MockRealTimeUpdateService());
+
+        try {
+            luceneService.init();
+        } catch (Exception e) {
+            System.err.println("Error initializing LuceneService: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        logBufferService = new LogBufferService(luceneService);
+        logBufferService.setMaxBufferSize(1000);
+        logBufferService.setFlushIntervalMs(5000);
+
+        // Initialize benchmark results file if it doesn't exist
+        initBenchmarkResultsFile();
+    }
 
     /**
      * Main method to run the benchmark tool.
@@ -72,41 +101,7 @@ public class LogIngestionBenchmarkTool {
             e.printStackTrace();
         }
     }
-    
-    /**
-     * Constructor to initialize the benchmark tool.
-     */
-    public LogIngestionBenchmarkTool() throws IOException {
-        // Initialize JMX beans for system metrics
-        osBean = ManagementFactory.getOperatingSystemMXBean();
-        memoryBean = ManagementFactory.getMemoryMXBean();
-        
-        // Create a temporary directory for the test index
-        testIndexPath = Files.createTempDirectory("test-lucene-index");
-        
-        // Initialize services
-        luceneService = new LuceneService();
-        luceneService.setIndexPath(testIndexPath.toString());
-        luceneService.setPartitioningEnabled(false);
-        
-        // Create a mock RealTimeUpdateService
-        luceneService.setRealTimeUpdateService(new MockRealTimeUpdateService());
-        
-        try {
-            luceneService.init();
-        } catch (Exception e) {
-            System.err.println("Error initializing LuceneService: " + e.getMessage());
-            e.printStackTrace();
-        }
-        
-        logBufferService = new LogBufferService(luceneService);
-        logBufferService.setMaxBufferSize(1000);
-        logBufferService.setFlushIntervalMs(5000);
-        
-        // Initialize benchmark results file if it doesn't exist
-        initBenchmarkResultsFile();
-    }
-    
+
     /**
      * Run all benchmarks.
      */
@@ -119,7 +114,7 @@ public class LogIngestionBenchmarkTool {
         printResults("Small Batch", SMALL_BATCH_SIZE, smallBatchDirectMetrics, smallBatchBufferedMetrics);
         saveBenchmarkResults("SmallBatch", SMALL_BATCH_SIZE, "Direct", smallBatchDirectMetrics);
         saveBenchmarkResults("SmallBatch", SMALL_BATCH_SIZE, "Buffered", smallBatchBufferedMetrics);
-        
+
         // Run medium batch benchmarks
         System.out.println("\nRunning medium batch benchmarks...");
         List<LogEntry> mediumBatchLogs = generateTestLogs(MEDIUM_BATCH_SIZE);
@@ -128,7 +123,7 @@ public class LogIngestionBenchmarkTool {
         printResults("Medium Batch", MEDIUM_BATCH_SIZE, mediumBatchDirectMetrics, mediumBatchBufferedMetrics);
         saveBenchmarkResults("MediumBatch", MEDIUM_BATCH_SIZE, "Direct", mediumBatchDirectMetrics);
         saveBenchmarkResults("MediumBatch", MEDIUM_BATCH_SIZE, "Buffered", mediumBatchBufferedMetrics);
-        
+
         // Run large batch benchmarks
         System.out.println("\nRunning large batch benchmarks...");
         List<LogEntry> largeBatchLogs = generateTestLogs(LARGE_BATCH_SIZE);
@@ -137,7 +132,7 @@ public class LogIngestionBenchmarkTool {
         printResults("Large Batch", LARGE_BATCH_SIZE, largeBatchDirectMetrics, largeBatchBufferedMetrics);
         saveBenchmarkResults("LargeBatch", LARGE_BATCH_SIZE, "Direct", largeBatchDirectMetrics);
         saveBenchmarkResults("LargeBatch", LARGE_BATCH_SIZE, "Buffered", largeBatchBufferedMetrics);
-        
+
         // Run concurrent benchmarks
         System.out.println("\nRunning concurrent benchmarks...");
         int logsPerThread = MEDIUM_BATCH_SIZE / CONCURRENT_THREADS;
@@ -151,7 +146,7 @@ public class LogIngestionBenchmarkTool {
         saveBenchmarkResults("ConcurrentIngestion", MEDIUM_BATCH_SIZE, "Direct", concurrentDirectMetrics);
         saveBenchmarkResults("ConcurrentIngestion", MEDIUM_BATCH_SIZE, "Buffered", concurrentBufferedMetrics);
     }
-    
+
     /**
      * Print benchmark results to the console.
      */
@@ -162,14 +157,14 @@ public class LogIngestionBenchmarkTool {
         System.out.println("  CPU Usage: " + directMetrics.get("cpuUsage") + "%");
         System.out.println("  Heap Memory Used: " + directMetrics.get("heapMemoryUsed") + "MB");
         System.out.println("  Non-Heap Memory Used: " + directMetrics.get("nonHeapMemoryUsed") + "MB");
-        
+
         System.out.println("  Buffered Ingestion: " + bufferedMetrics.get("ingestionTime") + "ms");
         System.out.println("  Logs/second (buffered): " + bufferedMetrics.get("logsPerSecond"));
         System.out.println("  CPU Usage (buffered): " + bufferedMetrics.get("cpuUsage") + "%");
         System.out.println("  Heap Memory Used (buffered): " + bufferedMetrics.get("heapMemoryUsed") + "MB");
         System.out.println("  Non-Heap Memory Used (buffered): " + bufferedMetrics.get("nonHeapMemoryUsed") + "MB");
     }
-    
+
     /**
      * Clean up resources.
      */
@@ -177,14 +172,14 @@ public class LogIngestionBenchmarkTool {
         // Clean up temporary index directory
         if (testIndexPath != null) {
             Files.walk(testIndexPath)
-                .sorted((a, b) -> -a.compareTo(b))
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        System.err.println("Failed to delete: " + path);
-                    }
-                });
+                    .sorted((a, b) -> -a.compareTo(b))
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            System.err.println("Failed to delete: " + path);
+                        }
+                    });
         }
     }
 
@@ -208,8 +203,8 @@ public class LogIngestionBenchmarkTool {
         for (int i = 0; i < count; i++) {
             String logLevel = (i % 5 == 0) ? "ERROR" : (i % 3 == 0) ? "WARN" : "INFO";
             String source = "test-source-" + (i % 10);
-            String message = "Test log message " + i + " with some random content " + UUID.randomUUID().toString();
-            
+            String message = "Test log message " + i + " with some random content " + UUID.randomUUID();
+
             logs.add(createTestLogEntry(i, System.currentTimeMillis(), logLevel, message, source));
         }
         return logs;
@@ -220,31 +215,31 @@ public class LogIngestionBenchmarkTool {
      */
     private Map<String, Object> measureDirectIngestionPerformance(List<LogEntry> logs) {
         Map<String, Object> metrics = new HashMap<>();
-        
+
         try {
             // Get initial memory usage
             long initialHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
             long initialNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-            
+
             // Measure ingestion time and CPU usage
             Instant start = Instant.now();
             double startCpuTime = getProcessCpuTime();
-            
+
             int indexed = luceneService.indexLogEntries(logs);
-            
+
             long ingestionTime = Duration.between(start, Instant.now()).toMillis();
             double endCpuTime = getProcessCpuTime();
-            
+
             // Get final memory usage
             long finalHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
             long finalNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-            
+
             // Calculate metrics
             double cpuUsage = calculateCpuUsage(startCpuTime, endCpuTime, ingestionTime);
             double heapMemoryUsed = (finalHeapMemory - initialHeapMemory) / (1024.0 * 1024.0); // Convert to MB
             double nonHeapMemoryUsed = (finalNonHeapMemory - initialNonHeapMemory) / (1024.0 * 1024.0); // Convert to MB
-            double logsPerSecond = (indexed / (double)ingestionTime) * 1000;
-            
+            double logsPerSecond = (indexed / (double) ingestionTime) * 1000;
+
             // Store metrics
             metrics.put("ingestionTime", ingestionTime);
             metrics.put("logsPerSecond", logsPerSecond);
@@ -264,7 +259,7 @@ public class LogIngestionBenchmarkTool {
             metrics.put("heapMemoryUsed", 0.0);
             metrics.put("nonHeapMemoryUsed", 0.0);
         }
-        
+
         return metrics;
     }
 
@@ -273,30 +268,30 @@ public class LogIngestionBenchmarkTool {
      */
     private Map<String, Object> measureBufferedIngestionPerformance(List<LogEntry> logs) {
         Map<String, Object> metrics = new HashMap<>();
-        
+
         // Get initial memory usage
         long initialHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long initialNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Measure ingestion time and CPU usage
         Instant start = Instant.now();
         double startCpuTime = getProcessCpuTime();
-        
+
         logBufferService.addAllToBuffer(logs);
-        
+
         long ingestionTime = Duration.between(start, Instant.now()).toMillis();
         double endCpuTime = getProcessCpuTime();
-        
+
         // Get final memory usage
         long finalHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long finalNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Calculate metrics
         double cpuUsage = calculateCpuUsage(startCpuTime, endCpuTime, ingestionTime);
         double heapMemoryUsed = (finalHeapMemory - initialHeapMemory) / (1024.0 * 1024.0); // Convert to MB
         double nonHeapMemoryUsed = (finalNonHeapMemory - initialNonHeapMemory) / (1024.0 * 1024.0); // Convert to MB
-        double logsPerSecond = (logs.size() / (double)ingestionTime) * 1000;
-        
+        double logsPerSecond = (logs.size() / (double) ingestionTime) * 1000;
+
         // Store metrics
         metrics.put("ingestionTime", ingestionTime);
         metrics.put("logsPerSecond", logsPerSecond);
@@ -304,33 +299,33 @@ public class LogIngestionBenchmarkTool {
         metrics.put("cpuUsage", cpuUsage);
         metrics.put("heapMemoryUsed", heapMemoryUsed);
         metrics.put("nonHeapMemoryUsed", nonHeapMemoryUsed);
-        
+
         return metrics;
     }
 
     /**
      * Measure concurrent direct ingestion performance with CPU and memory metrics.
      */
-    private Map<String, Object> measureConcurrentDirectIngestionPerformance(List<List<LogEntry>> threadLogs) 
+    private Map<String, Object> measureConcurrentDirectIngestionPerformance(List<List<LogEntry>> threadLogs)
             throws InterruptedException {
         Map<String, Object> metrics = new HashMap<>();
-        
+
         // Create thread pool
         ExecutorService executor = Executors.newFixedThreadPool(CONCURRENT_THREADS);
         CountDownLatch latch = new CountDownLatch(CONCURRENT_THREADS);
-        
+
         // Track total logs and errors
         final int[] totalIndexed = {0};
         final boolean[] hasError = {false};
-        
+
         // Get initial memory usage
         long initialHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long initialNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Measure ingestion time and CPU usage
         Instant start = Instant.now();
         double startCpuTime = getProcessCpuTime();
-        
+
         // Submit tasks
         for (List<LogEntry> logs : threadLogs) {
             executor.submit(() -> {
@@ -350,25 +345,25 @@ public class LogIngestionBenchmarkTool {
                 }
             });
         }
-        
+
         // Wait for all tasks to complete
         latch.await(60, TimeUnit.SECONDS);
         long ingestionTime = Duration.between(start, Instant.now()).toMillis();
         double endCpuTime = getProcessCpuTime();
-        
+
         // Get final memory usage
         long finalHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long finalNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Shutdown executor
         executor.shutdown();
-        
+
         // Calculate metrics
         double cpuUsage = calculateCpuUsage(startCpuTime, endCpuTime, ingestionTime);
         double heapMemoryUsed = (finalHeapMemory - initialHeapMemory) / (1024.0 * 1024.0); // Convert to MB
         double nonHeapMemoryUsed = (finalNonHeapMemory - initialNonHeapMemory) / (1024.0 * 1024.0); // Convert to MB
-        double logsPerSecond = (totalIndexed[0] / (double)ingestionTime) * 1000;
-        
+        double logsPerSecond = (totalIndexed[0] / (double) ingestionTime) * 1000;
+
         // Store metrics
         metrics.put("ingestionTime", ingestionTime);
         metrics.put("logsPerSecond", logsPerSecond);
@@ -377,32 +372,32 @@ public class LogIngestionBenchmarkTool {
         metrics.put("cpuUsage", cpuUsage);
         metrics.put("heapMemoryUsed", heapMemoryUsed);
         metrics.put("nonHeapMemoryUsed", nonHeapMemoryUsed);
-        
+
         return metrics;
     }
 
     /**
      * Measure concurrent buffered ingestion performance with CPU and memory metrics.
      */
-    private Map<String, Object> measureConcurrentBufferedIngestionPerformance(List<List<LogEntry>> threadLogs) 
+    private Map<String, Object> measureConcurrentBufferedIngestionPerformance(List<List<LogEntry>> threadLogs)
             throws InterruptedException {
         Map<String, Object> metrics = new HashMap<>();
-        
+
         // Create thread pool
         ExecutorService executor = Executors.newFixedThreadPool(CONCURRENT_THREADS);
         CountDownLatch latch = new CountDownLatch(CONCURRENT_THREADS);
-        
+
         // Track total logs
         final int[] totalBuffered = {0};
-        
+
         // Get initial memory usage
         long initialHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long initialNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Measure ingestion time and CPU usage
         Instant start = Instant.now();
         double startCpuTime = getProcessCpuTime();
-        
+
         // Submit tasks
         for (List<LogEntry> logs : threadLogs) {
             executor.submit(() -> {
@@ -413,25 +408,25 @@ public class LogIngestionBenchmarkTool {
                 latch.countDown();
             });
         }
-        
+
         // Wait for all tasks to complete
         latch.await(30, TimeUnit.SECONDS);
         long ingestionTime = Duration.between(start, Instant.now()).toMillis();
         double endCpuTime = getProcessCpuTime();
-        
+
         // Get final memory usage
         long finalHeapMemory = memoryBean.getHeapMemoryUsage().getUsed();
         long finalNonHeapMemory = memoryBean.getNonHeapMemoryUsage().getUsed();
-        
+
         // Shutdown executor
         executor.shutdown();
-        
+
         // Calculate metrics
         double cpuUsage = calculateCpuUsage(startCpuTime, endCpuTime, ingestionTime);
         double heapMemoryUsed = (finalHeapMemory - initialHeapMemory) / (1024.0 * 1024.0); // Convert to MB
         double nonHeapMemoryUsed = (finalNonHeapMemory - initialNonHeapMemory) / (1024.0 * 1024.0); // Convert to MB
-        double logsPerSecond = (totalBuffered[0] / (double)ingestionTime) * 1000;
-        
+        double logsPerSecond = (totalBuffered[0] / (double) ingestionTime) * 1000;
+
         // Store metrics
         metrics.put("ingestionTime", ingestionTime);
         metrics.put("logsPerSecond", logsPerSecond);
@@ -439,7 +434,7 @@ public class LogIngestionBenchmarkTool {
         metrics.put("cpuUsage", cpuUsage);
         metrics.put("heapMemoryUsed", heapMemoryUsed);
         metrics.put("nonHeapMemoryUsed", nonHeapMemoryUsed);
-        
+
         return metrics;
     }
 
@@ -450,7 +445,7 @@ public class LogIngestionBenchmarkTool {
         Map<String, String> fields = new HashMap<>();
         fields.put("host", "test-host-" + (id % 5));
         fields.put("thread", "thread-" + (id % 10));
-        
+
         return new LogEntry(
                 "test-" + id,
                 timestamp,
@@ -462,7 +457,7 @@ public class LogIngestionBenchmarkTool {
                 "Raw content: " + message
         );
     }
-    
+
     /**
      * Get the current process CPU time.
      */
@@ -472,7 +467,7 @@ public class LogIngestionBenchmarkTool {
         }
         return 0.0;
     }
-    
+
     /**
      * Calculate CPU usage as a percentage.
      */
@@ -480,22 +475,22 @@ public class LogIngestionBenchmarkTool {
         if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
             double cpuTime = endCpuTime - startCpuTime;
             int availableProcessors = osBean.getAvailableProcessors();
-            
+
             // Convert from nanoseconds to milliseconds and account for multiple processors
             double cpuUsage = (cpuTime / 1000000.0) / (elapsedTimeMs * availableProcessors) * 100.0;
             return Math.min(100.0, cpuUsage); // Cap at 100%
         }
         return 0.0;
     }
-    
+
     /**
      * Save benchmark results to a CSV file.
      */
-    private void saveBenchmarkResults(String testName, int batchSize, String mode, Map<String, Object> metrics) 
+    private void saveBenchmarkResults(String testName, int batchSize, String mode, Map<String, Object> metrics)
             throws IOException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String timestamp = dateFormat.format(new Date());
-        
+
         String line = String.format("%s,%s,%d,%s,%d,%.2f,%.2f,%.2f,%.2f\n",
                 timestamp,
                 testName,
@@ -506,11 +501,11 @@ public class LogIngestionBenchmarkTool {
                 metrics.get("cpuUsage"),
                 metrics.get("heapMemoryUsed"),
                 metrics.get("nonHeapMemoryUsed"));
-        
-        Files.write(Paths.get(BENCHMARK_RESULTS_FILE), line.getBytes(), 
+
+        Files.write(Paths.get(BENCHMARK_RESULTS_FILE), line.getBytes(),
                 StandardOpenOption.APPEND);
     }
-    
+
     /**
      * A simple mock implementation of RealTimeUpdateService that does nothing.
      * This is used to avoid the circular dependency between LuceneService and RealTimeUpdateService.
@@ -519,17 +514,17 @@ public class LogIngestionBenchmarkTool {
         public MockRealTimeUpdateService() {
             super(); // Use the no-argument constructor
         }
-        
+
         @Override
         public void broadcastLogUpdate(LogEntry logEntry) {
             // Do nothing - this is a mock implementation
         }
-        
+
         @Override
         public void broadcastWidgetUpdate(String dashboardId, String widgetId, Object data) {
             // Do nothing - this is a mock implementation
         }
-        
+
         @Override
         public Map<String, Object> getConnectionStats() {
             return new HashMap<>(); // Return empty stats

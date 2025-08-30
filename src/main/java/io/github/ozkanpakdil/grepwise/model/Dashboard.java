@@ -105,8 +105,8 @@ public class Dashboard {
         if (o == null || getClass() != o.getClass()) return false;
         Dashboard dashboard = (Dashboard) o;
         return Objects.equals(id, dashboard.id) &&
-               Objects.equals(name, dashboard.name) &&
-               Objects.equals(createdBy, dashboard.createdBy);
+                Objects.equals(name, dashboard.name) &&
+                Objects.equals(createdBy, dashboard.createdBy);
     }
 
     @Override

@@ -7,9 +7,6 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Collections;
-
 /**
  * Health indicator for the Lucene service.
  * Checks if the Lucene index is accessible and operational.
@@ -29,7 +26,7 @@ public class LuceneHealthIndicator implements HealthIndicator {
         try {
             // Try to perform a simple search to verify Lucene is operational
             luceneService.search("test", false, null, null);
-            
+
             // If we get here, the search was successful
             return Health.up()
                     .withDetail("status", "Lucene index is operational")

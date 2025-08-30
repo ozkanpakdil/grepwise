@@ -22,7 +22,7 @@ public class ClusterState {
      * Constructor with all fields.
      *
      * @param leaderId The ID of the leader node
-     * @param nodes The list of nodes in the cluster
+     * @param nodes    The list of nodes in the cluster
      */
     public ClusterState(String leaderId, List<ClusterNode> nodes) {
         this.leaderId = leaderId;

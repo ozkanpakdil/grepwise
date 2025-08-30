@@ -60,7 +60,7 @@ public class RetentionPolicyController {
     /**
      * Update an existing retention policy.
      *
-     * @param id The ID of the policy to update
+     * @param id     The ID of the policy to update
      * @param policy The updated policy
      * @return The updated policy
      */

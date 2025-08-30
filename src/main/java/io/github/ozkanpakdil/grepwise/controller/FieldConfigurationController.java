@@ -90,7 +90,7 @@ public class FieldConfigurationController {
     /**
      * Update an existing field configuration.
      *
-     * @param id The ID of the field configuration to update
+     * @param id                 The ID of the field configuration to update
      * @param fieldConfiguration The updated field configuration
      * @return The updated field configuration
      */
@@ -127,7 +127,7 @@ public class FieldConfigurationController {
      * Test a field configuration by extracting a value from a sample string.
      *
      * @param fieldConfiguration The field configuration to test
-     * @param sampleString The sample string to extract from
+     * @param sampleString       The sample string to extract from
      * @return The extracted value
      */
     @PostMapping("/test")

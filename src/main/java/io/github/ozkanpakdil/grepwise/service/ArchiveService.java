@@ -6,41 +6,27 @@ import io.github.ozkanpakdil.grepwise.model.ArchiveMetadata;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.ArchiveConfigurationRepository;
 import io.github.ozkanpakdil.grepwise.repository.ArchiveMetadataRepository;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
-import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.zip.Deflater;
 
 /**
  * Service for managing log archives.
@@ -52,11 +38,11 @@ public class ArchiveService {
     private static final DateTimeFormatter FILENAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String METADATA_FILENAME = "metadata.json";
     private static final String LOGS_FILENAME = "logs.json";
-    
+
     private final ArchiveConfigurationRepository archiveConfigurationRepository;
     private final ArchiveMetadataRepository archiveMetadataRepository;
     private final ObjectMapper objectMapper;
-    
+
     @Autowired
     public ArchiveService(
             ArchiveConfigurationRepository archiveConfigurationRepository,
@@ -66,7 +52,7 @@ public class ArchiveService {
         this.objectMapper = new ObjectMapper();
         logger.info("ArchiveService initialized");
     }
-    
+
     /**
      * Initialize the archive service.
      */
@@ -80,7 +66,7 @@ public class ArchiveService {
             logger.info("Created archive directory: {}", archivePath);
         }
     }
-    
+
     /**
      * Archive logs.
      *
@@ -92,30 +78,30 @@ public class ArchiveService {
             logger.warn("No logs to archive");
             return null;
         }
-        
+
         ArchiveConfiguration config = archiveConfigurationRepository.getDefaultConfiguration();
-        
+
         // Generate archive filename
         String timestamp = LocalDateTime.now().format(FILENAME_FORMATTER);
         String filename = "logs_" + timestamp + ".zip";
         Path archivePath = Paths.get(config.getArchiveDirectory(), filename);
-        
+
         // Collect metadata
         long startTimestamp = logs.stream()
                 .mapToLong(LogEntry::timestamp)
                 .min()
                 .orElse(0);
-        
+
         long endTimestamp = logs.stream()
                 .mapToLong(LogEntry::timestamp)
                 .max()
                 .orElse(0);
-        
+
         Set<String> sources = logs.stream()
                 .map(LogEntry::source)
                 .filter(s -> s != null && !s.isEmpty())
                 .collect(Collectors.toSet());
-        
+
         // Create archive metadata
         ArchiveMetadata metadata = new ArchiveMetadata();
         metadata.setFilename(filename);
@@ -125,25 +111,25 @@ public class ArchiveService {
         metadata.setSources(sources);
         metadata.setCompressionType("zip");
         metadata.setCompressionLevel(config.getCompressionLevel());
-        
+
         // Create archive file
         try (ZipArchiveOutputStream zipOut = new ZipArchiveOutputStream(
                 new BufferedOutputStream(new FileOutputStream(archivePath.toFile())))) {
-            
+
             // Set compression level
             zipOut.setLevel(config.getCompressionLevel());
-            
+
             // Add metadata file
             ZipArchiveEntry metadataEntry = new ZipArchiveEntry(METADATA_FILENAME);
             zipOut.putArchiveEntry(metadataEntry);
             String metadataJson = objectMapper.writeValueAsString(metadata);
             zipOut.write(metadataJson.getBytes(StandardCharsets.UTF_8));
             zipOut.closeArchiveEntry();
-            
+
             // Add logs file
             ZipArchiveEntry logsEntry = new ZipArchiveEntry(LOGS_FILENAME);
             zipOut.putArchiveEntry(logsEntry);
-            
+
             // Write logs as JSON lines (one JSON object per line)
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(zipOut, StandardCharsets.UTF_8))) {
@@ -155,18 +141,18 @@ public class ArchiveService {
             }
             zipOut.closeArchiveEntry();
         }
-        
+
         // Update metadata with file size
         long fileSize = Files.size(archivePath);
         metadata.setSizeBytes(fileSize);
-        
+
         // Save metadata
         ArchiveMetadata savedMetadata = archiveMetadataRepository.save(metadata);
         logger.info("Archived {} logs to {}, size: {} bytes", logs.size(), archivePath, fileSize);
-        
+
         return savedMetadata;
     }
-    
+
     /**
      * Extract logs from an archive.
      *
@@ -179,24 +165,24 @@ public class ArchiveService {
             logger.warn("Archive not found: {}", archiveId);
             return List.of();
         }
-        
+
         ArchiveConfiguration config = archiveConfigurationRepository.getDefaultConfiguration();
         Path archivePath = Paths.get(config.getArchiveDirectory(), metadata.getFilename());
-        
+
         if (!Files.exists(archivePath)) {
             logger.warn("Archive file not found: {}", archivePath);
             archiveMetadataRepository.markUnavailable(archiveId);
             return List.of();
         }
-        
+
         List<LogEntry> logs = new ArrayList<>();
-        
+
         try (ZipArchiveOutputStream zipFile = new ZipArchiveOutputStream(archivePath.toFile())) {
             // Extract logs file
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(
                             new FileInputStream(archivePath.toFile()), StandardCharsets.UTF_8))) {
-                
+
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (!line.trim().isEmpty()) {
@@ -209,11 +195,11 @@ public class ArchiveService {
             logger.error("Error extracting logs from archive: {}", archivePath, e);
             throw e;
         }
-        
+
         logger.info("Extracted {} logs from archive: {}", logs.size(), archivePath);
         return logs;
     }
-    
+
     /**
      * Get all archive metadata.
      *
@@ -222,7 +208,7 @@ public class ArchiveService {
     public List<ArchiveMetadata> getAllArchiveMetadata() {
         return archiveMetadataRepository.findAllAvailableSortedByCreationTime();
     }
-    
+
     /**
      * Get archive metadata by ID.
      *
@@ -232,7 +218,7 @@ public class ArchiveService {
     public ArchiveMetadata getArchiveMetadataById(String id) {
         return archiveMetadataRepository.findById(id);
     }
-    
+
     /**
      * Get archive metadata by source.
      *
@@ -242,18 +228,18 @@ public class ArchiveService {
     public List<ArchiveMetadata> getArchiveMetadataBySource(String source) {
         return archiveMetadataRepository.findBySource(source);
     }
-    
+
     /**
      * Get archive metadata by time range.
      *
      * @param startTimestamp The start timestamp
-     * @param endTimestamp The end timestamp
+     * @param endTimestamp   The end timestamp
      * @return A list of archive metadata that overlap with the specified time range
      */
     public List<ArchiveMetadata> getArchiveMetadataByTimeRange(long startTimestamp, long endTimestamp) {
         return archiveMetadataRepository.findByTimeRange(startTimestamp, endTimestamp);
     }
-    
+
     /**
      * Delete an archive by ID.
      *
@@ -266,25 +252,25 @@ public class ArchiveService {
             logger.warn("Archive not found: {}", id);
             return false;
         }
-        
+
         ArchiveConfiguration config = archiveConfigurationRepository.getDefaultConfiguration();
         Path archivePath = Paths.get(config.getArchiveDirectory(), metadata.getFilename());
-        
+
         // Delete archive file if it exists
         if (Files.exists(archivePath)) {
             Files.delete(archivePath);
             logger.info("Deleted archive file: {}", archivePath);
         }
-        
+
         // Delete metadata
         boolean deleted = archiveMetadataRepository.deleteById(id);
         if (deleted) {
             logger.info("Deleted archive metadata: {}", id);
         }
-        
+
         return deleted;
     }
-    
+
     /**
      * Get the archive configuration.
      *
@@ -293,7 +279,7 @@ public class ArchiveService {
     public ArchiveConfiguration getArchiveConfiguration() {
         return archiveConfigurationRepository.getDefaultConfiguration();
     }
-    
+
     /**
      * Update the archive configuration.
      *
@@ -303,25 +289,25 @@ public class ArchiveService {
     public ArchiveConfiguration updateArchiveConfiguration(ArchiveConfiguration configuration) {
         return archiveConfigurationRepository.save(configuration);
     }
-    
+
     /**
      * Scheduled task to clean up old archives based on retention policy.
      */
     @Scheduled(cron = "0 0 2 * * ?") // Run at 2:00 AM every day
     public void cleanupOldArchives() throws IOException {
         logger.info("Starting scheduled cleanup of old archives");
-        
+
         ArchiveConfiguration config = archiveConfigurationRepository.getDefaultConfiguration();
         int retentionDays = config.getArchiveRetentionDays();
-        
+
         // Calculate cutoff date
-        Instant cutoffDate = Instant.now().minusSeconds(retentionDays * 24 * 60 * 60);
+        Instant cutoffDate = Instant.now().minusSeconds((long) retentionDays * 24 * 60 * 60);
         logger.info("Cleaning up archives older than: {}", cutoffDate);
-        
+
         // Find archives older than cutoff date
         List<ArchiveMetadata> oldArchives = archiveMetadataRepository.findOlderThan(cutoffDate);
         logger.info("Found {} archives to clean up", oldArchives.size());
-        
+
         // Delete old archives
         int deletedCount = 0;
         for (ArchiveMetadata metadata : oldArchives) {
@@ -333,10 +319,10 @@ public class ArchiveService {
                 logger.error("Error deleting archive: {}", metadata.getId(), e);
             }
         }
-        
+
         logger.info("Cleaned up {} old archives", deletedCount);
     }
-    
+
     /**
      * Archive logs before deletion.
      *
@@ -349,7 +335,7 @@ public class ArchiveService {
             if (!config.isAutoArchiveEnabled() || logs.isEmpty()) {
                 return true; // Skip archiving if disabled or no logs
             }
-            
+
             ArchiveMetadata metadata = archiveLogs(logs);
             return metadata != null;
         } catch (Exception e) {

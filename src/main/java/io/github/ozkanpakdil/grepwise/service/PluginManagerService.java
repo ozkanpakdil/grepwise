@@ -72,7 +72,7 @@ public interface PluginManagerService {
      * Returns a list of all plugins of the specified type.
      *
      * @param pluginClass The class or interface that plugins should implement
-     * @param <T> The type of plugin to retrieve
+     * @param <T>         The type of plugin to retrieve
      * @return List of plugins of the specified type
      */
     <T extends Plugin> List<T> getPluginsByType(Class<T> pluginClass);
@@ -96,7 +96,7 @@ public interface PluginManagerService {
     /**
      * Updates the configuration for a plugin.
      *
-     * @param pluginId The ID of the plugin
+     * @param pluginId      The ID of the plugin
      * @param configuration The new configuration
      * @return true if the configuration was updated successfully, false otherwise
      */

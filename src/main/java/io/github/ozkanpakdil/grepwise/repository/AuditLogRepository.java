@@ -26,12 +26,12 @@ public class AuditLogRepository {
         if (auditLog.getId() == null || auditLog.getId().isEmpty()) {
             auditLog.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamp if not already set
         if (auditLog.getTimestamp() == 0) {
             auditLog.setTimestamp(System.currentTimeMillis());
         }
-        
+
         auditLogs.put(auditLog.getId(), auditLog);
         return auditLog;
     }
@@ -87,8 +87,8 @@ public class AuditLogRepository {
      * Find audit logs by user ID with pagination.
      *
      * @param userId The user ID to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page   The page number (0-based)
+     * @param size   The page size
      * @return A list of audit logs for the specified user and page
      */
     public List<AuditLog> findByUserId(String userId, int page, int size) {
@@ -117,8 +117,8 @@ public class AuditLogRepository {
      * Find audit logs by username with pagination.
      *
      * @param username The username to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page     The page number (0-based)
+     * @param size     The page size
      * @return A list of audit logs for the specified username and page
      */
     public List<AuditLog> findByUsername(String username, int page, int size) {
@@ -147,8 +147,8 @@ public class AuditLogRepository {
      * Find audit logs by category with pagination.
      *
      * @param category The category to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page     The page number (0-based)
+     * @param size     The page size
      * @return A list of audit logs for the specified category and page
      */
     public List<AuditLog> findByCategory(String category, int page, int size) {
@@ -177,8 +177,8 @@ public class AuditLogRepository {
      * Find audit logs by action with pagination.
      *
      * @param action The action to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page   The page number (0-based)
+     * @param size   The page size
      * @return A list of audit logs for the specified action and page
      */
     public List<AuditLog> findByAction(String action, int page, int size) {
@@ -207,8 +207,8 @@ public class AuditLogRepository {
      * Find audit logs by status with pagination.
      *
      * @param status The status to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page   The page number (0-based)
+     * @param size   The page size
      * @return A list of audit logs for the specified status and page
      */
     public List<AuditLog> findByStatus(String status, int page, int size) {
@@ -237,8 +237,8 @@ public class AuditLogRepository {
      * Find audit logs by target ID with pagination.
      *
      * @param targetId The target ID to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page     The page number (0-based)
+     * @param size     The page size
      * @return A list of audit logs for the specified target ID and page
      */
     public List<AuditLog> findByTargetId(String targetId, int page, int size) {
@@ -267,8 +267,8 @@ public class AuditLogRepository {
      * Find audit logs by target type with pagination.
      *
      * @param targetType The target type to filter by
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page       The page number (0-based)
+     * @param size       The page size
      * @return A list of audit logs for the specified target type and page
      */
     public List<AuditLog> findByTargetType(String targetType, int page, int size) {
@@ -284,7 +284,7 @@ public class AuditLogRepository {
      * Find audit logs by time range.
      *
      * @param startTime The start time (inclusive)
-     * @param endTime The end time (inclusive)
+     * @param endTime   The end time (inclusive)
      * @return A list of audit logs within the specified time range
      */
     public List<AuditLog> findByTimestampBetween(long startTime, long endTime) {
@@ -298,9 +298,9 @@ public class AuditLogRepository {
      * Find audit logs by time range with pagination.
      *
      * @param startTime The start time (inclusive)
-     * @param endTime The end time (inclusive)
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param endTime   The end time (inclusive)
+     * @param page      The page number (0-based)
+     * @param size      The page size
      * @return A list of audit logs within the specified time range and page
      */
     public List<AuditLog> findByTimestampBetween(long startTime, long endTime, int page, int size) {
@@ -320,7 +320,7 @@ public class AuditLogRepository {
      */
     public List<AuditLog> findByDescriptionContaining(String text) {
         return auditLogs.values().stream()
-                .filter(log -> log.getDescription() != null && 
+                .filter(log -> log.getDescription() != null &&
                         log.getDescription().toLowerCase().contains(text.toLowerCase()))
                 .sorted(Comparator.comparing(AuditLog::getTimestamp).reversed())
                 .collect(Collectors.toList());
@@ -336,7 +336,7 @@ public class AuditLogRepository {
      */
     public List<AuditLog> findByDescriptionContaining(String text, int page, int size) {
         return auditLogs.values().stream()
-                .filter(log -> log.getDescription() != null && 
+                .filter(log -> log.getDescription() != null &&
                         log.getDescription().toLowerCase().contains(text.toLowerCase()))
                 .sorted(Comparator.comparing(AuditLog::getTimestamp).reversed())
                 .skip((long) page * size)
@@ -361,8 +361,8 @@ public class AuditLogRepository {
      * Find audit logs with complex filtering and pagination.
      *
      * @param filters Map of filter criteria (key = field name, value = filter value)
-     * @param page The page number (0-based)
-     * @param size The page size
+     * @param page    The page number (0-based)
+     * @param size    The page size
      * @return A list of audit logs matching the specified filters and page
      */
     public List<AuditLog> findWithFilters(Map<String, Object> filters, int page, int size) {
@@ -377,7 +377,7 @@ public class AuditLogRepository {
     /**
      * Check if an audit log matches the specified filters.
      *
-     * @param log The audit log to check
+     * @param log     The audit log to check
      * @param filters Map of filter criteria (key = field name, value = filter value)
      * @return true if the audit log matches all filters, false otherwise
      */
@@ -385,11 +385,11 @@ public class AuditLogRepository {
         for (Map.Entry<String, Object> entry : filters.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            
+
             if (value == null) {
                 continue;
             }
-            
+
             switch (key) {
                 case "userId":
                     if (!value.equals(log.getUserId())) {
@@ -437,14 +437,14 @@ public class AuditLogRepository {
                     }
                     break;
                 case "searchText":
-                    if (log.getDescription() == null || 
+                    if (log.getDescription() == null ||
                             !log.getDescription().toLowerCase().contains(((String) value).toLowerCase())) {
                         return false;
                     }
                     break;
             }
         }
-        
+
         return true;
     }
 

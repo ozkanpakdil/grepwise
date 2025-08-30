@@ -1,14 +1,13 @@
 package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,8 +45,8 @@ public class LogBufferService {
 
     @PostConstruct
     public void init() {
-        logger.info("LogBufferService started with maxBufferSize={}, flushIntervalMs={}", 
-                    maxBufferSize, flushIntervalMs);
+        logger.info("LogBufferService started with maxBufferSize={}, flushIntervalMs={}",
+                maxBufferSize, flushIntervalMs);
     }
 
     @PreDestroy
@@ -66,15 +65,15 @@ public class LogBufferService {
     public boolean addToBuffer(LogEntry logEntry) {
         buffer.add(logEntry);
         int currentSize = bufferSize.incrementAndGet();
-        
+
         logger.trace("Added log entry to buffer. Current buffer size: {}", currentSize);
-        
+
         // If buffer is full, flush it
         if (currentSize >= maxBufferSize) {
             logger.trace("Buffer reached maximum size ({}). Flushing...", maxBufferSize);
             flushBuffer();
         }
-        
+
         return true;
     }
 
@@ -87,13 +86,13 @@ public class LogBufferService {
      */
     public int addAllToBuffer(List<LogEntry> logEntries) {
         int addedCount = 0;
-        
+
         for (LogEntry entry : logEntries) {
             if (addToBuffer(entry)) {
                 addedCount++;
             }
         }
-        
+
         logger.debug("Added {} log entries to buffer", addedCount);
         return addedCount;
     }
@@ -110,24 +109,24 @@ public class LogBufferService {
             logger.debug("Buffer flush already in progress, skipping");
             return 0;
         }
-        
+
         try {
             int currentSize = bufferSize.get();
             if (currentSize == 0) {
                 logger.debug("Buffer is empty, nothing to flush");
                 return 0;
             }
-            
+
             // Drain the buffer into a list
             List<LogEntry> entriesToFlush = new ArrayList<>(currentSize);
             LogEntry entry;
             while ((entry = buffer.poll()) != null) {
                 entriesToFlush.add(entry);
             }
-            
+
             // Reset buffer size
             bufferSize.set(0);
-            
+
             // Index the entries
             try {
                 int indexedCount = luceneService.indexLogEntries(entriesToFlush);

@@ -90,7 +90,7 @@ public class AlarmController {
     /**
      * Update an existing alarm.
      *
-     * @param id The alarm ID
+     * @param id           The alarm ID
      * @param alarmRequest The alarm update request
      * @return The updated alarm
      */
@@ -190,9 +190,9 @@ public class AlarmController {
 
             boolean triggered = alarmService.evaluateAlarm(alarm);
             return ResponseEntity.ok(Map.of(
-                "alarmId", id,
-                "triggered", triggered,
-                "evaluatedAt", System.currentTimeMillis()
+                    "alarmId", id,
+                    "triggered", triggered,
+                    "evaluatedAt", System.currentTimeMillis()
             ));
         } catch (Exception e) {
             logger.error("Error evaluating alarm {}: {}", id, e.getMessage());
@@ -285,45 +285,108 @@ public class AlarmController {
         private Integer groupingWindowMinutes;
 
         // Getters and setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-
-        public String getQuery() { return query; }
-        public void setQuery(String query) { this.query = query; }
-
-        public String getCondition() { return condition; }
-        public void setCondition(String condition) { this.condition = condition; }
-
-        public Integer getThreshold() { return threshold; }
-        public void setThreshold(Integer threshold) { this.threshold = threshold; }
-
-        public Integer getTimeWindowMinutes() { return timeWindowMinutes; }
-        public void setTimeWindowMinutes(Integer timeWindowMinutes) { this.timeWindowMinutes = timeWindowMinutes; }
-
-        public Boolean getEnabled() { return enabled; }
-        public void setEnabled(Boolean enabled) { this.enabled = enabled; }
-
-        public String getNotificationEmail() { return notificationEmail; }
-        public void setNotificationEmail(String notificationEmail) { this.notificationEmail = notificationEmail; }
-
-        public List<NotificationChannel> getNotificationChannels() { return notificationChannels; }
-        public void setNotificationChannels(List<NotificationChannel> notificationChannels) { 
-            this.notificationChannels = notificationChannels; 
+        public String getName() {
+            return name;
         }
 
-        public Integer getThrottleWindowMinutes() { return throttleWindowMinutes; }
-        public void setThrottleWindowMinutes(Integer throttleWindowMinutes) { this.throttleWindowMinutes = throttleWindowMinutes; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-        public Integer getMaxNotificationsPerWindow() { return maxNotificationsPerWindow; }
-        public void setMaxNotificationsPerWindow(Integer maxNotificationsPerWindow) { this.maxNotificationsPerWindow = maxNotificationsPerWindow; }
+        public String getDescription() {
+            return description;
+        }
 
-        public String getGroupingKey() { return groupingKey; }
-        public void setGroupingKey(String groupingKey) { this.groupingKey = groupingKey; }
+        public void setDescription(String description) {
+            this.description = description;
+        }
 
-        public Integer getGroupingWindowMinutes() { return groupingWindowMinutes; }
-        public void setGroupingWindowMinutes(Integer groupingWindowMinutes) { this.groupingWindowMinutes = groupingWindowMinutes; }
+        public String getQuery() {
+            return query;
+        }
+
+        public void setQuery(String query) {
+            this.query = query;
+        }
+
+        public String getCondition() {
+            return condition;
+        }
+
+        public void setCondition(String condition) {
+            this.condition = condition;
+        }
+
+        public Integer getThreshold() {
+            return threshold;
+        }
+
+        public void setThreshold(Integer threshold) {
+            this.threshold = threshold;
+        }
+
+        public Integer getTimeWindowMinutes() {
+            return timeWindowMinutes;
+        }
+
+        public void setTimeWindowMinutes(Integer timeWindowMinutes) {
+            this.timeWindowMinutes = timeWindowMinutes;
+        }
+
+        public Boolean getEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(Boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getNotificationEmail() {
+            return notificationEmail;
+        }
+
+        public void setNotificationEmail(String notificationEmail) {
+            this.notificationEmail = notificationEmail;
+        }
+
+        public List<NotificationChannel> getNotificationChannels() {
+            return notificationChannels;
+        }
+
+        public void setNotificationChannels(List<NotificationChannel> notificationChannels) {
+            this.notificationChannels = notificationChannels;
+        }
+
+        public Integer getThrottleWindowMinutes() {
+            return throttleWindowMinutes;
+        }
+
+        public void setThrottleWindowMinutes(Integer throttleWindowMinutes) {
+            this.throttleWindowMinutes = throttleWindowMinutes;
+        }
+
+        public Integer getMaxNotificationsPerWindow() {
+            return maxNotificationsPerWindow;
+        }
+
+        public void setMaxNotificationsPerWindow(Integer maxNotificationsPerWindow) {
+            this.maxNotificationsPerWindow = maxNotificationsPerWindow;
+        }
+
+        public String getGroupingKey() {
+            return groupingKey;
+        }
+
+        public void setGroupingKey(String groupingKey) {
+            this.groupingKey = groupingKey;
+        }
+
+        public Integer getGroupingWindowMinutes() {
+            return groupingWindowMinutes;
+        }
+
+        public void setGroupingWindowMinutes(Integer groupingWindowMinutes) {
+            this.groupingWindowMinutes = groupingWindowMinutes;
+        }
     }
 }

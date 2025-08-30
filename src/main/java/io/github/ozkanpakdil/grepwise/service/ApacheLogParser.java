@@ -48,15 +48,15 @@ public class ApacheLogParser {
      */
     public boolean isApacheLogFormat(String logLine) {
         return COMMON_LOG_PATTERN.matcher(logLine).matches() ||
-               COMBINED_LOG_PATTERN.matcher(logLine).matches() ||
-               ERROR_LOG_PATTERN.matcher(logLine).matches();
+                COMBINED_LOG_PATTERN.matcher(logLine).matches() ||
+                ERROR_LOG_PATTERN.matcher(logLine).matches();
     }
 
     /**
      * Parses a log line in Apache format into a LogEntry.
      *
      * @param logLine The log line to parse
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields, or null if the log line is not in a recognized Apache format
      */
     public LogEntry parseApacheLogLine(String logLine, String source) {
@@ -88,7 +88,7 @@ public class ApacheLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseCombinedLogFormat(Matcher matcher, String logLine, String source) {
@@ -149,7 +149,7 @@ public class ApacheLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseCommonLogFormat(Matcher matcher, String logLine, String source) {
@@ -206,7 +206,7 @@ public class ApacheLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseErrorLogFormat(Matcher matcher, String logLine, String source) {
@@ -263,17 +263,17 @@ public class ApacheLogParser {
             if (parts.length >= 3) {
                 String datePart = parts[0]; // "10/Oct/2000"
                 String timePart = parts[1] + ":" + parts[2].split(" ")[0]; // "13:55:36"
-                
+
                 datePart = datePart.replace("/", " "); // "10 Oct 2000"
-                
+
                 String reformattedTimestamp = datePart + " " + timePart; // "10 Oct 2000 13:55:36"
-                
+
                 long time = DateTimeRegexPatterns.extractDateTimeToTimestamp(reformattedTimestamp);
                 if (time != -1) {
                     return time;
                 }
             }
-            
+
             // If the above parsing fails, try using the DateTimeRegexPatterns directly
             return DateTimeRegexPatterns.extractDateTimeToTimestamp(timestamp);
         } catch (Exception e) {

@@ -6,11 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -93,14 +89,14 @@ public class ArchiveMetadataRepository {
      * Find archive metadata by time range.
      *
      * @param startTimestamp The start timestamp
-     * @param endTimestamp The end timestamp
+     * @param endTimestamp   The end timestamp
      * @return A list of metadata that overlap with the specified time range
      */
     public List<ArchiveMetadata> findByTimeRange(long startTimestamp, long endTimestamp) {
         return archives.values().stream()
-                .filter(metadata -> 
-                    (metadata.getStartTimestamp() <= endTimestamp && 
-                     metadata.getEndTimestamp() >= startTimestamp))
+                .filter(metadata ->
+                        (metadata.getStartTimestamp() <= endTimestamp &&
+                                metadata.getEndTimestamp() >= startTimestamp))
                 .collect(Collectors.toList());
     }
 

@@ -77,7 +77,7 @@ public class FieldConfigurationService {
     public FieldConfiguration saveFieldConfiguration(FieldConfiguration fieldConfiguration) {
         // Validate the field configuration
         validateFieldConfiguration(fieldConfiguration);
-        
+
         // Save the field configuration
         return fieldConfigurationRepository.save(fieldConfiguration);
     }
@@ -96,7 +96,7 @@ public class FieldConfigurationService {
      * Extract a field value from a source string based on a field configuration.
      *
      * @param fieldConfiguration The field configuration to use for extraction
-     * @param sourceValue The source string to extract from
+     * @param sourceValue        The source string to extract from
      * @return The extracted value, or null if no match was found
      */
     public String extractFieldValue(FieldConfiguration fieldConfiguration, String sourceValue) {

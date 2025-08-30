@@ -2,6 +2,7 @@ package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.model.ShardConfiguration;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing distributed search across multiple shards.
@@ -23,16 +22,12 @@ import java.util.stream.Collectors;
 @Service
 public class ShardManagerService {
     private static final Logger logger = LoggerFactory.getLogger(ShardManagerService.class);
-
-    @Autowired
-    private LuceneService luceneService;
-
-    @Autowired
-    private SearchCacheService searchCacheService;
-
     private final RestTemplate restTemplate = new RestTemplate();
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
-
+    @Autowired
+    private LuceneService luceneService;
+    @Autowired
+    private SearchCacheService searchCacheService;
     @Value("${grepwise.sharding.enabled:false}")
     private boolean shardingEnabled;
 
@@ -43,7 +38,7 @@ public class ShardManagerService {
     private String localNodeUrl;
 
     private ShardConfiguration shardConfiguration;
-    private Map<String, String> shardNodeMap = new ConcurrentHashMap<>();
+    private final Map<String, String> shardNodeMap = new ConcurrentHashMap<>();
     private boolean isInitialized = false;
 
     @PostConstruct
@@ -54,11 +49,11 @@ public class ShardManagerService {
             shardConfiguration = new ShardConfiguration();
             shardConfiguration.setShardingEnabled(true);
             shardConfiguration.getShardNodes().add(localNodeUrl);
-            
+
             // Register this node
             shardNodeMap.put(localNodeId, localNodeUrl);
             isInitialized = true;
-            
+
             logger.info("ShardManagerService initialized with local node: {}", localNodeId);
         }
     }
@@ -69,11 +64,11 @@ public class ShardManagerService {
     public void updateConfiguration(ShardConfiguration config) {
         this.shardConfiguration = config;
         this.shardingEnabled = config.isShardingEnabled();
-        
+
         // Update shard node map
         shardNodeMap.clear();
         shardNodeMap.put(localNodeId, localNodeUrl);
-        
+
         if (config.getShardNodes() != null) {
             for (int i = 0; i < config.getShardNodes().size(); i++) {
                 String nodeUrl = config.getShardNodes().get(i);
@@ -82,7 +77,7 @@ public class ShardManagerService {
                 }
             }
         }
-        
+
         logger.info("ShardConfiguration updated: {}", config);
         logger.info("Shard node map: {}", shardNodeMap);
     }
@@ -103,7 +98,7 @@ public class ShardManagerService {
         }
 
         String shardingType = shardConfiguration.getShardingType();
-        
+
         switch (shardingType) {
             case "TIME_BASED":
                 // For time-based sharding, determine shards based on time range
@@ -131,7 +126,7 @@ public class ShardManagerService {
         // In a real implementation, this would be based on time ranges assigned to each shard
         int numberOfShards = shardConfiguration.getNumberOfShards();
         List<String> nodeIds = new ArrayList<>(shardNodeMap.keySet());
-        
+
         // Ensure we don't exceed available nodes
         int actualShards = Math.min(numberOfShards, nodeIds.size());
         return nodeIds.subList(0, actualShards);
@@ -156,15 +151,15 @@ public class ShardManagerService {
             if (endIndex == -1) {
                 endIndex = queryStr.length();
             }
-            
+
             String sourceValue = queryStr.substring(sourceIndex + 7, endIndex);
-            
+
             // Simple hash-based routing
             int nodeIndex = Math.abs(sourceValue.hashCode() % shardNodeMap.size());
             List<String> nodeIds = new ArrayList<>(shardNodeMap.keySet());
             return Collections.singletonList(nodeIds.get(nodeIndex));
         }
-        
+
         // If no source specified, query all shards
         return new ArrayList<>(shardNodeMap.keySet());
     }
@@ -191,7 +186,7 @@ public class ShardManagerService {
 
         // Execute search on all target shards in parallel
         List<Future<List<LogEntry>>> futures = new ArrayList<>();
-        
+
         for (String nodeId : targetShards) {
             futures.add(executorService.submit(() -> {
                 if (nodeId.equals(localNodeId)) {
@@ -236,37 +231,37 @@ public class ShardManagerService {
             // Build URL with query parameters
             StringBuilder urlBuilder = new StringBuilder(nodeUrl);
             urlBuilder.append("/api/logs/search?");
-            
+
             if (queryStr != null && !queryStr.isEmpty()) {
                 urlBuilder.append("query=").append(queryStr).append("&");
             }
-            
+
             urlBuilder.append("isRegex=").append(isRegex);
-            
+
             if (startTime != null) {
                 urlBuilder.append("&startTime=").append(startTime);
             }
-            
+
             if (endTime != null) {
                 urlBuilder.append("&endTime=").append(endTime);
             }
-            
+
             // Add parameter to indicate this is a shard request to prevent infinite loops
             urlBuilder.append("&isShardRequest=true");
-            
+
             String url = urlBuilder.toString();
             logger.debug("Executing remote search: {}", url);
-            
+
             // Execute remote request
             ResponseEntity<LogEntry[]> response = restTemplate.getForEntity(url, LogEntry[].class);
-            
+
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return Arrays.asList(response.getBody());
             }
         } catch (Exception e) {
             logger.error("Error executing remote search on node: {}", nodeUrl, e);
         }
-        
+
         return Collections.emptyList();
     }
 
@@ -277,9 +272,9 @@ public class ShardManagerService {
         if (!shardingEnabled) {
             return;
         }
-        
+
         shardNodeMap.put(nodeId, nodeUrl);
-        
+
         // Update configuration
         if (shardConfiguration != null) {
             List<String> nodes = shardConfiguration.getShardNodes();
@@ -288,7 +283,7 @@ public class ShardManagerService {
                 shardConfiguration.setShardNodes(nodes);
             }
         }
-        
+
         logger.info("Registered shard node: {} at {}", nodeId, nodeUrl);
     }
 
@@ -299,16 +294,16 @@ public class ShardManagerService {
         if (!shardingEnabled) {
             return;
         }
-        
+
         String nodeUrl = shardNodeMap.remove(nodeId);
-        
+
         // Update configuration
         if (nodeUrl != null && shardConfiguration != null) {
             List<String> nodes = shardConfiguration.getShardNodes();
             nodes.remove(nodeUrl);
             shardConfiguration.setShardNodes(nodes);
         }
-        
+
         logger.info("Unregistered shard node: {}", nodeId);
     }
 
@@ -331,11 +326,11 @@ public class ShardManagerService {
      */
     public void setShardingEnabled(boolean shardingEnabled) {
         this.shardingEnabled = shardingEnabled;
-        
+
         if (shardConfiguration != null) {
             shardConfiguration.setShardingEnabled(shardingEnabled);
         }
-        
+
         logger.info("Sharding {}", shardingEnabled ? "enabled" : "disabled");
     }
 }

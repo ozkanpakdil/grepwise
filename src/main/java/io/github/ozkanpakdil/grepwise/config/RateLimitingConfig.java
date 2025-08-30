@@ -1,6 +1,5 @@
 package io.github.ozkanpakdil.grepwise.config;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -10,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration for rate limiting.
@@ -60,8 +58,8 @@ public class RateLimitingConfig {
 
     /**
      * Get or create a bucket for a client.
-     * 
-     * @param clientId The client identifier (IP address or user ID)
+     *
+     * @param clientId   The client identifier (IP address or user ID)
      * @param bucketType The type of bucket to use (default, search, admin)
      * @return The bucket for the client
      */

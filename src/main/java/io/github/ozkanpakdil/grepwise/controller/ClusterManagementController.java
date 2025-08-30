@@ -44,10 +44,10 @@ public class ClusterManagementController {
     @PostMapping("/high-availability")
     public ResponseEntity<Map<String, Object>> setHighAvailabilityEnabled(@RequestParam boolean enabled) {
         highAvailabilityService.setHighAvailabilityEnabled(enabled);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("highAvailabilityEnabled", highAvailabilityService.isHighAvailabilityEnabled());
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -62,14 +62,14 @@ public class ClusterManagementController {
         if (!highAvailabilityService.isHighAvailabilityEnabled()) {
             return ResponseEntity.ok().build();
         }
-        
+
         String nodeId = (String) heartbeatData.get("nodeId");
         String nodeUrl = (String) heartbeatData.get("nodeUrl");
         long timestamp = ((Number) heartbeatData.get("timestamp")).longValue();
         boolean isLeader = (boolean) heartbeatData.get("isLeader");
-        
+
         highAvailabilityService.handleHeartbeat(nodeId, nodeUrl, timestamp, isLeader);
-        
+
         return ResponseEntity.ok().build();
     }
 
@@ -84,10 +84,10 @@ public class ClusterManagementController {
         if (!highAvailabilityService.isHighAvailabilityEnabled()) {
             return ResponseEntity.ok().build();
         }
-        
+
         String nodeId = data.get("nodeId");
         highAvailabilityService.handleNodeLeaving(nodeId);
-        
+
         return ResponseEntity.ok().build();
     }
 
@@ -102,9 +102,9 @@ public class ClusterManagementController {
         if (!highAvailabilityService.isHighAvailabilityEnabled()) {
             return ResponseEntity.ok().build();
         }
-        
+
         highAvailabilityService.handleLeaderChange(clusterState);
-        
+
         return ResponseEntity.ok().build();
     }
 
@@ -116,13 +116,13 @@ public class ClusterManagementController {
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getClusterStats() {
         Map<String, Object> stats = new HashMap<>();
-        
+
         stats.put("highAvailabilityEnabled", highAvailabilityService.isHighAvailabilityEnabled());
         stats.put("nodeId", highAvailabilityService.getNodeId());
         stats.put("isLeader", highAvailabilityService.isLeader());
         stats.put("leaderId", highAvailabilityService.getCurrentLeaderId());
         stats.put("nodeCount", highAvailabilityService.getClusterNodes().size());
-        
+
         return ResponseEntity.ok(stats);
     }
 }

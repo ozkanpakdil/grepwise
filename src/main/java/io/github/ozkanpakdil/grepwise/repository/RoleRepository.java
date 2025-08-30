@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Repository
 public class RoleRepository {
     private final Map<String, Role> roles = new ConcurrentHashMap<>();
-    
+
     @Autowired
     private PermissionRepository permissionRepository;
 
@@ -34,14 +34,14 @@ public class RoleRepository {
         if (role.getId() == null || role.getId().isEmpty()) {
             role.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (role.getCreatedAt() == 0) {
             role.setCreatedAt(now);
         }
         role.setUpdatedAt(now);
-        
+
         roles.put(role.getId(), role);
         return role;
     }
@@ -107,7 +107,7 @@ public class RoleRepository {
     public int count() {
         return roles.size();
     }
-    
+
     /**
      * Find roles that have a specific permission.
      *
@@ -119,7 +119,7 @@ public class RoleRepository {
                 .filter(role -> role.hasPermission(permissionName))
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Initialize default roles if none exist.
      * This method creates a set of standard roles for the application.
@@ -128,15 +128,15 @@ public class RoleRepository {
         if (count() > 0) {
             return; // Roles already exist
         }
-        
+
         // Ensure permissions are initialized
         permissionRepository.initializeDefaultPermissions();
-        
+
         // Create admin role with all permissions
         Role adminRole = createRoleIfNotExists("ADMIN", "Administrator with full access");
         permissionRepository.findAll().forEach(adminRole::addPermission);
         save(adminRole);
-        
+
         // Create user role with basic permissions
         Role userRole = createRoleIfNotExists("USER", "Standard user with limited access");
         addPermissionToRole(userRole, "log:view");
@@ -145,7 +145,7 @@ public class RoleRepository {
         addPermissionToRole(userRole, "alarm:view");
         addPermissionToRole(userRole, "alarm:acknowledge");
         save(userRole);
-        
+
         // Create manager role with elevated permissions
         Role managerRole = createRoleIfNotExists("MANAGER", "Manager with elevated access");
         addPermissionToRole(managerRole, "log:view");
@@ -164,18 +164,18 @@ public class RoleRepository {
         addPermissionToRole(managerRole, "user:view");
         save(managerRole);
     }
-    
+
     private Role createRoleIfNotExists(String name, String description) {
         if (existsByName(name)) {
             return findByName(name);
         }
-        
+
         Role role = new Role();
         role.setName(name);
         role.setDescription(description);
         return save(role);
     }
-    
+
     private void addPermissionToRole(Role role, String permissionName) {
         Permission permission = permissionRepository.findByName(permissionName);
         if (permission != null) {

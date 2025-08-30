@@ -29,14 +29,14 @@ public class AlarmRepository {
         if (alarm.getId() == null || alarm.getId().isEmpty()) {
             alarm.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (alarm.getCreatedAt() == 0) {
             alarm.setCreatedAt(now);
         }
         alarm.setUpdatedAt(now);
-        
+
         alarms.put(alarm.getId(), alarm);
         return alarm;
     }
@@ -80,7 +80,7 @@ public class AlarmRepository {
      */
     public List<Alarm> findByNameContaining(String name) {
         return alarms.values().stream()
-                .filter(alarm -> alarm.getName() != null && 
+                .filter(alarm -> alarm.getName() != null &&
                         alarm.getName().toLowerCase().contains(name.toLowerCase()))
                 .collect(Collectors.toList());
     }
@@ -136,7 +136,7 @@ public class AlarmRepository {
         if (alarm.getId() == null || !alarms.containsKey(alarm.getId())) {
             return null;
         }
-        
+
         alarm.setUpdatedAt(System.currentTimeMillis());
         alarms.put(alarm.getId(), alarm);
         return alarm;

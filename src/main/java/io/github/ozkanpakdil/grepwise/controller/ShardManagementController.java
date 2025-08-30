@@ -45,13 +45,13 @@ public class ShardManagementController {
     @PutMapping("/config")
     public ResponseEntity<ShardConfiguration> updateConfiguration(@RequestBody ShardConfiguration config) {
         logger.info("Updating shard configuration: {}", config);
-        
+
         // Save to repository
         ShardConfiguration savedConfig = shardConfigurationRepository.save(config);
-        
+
         // Update service configuration
         shardManagerService.updateConfiguration(savedConfig);
-        
+
         return ResponseEntity.ok(savedConfig);
     }
 
@@ -69,9 +69,9 @@ public class ShardManagementController {
     @PostMapping("/enable")
     public ResponseEntity<Map<String, Object>> enableSharding(@RequestParam boolean enabled) {
         logger.info("Setting sharding enabled: {}", enabled);
-        
+
         shardManagerService.setShardingEnabled(enabled);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("shardingEnabled", shardManagerService.isShardingEnabled());
         return ResponseEntity.ok(response);
@@ -92,11 +92,11 @@ public class ShardManagementController {
     public ResponseEntity<Map<String, Object>> registerShardNode(
             @RequestParam String nodeId,
             @RequestParam String nodeUrl) {
-        
+
         logger.info("Registering shard node: {} at {}", nodeId, nodeUrl);
-        
+
         shardManagerService.registerShardNode(nodeId, nodeUrl);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("nodeId", nodeId);
         response.put("nodeUrl", nodeUrl);
@@ -110,9 +110,9 @@ public class ShardManagementController {
     @DeleteMapping("/nodes/{nodeId}")
     public ResponseEntity<Map<String, Object>> unregisterShardNode(@PathVariable String nodeId) {
         logger.info("Unregistering shard node: {}", nodeId);
-        
+
         shardManagerService.unregisterShardNode(nodeId);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("nodeId", nodeId);
         response.put("unregistered", true);

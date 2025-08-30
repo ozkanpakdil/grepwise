@@ -29,7 +29,7 @@ public class FieldConfigurationRepository {
 
         // Create default field configurations for common log fields
         createDefaultFieldConfigurations();
-        
+
         logger.info("Initialized FieldConfigurationRepository with {} default configurations", configurations.size());
     }
 
@@ -39,75 +39,75 @@ public class FieldConfigurationRepository {
     private void createDefaultFieldConfigurations() {
         // Timestamp field configuration
         FieldConfiguration timestampConfig = new FieldConfiguration(
-            "timestamp",
-            "Log entry timestamp",
-            FieldConfiguration.FieldType.DATE,
-            null,
-            "timestamp",
-            true,
-            true,
-            false,
-            true
+                "timestamp",
+                "Log entry timestamp",
+                FieldConfiguration.FieldType.DATE,
+                null,
+                "timestamp",
+                true,
+                true,
+                false,
+                true
         );
         save(timestampConfig);
         logger.debug("Created default timestamp field configuration: {}", timestampConfig);
 
         // Level field configuration
         FieldConfiguration levelConfig = new FieldConfiguration(
-            "level",
-            "Log level (INFO, WARN, ERROR, etc.)",
-            FieldConfiguration.FieldType.STRING,
-            null,
-            "level",
-            true,
-            true,
-            false,
-            true
+                "level",
+                "Log level (INFO, WARN, ERROR, etc.)",
+                FieldConfiguration.FieldType.STRING,
+                null,
+                "level",
+                true,
+                true,
+                false,
+                true
         );
         save(levelConfig);
         logger.debug("Created default level field configuration: {}", levelConfig);
 
         // Message field configuration
         FieldConfiguration messageConfig = new FieldConfiguration(
-            "message",
-            "Log message content",
-            FieldConfiguration.FieldType.STRING,
-            null,
-            "message",
-            true,
-            true,
-            true,
-            true
+                "message",
+                "Log message content",
+                FieldConfiguration.FieldType.STRING,
+                null,
+                "message",
+                true,
+                true,
+                true,
+                true
         );
         save(messageConfig);
         logger.debug("Created default message field configuration: {}", messageConfig);
 
         // Source field configuration
         FieldConfiguration sourceConfig = new FieldConfiguration(
-            "source",
-            "Log source (file, application, etc.)",
-            FieldConfiguration.FieldType.STRING,
-            null,
-            "source",
-            true,
-            true,
-            false,
-            true
+                "source",
+                "Log source (file, application, etc.)",
+                FieldConfiguration.FieldType.STRING,
+                null,
+                "source",
+                true,
+                true,
+                false,
+                true
         );
         save(sourceConfig);
         logger.debug("Created default source field configuration: {}", sourceConfig);
 
         // IP Address field configuration (example of a custom extracted field)
         FieldConfiguration ipAddressConfig = new FieldConfiguration(
-            "ip_address",
-            "IP address extracted from log message",
-            FieldConfiguration.FieldType.STRING,
-            "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
-            "message",
-            true,
-            true,
-            false,
-            true
+                "ip_address",
+                "IP address extracted from log message",
+                FieldConfiguration.FieldType.STRING,
+                "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+                "message",
+                true,
+                true,
+                false,
+                true
         );
         save(ipAddressConfig);
         logger.debug("Created default IP address field configuration: {}", ipAddressConfig);

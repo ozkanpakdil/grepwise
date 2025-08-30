@@ -36,16 +36,16 @@ public class ConfigurationBackupController {
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportConfigurations() {
         String json = configurationBackupService.exportConfigurations();
-        
+
         // Generate a filename with current date and time
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String filename = "grepwise_config_backup_" + timestamp + ".json";
-        
+
         // Set headers for file download
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setContentDispositionFormData("attachment", filename);
-        
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(json.getBytes(StandardCharsets.UTF_8));
@@ -54,7 +54,7 @@ public class ConfigurationBackupController {
     /**
      * Import configurations from a JSON file.
      *
-     * @param file The JSON file containing configurations
+     * @param file      The JSON file containing configurations
      * @param overwrite Whether to overwrite existing configurations (default: false)
      * @return A summary of the import operation
      */
@@ -62,7 +62,7 @@ public class ConfigurationBackupController {
     public ResponseEntity<Map<String, Object>> importConfigurations(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "overwrite", defaultValue = "false") boolean overwrite) {
-        
+
         try {
             String json = new String(file.getBytes(), StandardCharsets.UTF_8);
             Map<String, Object> summary = configurationBackupService.importConfigurations(json, overwrite);

@@ -9,62 +9,62 @@ import java.util.Objects;
  * Stores information about user actions in the system for security and compliance purposes.
  */
 public class AuditLog {
-    
+
     /**
      * Unique identifier for the audit log entry
      */
     private String id;
-    
+
     /**
      * Timestamp when the action occurred (epoch milliseconds)
      */
     private long timestamp;
-    
+
     /**
      * User ID of the user who performed the action
      */
     private String userId;
-    
+
     /**
      * Username of the user who performed the action
      */
     private String username;
-    
+
     /**
      * IP address from which the action was performed
      */
     private String ipAddress;
-    
+
     /**
      * Category of the action (e.g., AUTH, USER_MGMT, DASHBOARD, ALARM, SETTINGS)
      */
     private String category;
-    
+
     /**
      * Type of action performed (e.g., LOGIN, CREATE, UPDATE, DELETE)
      */
     private String action;
-    
+
     /**
      * Status of the action (e.g., SUCCESS, FAILURE)
      */
     private String status;
-    
+
     /**
      * Description of the action
      */
     private String description;
-    
+
     /**
      * Target of the action (e.g., user ID, dashboard ID)
      */
     private String targetId;
-    
+
     /**
      * Type of the target (e.g., USER, DASHBOARD, ALARM)
      */
     private String targetType;
-    
+
     /**
      * Additional details about the action (stored as key-value pairs)
      */
@@ -81,9 +81,9 @@ public class AuditLog {
     /**
      * Constructor with all fields
      */
-    public AuditLog(String id, long timestamp, String userId, String username, String ipAddress, 
-                   String category, String action, String status, String description, 
-                   String targetId, String targetType, Map<String, String> details) {
+    public AuditLog(String id, long timestamp, String userId, String username, String ipAddress,
+                    String category, String action, String status, String description,
+                    String targetId, String targetType, Map<String, String> details) {
         this.id = id;
         this.timestamp = timestamp;
         this.userId = userId;
@@ -99,7 +99,7 @@ public class AuditLog {
     }
 
     // Getters and Setters
-    
+
     public String getId() {
         return id;
     }
@@ -195,7 +195,7 @@ public class AuditLog {
     public void setDetails(Map<String, String> details) {
         this.details = details;
     }
-    
+
     /**
      * Add a detail to the details map
      */
@@ -226,8 +226,8 @@ public class AuditLog {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, timestamp, userId, username, ipAddress, category, 
-                           action, status, description, targetId, targetType);
+        return Objects.hash(id, timestamp, userId, username, ipAddress, category,
+                action, status, description, targetId, targetType);
     }
 
     @Override

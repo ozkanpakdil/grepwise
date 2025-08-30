@@ -2,7 +2,6 @@ package io.github.ozkanpakdil.grepwise.model;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Represents a log entry in the system.
@@ -22,7 +21,7 @@ public record LogEntry(
     }
 
     public LogEntry(String id, long timestamp, String level, String message, String source, Map<String, String> metadata,
-            String rawContent) {
+                    String rawContent) {
         this(id, timestamp, null, level, message, source, metadata, rawContent);
     }
 

@@ -34,7 +34,7 @@ public class Alarm {
         this.updatedAt = now;
     }
 
-    public Alarm(String name, String description, String query, String condition, 
+    public Alarm(String name, String description, String query, String condition,
                  Integer threshold, Integer timeWindowMinutes, Boolean enabled) {
         this();
         this.name = name;
@@ -191,7 +191,7 @@ public class Alarm {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, query, condition, threshold, 
+        return Objects.hash(id, name, description, query, condition, threshold,
                 timeWindowMinutes, enabled, createdAt, updatedAt, notificationChannels,
                 throttleWindowMinutes, maxNotificationsPerWindow, groupingKey, groupingWindowMinutes);
     }

@@ -36,9 +36,9 @@ public class ComplianceReport {
      * Parameterized constructor
      */
     public ComplianceReport(String id, String name, String description, LocalDateTime generatedAt,
-                           LocalDateTime reportStartDate, LocalDateTime reportEndDate, String generatedBy,
-                           String reportType, String status, Map<String, Object> summary,
-                           List<AuditLog> includedLogs, Map<String, Object> metadata) {
+                            LocalDateTime reportStartDate, LocalDateTime reportEndDate, String generatedBy,
+                            String reportType, String status, Map<String, Object> summary,
+                            List<AuditLog> includedLogs, Map<String, Object> metadata) {
         this.id = id;
         this.name = name;
         this.description = description;

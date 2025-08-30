@@ -1,10 +1,13 @@
 # Log Ingestion Benchmark Tool
 
-This directory contains tools for benchmarking log ingestion performance in GrepWise. The benchmarks measure various aspects of log ingestion performance, including throughput, CPU usage, and memory consumption.
+This directory contains tools for benchmarking log ingestion performance in GrepWise. The benchmarks measure various
+aspects of log ingestion performance, including throughput, CPU usage, and memory consumption.
 
 ## Overview
 
-The benchmark tools in this directory help measure and analyze the performance of log ingestion in GrepWise. They provide insights into how the system performs under different loads and configurations, which can help identify bottlenecks and optimize performance.
+The benchmark tools in this directory help measure and analyze the performance of log ingestion in GrepWise. They
+provide insights into how the system performs under different loads and configurations, which can help identify
+bottlenecks and optimize performance.
 
 ## Benchmark Tools
 
@@ -18,6 +21,7 @@ This is a standalone command-line tool for benchmarking log ingestion performanc
 - Memory usage (both heap and non-heap) during ingestion
 
 The tool tests different scenarios:
+
 - Small batch ingestion (100 logs)
 - Medium batch ingestion (1000 logs)
 - Large batch ingestion (5000 logs)
@@ -27,7 +31,8 @@ For each scenario, it compares direct ingestion (bypassing buffer) and buffered 
 
 ### LogIngestionBenchmark
 
-This is a JUnit test class that provides similar functionality to the standalone tool but runs within the Spring context. It's useful for running benchmarks as part of the test suite.
+This is a JUnit test class that provides similar functionality to the standalone tool but runs within the Spring
+context. It's useful for running benchmarks as part of the test suite.
 
 ## Running the Benchmarks
 
@@ -46,7 +51,8 @@ To run the benchmark as a JUnit test:
 
 ## Benchmark Results
 
-The benchmark results are saved to a CSV file named `benchmark-results.csv` in the project root directory. The file contains the following columns:
+The benchmark results are saved to a CSV file named `benchmark-results.csv` in the project root directory. The file
+contains the following columns:
 
 - Timestamp: When the benchmark was run
 - Test: The name of the test (SmallBatch, MediumBatch, LargeBatch, ConcurrentIngestion)

@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -107,10 +106,10 @@ public class LogRepository {
      * Search log entries by a query string.
      * Supports both simple text search and regex search.
      *
-     * @param query The query string
-     * @param isRegex Whether the query is a regex pattern
+     * @param query     The query string
+     * @param isRegex   Whether the query is a regex pattern
      * @param startTime The start time for filtering (optional)
-     * @param endTime The end time for filtering (optional)
+     * @param endTime   The end time for filtering (optional)
      * @return A list of log entries matching the query and time range
      */
     public List<LogEntry> search(String query, boolean isRegex, Long startTime, Long endTime) {
@@ -156,7 +155,7 @@ public class LogRepository {
     /**
      * Search log entries by a simple query.
      * This is a basic implementation that just checks if the message contains the query string.
-     * 
+     *
      * @param query The query string
      * @return A list of log entries matching the query
      */

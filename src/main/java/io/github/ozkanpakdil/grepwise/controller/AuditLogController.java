@@ -21,24 +21,24 @@ import java.util.Map;
 @RequestMapping("/api/audit-logs")
 public class AuditLogController {
     private static final Logger logger = LoggerFactory.getLogger(AuditLogController.class);
-    
+
     @Autowired
     private AuditLogService auditLogService;
-    
+
     /**
      * Get audit logs with pagination and filtering.
      *
-     * @param page The page number (0-based, default: 0)
-     * @param size The page size (default: 20)
-     * @param userId Filter by user ID (optional)
-     * @param username Filter by username (optional)
-     * @param category Filter by category (optional)
-     * @param action Filter by action (optional)
-     * @param status Filter by status (optional)
-     * @param targetId Filter by target ID (optional)
+     * @param page       The page number (0-based, default: 0)
+     * @param size       The page size (default: 20)
+     * @param userId     Filter by user ID (optional)
+     * @param username   Filter by username (optional)
+     * @param category   Filter by category (optional)
+     * @param action     Filter by action (optional)
+     * @param status     Filter by status (optional)
+     * @param targetId   Filter by target ID (optional)
      * @param targetType Filter by target type (optional)
-     * @param startTime Filter by start time (optional)
-     * @param endTime Filter by end time (optional)
+     * @param startTime  Filter by start time (optional)
+     * @param endTime    Filter by end time (optional)
      * @param searchText Search in description (optional)
      * @return List of audit logs matching the criteria
      */
@@ -56,7 +56,7 @@ public class AuditLogController {
             @RequestParam(required = false) Long startTime,
             @RequestParam(required = false) Long endTime,
             @RequestParam(required = false) String searchText) {
-        
+
         try {
             // Create filters map
             Map<String, Object> filters = new HashMap<>();
@@ -70,21 +70,21 @@ public class AuditLogController {
             if (startTime != null) filters.put("startTime", startTime);
             if (endTime != null) filters.put("endTime", endTime);
             if (searchText != null) filters.put("searchText", searchText);
-            
+
             List<AuditLog> auditLogs;
             if (filters.isEmpty()) {
                 auditLogs = auditLogService.getAuditLogs(page, size);
             } else {
                 auditLogs = auditLogService.getAuditLogsWithFilters(filters, page, size);
             }
-            
+
             return ResponseEntity.ok(auditLogs);
         } catch (Exception e) {
             logger.error("Error retrieving audit logs", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get a specific audit log by ID.
      *
@@ -98,7 +98,7 @@ public class AuditLogController {
                     .filter(log -> id.equals(log.getId()))
                     .findFirst()
                     .orElse(null);
-            
+
             if (auditLog != null) {
                 return ResponseEntity.ok(auditLog);
             } else {
@@ -109,7 +109,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get distinct categories.
      *
@@ -125,7 +125,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get distinct actions.
      *
@@ -141,7 +141,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get distinct target types.
      *
@@ -157,7 +157,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get audit log counts by category.
      *
@@ -173,7 +173,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get audit log counts by action.
      *
@@ -189,7 +189,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get audit log counts by status.
      *
@@ -205,7 +205,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get the total count of audit logs.
      *
@@ -221,7 +221,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Delete an audit log by ID.
      * This endpoint should be restricted to administrators.
@@ -243,7 +243,7 @@ public class AuditLogController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Delete all audit logs.
      * This endpoint should be restricted to administrators.

@@ -15,10 +15,9 @@ import org.springframework.stereotype.Component;
 public class LogBufferHealthIndicator implements HealthIndicator {
 
     private static final Logger logger = LoggerFactory.getLogger(LogBufferHealthIndicator.class);
-    private final LogBufferService logBufferService;
-    
     // Define a threshold percentage for buffer capacity warning
     private static final double BUFFER_WARNING_THRESHOLD = 0.8; // 80%
+    private final LogBufferService logBufferService;
 
     public LogBufferHealthIndicator(LogBufferService logBufferService) {
         this.logBufferService = logBufferService;
@@ -30,27 +29,27 @@ public class LogBufferHealthIndicator implements HealthIndicator {
             int currentSize = logBufferService.getBufferSize();
             int maxSize = logBufferService.getMaxBufferSize();
             int flushInterval = logBufferService.getFlushIntervalMs();
-            
+
             double bufferUtilization = (double) currentSize / maxSize;
-            
+
             Health.Builder builder = Health.up();
-            
+
             // Add details about the buffer
             builder.withDetail("currentSize", currentSize)
-                   .withDetail("maxSize", maxSize)
-                   .withDetail("utilization", String.format("%.2f%%", bufferUtilization * 100))
-                   .withDetail("flushIntervalMs", flushInterval);
-            
+                    .withDetail("maxSize", maxSize)
+                    .withDetail("utilization", String.format("%.2f%%", bufferUtilization * 100))
+                    .withDetail("flushIntervalMs", flushInterval);
+
             // Check if buffer is getting close to capacity
             if (bufferUtilization > BUFFER_WARNING_THRESHOLD) {
                 builder.down()
-                       .withDetail("status", "Buffer is near capacity")
-                       .withDetail("warning", "Buffer utilization exceeds " + 
-                                  (BUFFER_WARNING_THRESHOLD * 100) + "% of maximum capacity");
+                        .withDetail("status", "Buffer is near capacity")
+                        .withDetail("warning", "Buffer utilization exceeds " +
+                                (BUFFER_WARNING_THRESHOLD * 100) + "% of maximum capacity");
             } else {
                 builder.withDetail("status", "Log buffer is operational");
             }
-            
+
             return builder.build();
         } catch (Exception e) {
             logger.error("Log buffer health check failed", e);

@@ -2,15 +2,14 @@ package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.Alarm;
 import io.github.ozkanpakdil.grepwise.model.NotificationChannel;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.health.Status;
-import org.springframework.boot.actuate.system.DiskSpaceHealthIndicator;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Service for monitoring system health and creating alerts for system issues.
@@ -30,16 +28,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SystemHealthMonitoringService {
     private static final Logger logger = LoggerFactory.getLogger(SystemHealthMonitoringService.class);
-
-    @Autowired
-    private AlarmService alarmService;
-
-    @Autowired
-    private MeterRegistry meterRegistry;
-
-    @Autowired
-    private HealthEndpoint healthEndpoint;
-
     // Default thresholds
     private static final double DEFAULT_CPU_THRESHOLD = 80.0; // 80% CPU usage
     private static final double DEFAULT_MEMORY_THRESHOLD = 80.0; // 80% memory usage
@@ -47,7 +35,14 @@ public class SystemHealthMonitoringService {
     private static final int DEFAULT_TIME_WINDOW_MINUTES = 5; // 5 minutes
     private static final int DEFAULT_THROTTLE_WINDOW_MINUTES = 30; // 30 minutes
     private static final int DEFAULT_MAX_NOTIFICATIONS_PER_WINDOW = 3; // 3 notifications per 30 minutes
-
+    // Metrics cache
+    private final Map<String, Double> metricsCache = new ConcurrentHashMap<>();
+    @Autowired
+    private AlarmService alarmService;
+    @Autowired
+    private MeterRegistry meterRegistry;
+    @Autowired
+    private HealthEndpoint healthEndpoint;
     // Current thresholds (can be customized)
     private double cpuThreshold = DEFAULT_CPU_THRESHOLD;
     private double memoryThreshold = DEFAULT_MEMORY_THRESHOLD;
@@ -55,28 +50,24 @@ public class SystemHealthMonitoringService {
     private int timeWindowMinutes = DEFAULT_TIME_WINDOW_MINUTES;
     private int throttleWindowMinutes = DEFAULT_THROTTLE_WINDOW_MINUTES;
     private int maxNotificationsPerWindow = DEFAULT_MAX_NOTIFICATIONS_PER_WINDOW;
-
     // System alarms
     private Alarm cpuAlarm;
     private Alarm memoryAlarm;
     private Alarm diskAlarm;
     private Alarm healthAlarm;
 
-    // Metrics cache
-    private final Map<String, Double> metricsCache = new ConcurrentHashMap<>();
-
     /**
      * Initialize the service and create default system alarms.
      */
     public void init() {
         logger.info("Initializing SystemHealthMonitoringService");
-        
+
         // Register metrics
         registerMetrics();
-        
+
         // Create default system alarms
         createDefaultAlarms();
-        
+
         logger.info("SystemHealthMonitoringService initialized successfully");
     }
 
@@ -113,7 +104,7 @@ public class SystemHealthMonitoringService {
                     "count > 0",
                     1
             );
-            
+
             // Memory usage alarm
             memoryAlarm = createSystemAlarm(
                     "System Memory Usage Alert",
@@ -122,7 +113,7 @@ public class SystemHealthMonitoringService {
                     "count > 0",
                     1
             );
-            
+
             // Disk space alarm
             diskAlarm = createSystemAlarm(
                     "System Disk Usage Alert",
@@ -131,7 +122,7 @@ public class SystemHealthMonitoringService {
                     "count > 0",
                     1
             );
-            
+
             // Health check alarm
             healthAlarm = createSystemAlarm(
                     "System Health Check Alert",
@@ -140,7 +131,7 @@ public class SystemHealthMonitoringService {
                     "count > 0",
                     1
             );
-            
+
             logger.info("Default system alarms created successfully");
         } catch (Exception e) {
             logger.error("Error creating default system alarms: {}", e.getMessage(), e);
@@ -150,11 +141,11 @@ public class SystemHealthMonitoringService {
     /**
      * Create a system alarm with the given parameters.
      *
-     * @param name The alarm name
+     * @param name        The alarm name
      * @param description The alarm description
-     * @param query The alarm query
-     * @param condition The alarm condition
-     * @param threshold The alarm threshold
+     * @param query       The alarm query
+     * @param condition   The alarm condition
+     * @param threshold   The alarm threshold
      * @return The created alarm
      */
     private Alarm createSystemAlarm(String name, String description, String query, String condition, Integer threshold) {
@@ -163,7 +154,7 @@ public class SystemHealthMonitoringService {
         for (Alarm alarm : existingAlarms) {
             if (alarm.getName().equals(name)) {
                 logger.info("System alarm '{}' already exists, updating", name);
-                
+
                 // Update existing alarm
                 alarm.setDescription(description);
                 alarm.setQuery(query);
@@ -173,11 +164,11 @@ public class SystemHealthMonitoringService {
                 alarm.setThrottleWindowMinutes(throttleWindowMinutes);
                 alarm.setMaxNotificationsPerWindow(maxNotificationsPerWindow);
                 alarm.setEnabled(true);
-                
+
                 return alarmService.updateAlarm(alarm);
             }
         }
-        
+
         // Create new alarm
         Alarm alarm = new Alarm();
         alarm.setName(name);
@@ -191,13 +182,13 @@ public class SystemHealthMonitoringService {
         alarm.setEnabled(true);
         alarm.setGroupingKey("system-health");
         alarm.setGroupingWindowMinutes(5);
-        
+
         // Set default notification channels if available
         List<NotificationChannel> defaultChannels = getDefaultNotificationChannels();
         if (!defaultChannels.isEmpty()) {
             alarm.setNotificationChannels(defaultChannels);
         }
-        
+
         return alarmService.createAlarm(alarm);
     }
 
@@ -209,10 +200,10 @@ public class SystemHealthMonitoringService {
      */
     private List<NotificationChannel> getDefaultNotificationChannels() {
         List<NotificationChannel> channels = new ArrayList<>();
-        
+
         // Add default email channel (example)
         // channels.add(new NotificationChannel("EMAIL", "admin@example.com"));
-        
+
         return channels;
     }
 
@@ -226,19 +217,19 @@ public class SystemHealthMonitoringService {
             // Collect CPU usage
             double cpuUsage = getCpuUsage();
             metricsCache.put("system.cpu.usage", cpuUsage);
-            
+
             // Collect memory usage
             double memoryUsage = getMemoryUsage();
             metricsCache.put("system.memory.usage", memoryUsage);
-            
+
             // Collect disk usage
             double diskUsage = getDiskUsage();
             metricsCache.put("system.disk.usage", diskUsage);
-            
+
             // Collect health status
             boolean healthStatus = getHealthStatus();
             metricsCache.put("system.health.status", healthStatus ? 0.0 : 1.0);
-            
+
             logger.debug("System metrics collected: CPU={}%, Memory={}%, Disk={}%, Health={}",
                     String.format("%.2f", cpuUsage),
                     String.format("%.2f", memoryUsage),
@@ -257,13 +248,12 @@ public class SystemHealthMonitoringService {
     public double getCpuUsage() {
         try {
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-            
+
             // Try to access com.sun.management.OperatingSystemMXBean methods if available
-            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-                com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
                 return sunOsBean.getCpuLoad() * 100.0;
             }
-            
+
             // Fallback to standard method
             return osBean.getSystemLoadAverage() * 100.0 / osBean.getAvailableProcessors();
         } catch (Exception e) {
@@ -282,7 +272,7 @@ public class SystemHealthMonitoringService {
             MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
             long usedMemory = memoryBean.getHeapMemoryUsage().getUsed() + memoryBean.getNonHeapMemoryUsage().getUsed();
             long maxMemory = memoryBean.getHeapMemoryUsage().getMax() + memoryBean.getNonHeapMemoryUsage().getMax();
-            
+
             return (double) usedMemory / maxMemory * 100.0;
         } catch (Exception e) {
             logger.error("Error getting memory usage: {}", e.getMessage(), e);
@@ -300,7 +290,7 @@ public class SystemHealthMonitoringService {
             // This is a simplified implementation
             // In a real-world scenario, you would use the DiskSpaceHealthIndicator
             // or a more sophisticated method to get actual disk usage
-            
+
             // For now, we'll return a random value between 50-70% for demonstration
             return 50.0 + Math.random() * 20.0;
         } catch (Exception e) {
@@ -333,9 +323,9 @@ public class SystemHealthMonitoringService {
         if (threshold < 0 || threshold > 100) {
             throw new IllegalArgumentException("Threshold must be between 0 and 100");
         }
-        
+
         this.cpuThreshold = threshold;
-        
+
         // Update CPU alarm if it exists
         if (cpuAlarm != null) {
             cpuAlarm.setQuery("system.cpu.usage > " + threshold);
@@ -353,9 +343,9 @@ public class SystemHealthMonitoringService {
         if (threshold < 0 || threshold > 100) {
             throw new IllegalArgumentException("Threshold must be between 0 and 100");
         }
-        
+
         this.memoryThreshold = threshold;
-        
+
         // Update memory alarm if it exists
         if (memoryAlarm != null) {
             memoryAlarm.setQuery("system.memory.usage > " + threshold);
@@ -373,9 +363,9 @@ public class SystemHealthMonitoringService {
         if (threshold < 0 || threshold > 100) {
             throw new IllegalArgumentException("Threshold must be between 0 and 100");
         }
-        
+
         this.diskThreshold = threshold;
-        
+
         // Update disk alarm if it exists
         if (diskAlarm != null) {
             diskAlarm.setQuery("system.disk.usage > " + threshold);
@@ -393,15 +383,15 @@ public class SystemHealthMonitoringService {
         if (minutes <= 0) {
             throw new IllegalArgumentException("Time window must be greater than 0");
         }
-        
+
         this.timeWindowMinutes = minutes;
-        
+
         // Update all alarms
         updateAlarmTimeWindow(cpuAlarm, minutes);
         updateAlarmTimeWindow(memoryAlarm, minutes);
         updateAlarmTimeWindow(diskAlarm, minutes);
         updateAlarmTimeWindow(healthAlarm, minutes);
-        
+
         logger.info("Time window updated to {} minutes for all system alarms", minutes);
     }
 
@@ -414,15 +404,15 @@ public class SystemHealthMonitoringService {
         if (minutes <= 0) {
             throw new IllegalArgumentException("Throttle window must be greater than 0");
         }
-        
+
         this.throttleWindowMinutes = minutes;
-        
+
         // Update all alarms
         updateAlarmThrottleWindow(cpuAlarm, minutes);
         updateAlarmThrottleWindow(memoryAlarm, minutes);
         updateAlarmThrottleWindow(diskAlarm, minutes);
         updateAlarmThrottleWindow(healthAlarm, minutes);
-        
+
         logger.info("Throttle window updated to {} minutes for all system alarms", minutes);
     }
 
@@ -435,22 +425,22 @@ public class SystemHealthMonitoringService {
         if (count <= 0) {
             throw new IllegalArgumentException("Max notifications must be greater than 0");
         }
-        
+
         this.maxNotificationsPerWindow = count;
-        
+
         // Update all alarms
         updateAlarmMaxNotifications(cpuAlarm, count);
         updateAlarmMaxNotifications(memoryAlarm, count);
         updateAlarmMaxNotifications(diskAlarm, count);
         updateAlarmMaxNotifications(healthAlarm, count);
-        
+
         logger.info("Max notifications updated to {} for all system alarms", count);
     }
 
     /**
      * Update alarm time window.
      *
-     * @param alarm The alarm to update
+     * @param alarm   The alarm to update
      * @param minutes The new time window in minutes
      */
     private void updateAlarmTimeWindow(Alarm alarm, int minutes) {
@@ -463,7 +453,7 @@ public class SystemHealthMonitoringService {
     /**
      * Update alarm throttle window.
      *
-     * @param alarm The alarm to update
+     * @param alarm   The alarm to update
      * @param minutes The new throttle window in minutes
      */
     private void updateAlarmThrottleWindow(Alarm alarm, int minutes) {
@@ -493,16 +483,16 @@ public class SystemHealthMonitoringService {
      */
     public Map<String, Object> getSystemMetrics() {
         Map<String, Object> metrics = new HashMap<>();
-        
+
         metrics.put("cpu.usage", String.format("%.2f%%", metricsCache.getOrDefault("system.cpu.usage", 0.0)));
         metrics.put("memory.usage", String.format("%.2f%%", metricsCache.getOrDefault("system.memory.usage", 0.0)));
         metrics.put("disk.usage", String.format("%.2f%%", metricsCache.getOrDefault("system.disk.usage", 0.0)));
         metrics.put("health.status", metricsCache.getOrDefault("system.health.status", 0.0) > 0.5 ? "DOWN" : "UP");
-        
+
         metrics.put("cpu.threshold", String.format("%.2f%%", cpuThreshold));
         metrics.put("memory.threshold", String.format("%.2f%%", memoryThreshold));
         metrics.put("disk.threshold", String.format("%.2f%%", diskThreshold));
-        
+
         return metrics;
     }
 }

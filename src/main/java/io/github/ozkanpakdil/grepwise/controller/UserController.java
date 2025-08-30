@@ -12,15 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +23,7 @@ import java.util.stream.Collectors;
 /**
  * REST controller for user management.
  * This controller provides endpoints for creating, retrieving, updating, and deleting users.
- * 
+ * <p>
  * This controller is versioned as v1 by default, making all endpoints accessible at /api/v1/users.
  * Individual methods can override this version with their own @ApiVersion annotation.
  */
@@ -40,20 +32,15 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
-
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private RoleRepository roleRepository;
-
     @Autowired
     private AuthService authService;
-    
     @Autowired
     private AuditLogService auditLogService;
-
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * Get all users (API v1).
@@ -105,40 +92,40 @@ public class UserController {
     public ResponseEntity<?> createUser(@RequestBody UserRequest userRequest) {
         try {
             logger.info("User creation attempt for username: {}", userRequest.getUsername());
-            
+
             // Check if username or email already exists
             if (userRepository.existsByUsername(userRequest.getUsername())) {
                 logger.warn("User creation failed: Username already exists: {}", userRequest.getUsername());
-                
+
                 // Log the failed user creation
                 auditLogService.createUserAuditLog(
-                    "CREATE", 
-                    "FAILURE", 
-                    null, 
-                    userRequest.getUsername(), 
-                    "User creation failed: Username already exists", 
-                    null
+                        "CREATE",
+                        "FAILURE",
+                        null,
+                        userRequest.getUsername(),
+                        "User creation failed: Username already exists",
+                        null
                 );
-                
+
                 return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
             }
-            
+
             if (userRepository.existsByEmail(userRequest.getEmail())) {
                 logger.warn("User creation failed: Email already exists: {}", userRequest.getEmail());
-                
+
                 // Log the failed user creation
                 auditLogService.createUserAuditLog(
-                    "CREATE", 
-                    "FAILURE", 
-                    null, 
-                    userRequest.getUsername(), 
-                    "User creation failed: Email already exists", 
-                    null
+                        "CREATE",
+                        "FAILURE",
+                        null,
+                        userRequest.getUsername(),
+                        "User creation failed: Email already exists",
+                        null
                 );
-                
+
                 return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
             }
-            
+
             // Create new user
             User user = new User();
             user.setUsername(userRequest.getUsername());
@@ -147,7 +134,7 @@ public class UserController {
             user.setFirstName(userRequest.getFirstName());
             user.setLastName(userRequest.getLastName());
             user.setTenantId(userRequest.getTenantId());
-            
+
             // Add roles if provided
             if (userRequest.getRoleIds() != null && !userRequest.getRoleIds().isEmpty()) {
                 for (String roleId : userRequest.getRoleIds()) {
@@ -163,11 +150,11 @@ public class UserController {
                     user.addRole(userRole);
                 }
             }
-            
+
             user.setEnabled(userRequest.getEnabled() != null ? userRequest.getEnabled() : true);
-            
+
             User createdUser = userRepository.save(user);
-            
+
             // Log the successful user creation
             logger.info("User created successfully: {}", createdUser.getUsername());
             Map<String, String> details = new HashMap<>();
@@ -175,44 +162,44 @@ public class UserController {
             details.put("firstName", createdUser.getFirstName());
             details.put("lastName", createdUser.getLastName());
             details.put("roles", String.join(",", createdUser.getRoleNames()));
-            
+
             auditLogService.createUserAuditLog(
-                "CREATE", 
-                "SUCCESS", 
-                createdUser.getId(), 
-                createdUser.getUsername(), 
-                "User created successfully", 
-                details
+                    "CREATE",
+                    "SUCCESS",
+                    createdUser.getId(),
+                    createdUser.getUsername(),
+                    "User created successfully",
+                    details
             );
-            
+
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToUserResponse(createdUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user creation request: {}", e.getMessage());
-            
+
             // Log the failed user creation
             auditLogService.createUserAuditLog(
-                "CREATE", 
-                "FAILURE", 
-                null, 
-                userRequest.getUsername(), 
-                "User creation failed: Invalid request - " + e.getMessage(), 
-                null
+                    "CREATE",
+                    "FAILURE",
+                    null,
+                    userRequest.getUsername(),
+                    "User creation failed: Invalid request - " + e.getMessage(),
+                    null
             );
-            
+
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Error creating user: {}", e.getMessage());
-            
+
             // Log the failed user creation
             auditLogService.createUserAuditLog(
-                "CREATE", 
-                "FAILURE", 
-                null, 
-                userRequest.getUsername(), 
-                "User creation failed: Internal server error", 
-                null
+                    "CREATE",
+                    "FAILURE",
+                    null,
+                    userRequest.getUsername(),
+                    "User creation failed: Internal server error",
+                    null
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -221,7 +208,7 @@ public class UserController {
     /**
      * Update an existing user.
      *
-     * @param id The user ID
+     * @param id          The user ID
      * @param userRequest The user update request
      * @return The updated user
      */
@@ -229,95 +216,95 @@ public class UserController {
     public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody UserRequest userRequest) {
         try {
             logger.info("User update attempt for ID: {}", id);
-            
+
             User existingUser = userRepository.findById(id);
             if (existingUser == null) {
                 logger.warn("User update failed: User not found with ID: {}", id);
-                
+
                 // Log the failed user update
                 auditLogService.createUserAuditLog(
-                    "UPDATE", 
-                    "FAILURE", 
-                    id, 
-                    null, 
-                    "User update failed: User not found", 
-                    null
+                        "UPDATE",
+                        "FAILURE",
+                        id,
+                        null,
+                        "User update failed: User not found",
+                        null
                 );
-                
+
                 return ResponseEntity.notFound().build();
             }
-            
+
             // Check if username or email already exists (if changed)
-            if (userRequest.getUsername() != null && !userRequest.getUsername().equals(existingUser.getUsername()) 
+            if (userRequest.getUsername() != null && !userRequest.getUsername().equals(existingUser.getUsername())
                     && userRepository.existsByUsername(userRequest.getUsername())) {
                 logger.warn("User update failed: Username already exists: {}", userRequest.getUsername());
-                
+
                 // Log the failed user update
                 auditLogService.createUserAuditLog(
-                    "UPDATE", 
-                    "FAILURE", 
-                    id, 
-                    existingUser.getUsername(), 
-                    "User update failed: Username already exists", 
-                    null
+                        "UPDATE",
+                        "FAILURE",
+                        id,
+                        existingUser.getUsername(),
+                        "User update failed: Username already exists",
+                        null
                 );
-                
+
                 return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
             }
-            
-            if (userRequest.getEmail() != null && !userRequest.getEmail().equals(existingUser.getEmail()) 
+
+            if (userRequest.getEmail() != null && !userRequest.getEmail().equals(existingUser.getEmail())
                     && userRepository.existsByEmail(userRequest.getEmail())) {
                 logger.warn("User update failed: Email already exists: {}", userRequest.getEmail());
-                
+
                 // Log the failed user update
                 auditLogService.createUserAuditLog(
-                    "UPDATE", 
-                    "FAILURE", 
-                    id, 
-                    existingUser.getUsername(), 
-                    "User update failed: Email already exists", 
-                    null
+                        "UPDATE",
+                        "FAILURE",
+                        id,
+                        existingUser.getUsername(),
+                        "User update failed: Email already exists",
+                        null
                 );
-                
+
                 return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
             }
-            
+
             // Store original values for audit log
             String originalUsername = existingUser.getUsername();
             String originalEmail = existingUser.getEmail();
             List<String> originalRoles = new ArrayList<>(existingUser.getRoleNames());
             boolean originalEnabled = existingUser.isEnabled();
-            
+
             // Update user fields if provided
             if (userRequest.getUsername() != null) {
                 existingUser.setUsername(userRequest.getUsername());
             }
-            
+
             if (userRequest.getEmail() != null) {
                 existingUser.setEmail(userRequest.getEmail());
             }
-            
+
             if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty()) {
                 existingUser.setPassword(passwordEncoder.encode(userRequest.getPassword()));
             }
-            
+
             if (userRequest.getFirstName() != null) {
                 existingUser.setFirstName(userRequest.getFirstName());
             }
-            
+
             if (userRequest.getLastName() != null) {
                 existingUser.setLastName(userRequest.getLastName());
             }
-            
+
             if (userRequest.getTenantId() != null) {
                 existingUser.setTenantId(userRequest.getTenantId());
             }
-            
+
             // Update roles if provided
             if (userRequest.getRoleIds() != null) {
                 // Clear existing roles
                 existingUser.getRoles().clear();
-                
+
                 // Add new roles
                 for (String roleId : userRequest.getRoleIds()) {
                     Role role = roleRepository.findById(roleId);
@@ -326,16 +313,16 @@ public class UserController {
                     }
                 }
             }
-            
+
             if (userRequest.getEnabled() != null) {
                 existingUser.setEnabled(userRequest.getEnabled());
             }
-            
+
             User updatedUser = userRepository.save(existingUser);
-            
+
             // Log the successful user update
             logger.info("User updated successfully: {}", updatedUser.getUsername());
-            
+
             // Create details map with changes
             Map<String, String> details = new HashMap<>();
             if (!originalUsername.equals(updatedUser.getUsername())) {
@@ -353,44 +340,44 @@ public class UserController {
             if (originalEnabled != updatedUser.isEnabled()) {
                 details.put("enabledChanged", originalEnabled + " -> " + updatedUser.isEnabled());
             }
-            
+
             auditLogService.createUserAuditLog(
-                "UPDATE", 
-                "SUCCESS", 
-                updatedUser.getId(), 
-                updatedUser.getUsername(), 
-                "User updated successfully", 
-                details
+                    "UPDATE",
+                    "SUCCESS",
+                    updatedUser.getId(),
+                    updatedUser.getUsername(),
+                    "User updated successfully",
+                    details
             );
-            
+
             return ResponseEntity.ok(convertToUserResponse(updatedUser));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid user update request for {}: {}", id, e.getMessage());
-            
+
             // Log the failed user update
             auditLogService.createUserAuditLog(
-                "UPDATE", 
-                "FAILURE", 
-                id, 
-                null, 
-                "User update failed: Invalid request - " + e.getMessage(), 
-                null
+                    "UPDATE",
+                    "FAILURE",
+                    id,
+                    null,
+                    "User update failed: Invalid request - " + e.getMessage(),
+                    null
             );
-            
+
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Error updating user {}: {}", id, e.getMessage());
-            
+
             // Log the failed user update
             auditLogService.createUserAuditLog(
-                "UPDATE", 
-                "FAILURE", 
-                id, 
-                null, 
-                "User update failed: Internal server error", 
-                null
+                    "UPDATE",
+                    "FAILURE",
+                    id,
+                    null,
+                    "User update failed: Internal server error",
+                    null
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -406,59 +393,59 @@ public class UserController {
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
         try {
             logger.info("User deletion attempt for ID: {}", id);
-            
+
             // Get user before deletion for audit logging
             User user = userRepository.findById(id);
             String username = user != null ? user.getUsername() : null;
-            
+
             boolean deleted = userRepository.deleteById(id);
             if (deleted) {
                 logger.info("User deleted successfully: ID={}, username={}", id, username);
-                
+
                 // Log the successful user deletion
                 Map<String, String> details = new HashMap<>();
                 if (username != null) {
                     details.put("username", username);
                 }
-                
+
                 auditLogService.createUserAuditLog(
-                    "DELETE", 
-                    "SUCCESS", 
-                    id, 
-                    username, 
-                    "User deleted successfully", 
-                    details
+                        "DELETE",
+                        "SUCCESS",
+                        id,
+                        username,
+                        "User deleted successfully",
+                        details
                 );
-                
+
                 return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
             } else {
                 logger.warn("User deletion failed: User not found with ID: {}", id);
-                
+
                 // Log the failed user deletion
                 auditLogService.createUserAuditLog(
-                    "DELETE", 
-                    "FAILURE", 
-                    id, 
-                    null, 
-                    "User deletion failed: User not found", 
-                    null
+                        "DELETE",
+                        "FAILURE",
+                        id,
+                        null,
+                        "User deletion failed: User not found",
+                        null
                 );
-                
+
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
             logger.error("Error deleting user {}: {}", id, e.getMessage());
-            
+
             // Log the failed user deletion
             auditLogService.createUserAuditLog(
-                "DELETE", 
-                "FAILURE", 
-                id, 
-                null, 
-                "User deletion failed: Internal server error", 
-                null
+                    "DELETE",
+                    "FAILURE",
+                    id,
+                    null,
+                    "User deletion failed: Internal server error",
+                    null
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -483,7 +470,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Get users by permission.
      *
@@ -503,7 +490,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Convert a User entity to a UserResponse DTO.
      *
@@ -540,31 +527,71 @@ public class UserController {
         private String tenantId;
 
         // Getters and setters
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
+        public String getUsername() {
+            return username;
+        }
 
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
+        public void setUsername(String username) {
+            this.username = username;
+        }
 
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
+        public String getEmail() {
+            return email;
+        }
 
-        public String getFirstName() { return firstName; }
-        public void setFirstName(String firstName) { this.firstName = firstName; }
+        public void setEmail(String email) {
+            this.email = email;
+        }
 
-        public String getLastName() { return lastName; }
-        public void setLastName(String lastName) { this.lastName = lastName; }
+        public String getPassword() {
+            return password;
+        }
 
-        public List<String> getRoleIds() { return roleIds; }
-        public void setRoleIds(List<String> roleIds) { this.roleIds = roleIds; }
+        public void setPassword(String password) {
+            this.password = password;
+        }
 
-        public Boolean getEnabled() { return enabled; }
-        public void setEnabled(Boolean enabled) { this.enabled = enabled; }
-        
-        public String getTenantId() { return tenantId; }
-        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
+        }
+
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        public List<String> getRoleIds() {
+            return roleIds;
+        }
+
+        public void setRoleIds(List<String> roleIds) {
+            this.roleIds = roleIds;
+        }
+
+        public Boolean getEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(Boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getTenantId() {
+            return tenantId;
+        }
+
+        public void setTenantId(String tenantId) {
+            this.tenantId = tenantId;
+        }
     }
-    
+
     /**
      * Response DTO for user data.
      */
@@ -582,37 +609,92 @@ public class UserController {
         private boolean enabled;
 
         // Getters and setters
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
+        public String getId() {
+            return id;
+        }
 
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
+        public void setId(String id) {
+            this.id = id;
+        }
 
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
+        public String getUsername() {
+            return username;
+        }
 
-        public String getFirstName() { return firstName; }
-        public void setFirstName(String firstName) { this.firstName = firstName; }
+        public void setUsername(String username) {
+            this.username = username;
+        }
 
-        public String getLastName() { return lastName; }
-        public void setLastName(String lastName) { this.lastName = lastName; }
+        public String getEmail() {
+            return email;
+        }
 
-        public List<String> getRoleIds() { return roleIds; }
-        public void setRoleIds(List<String> roleIds) { this.roleIds = roleIds; }
+        public void setEmail(String email) {
+            this.email = email;
+        }
 
-        public List<String> getRoleNames() { return roleNames; }
-        public void setRoleNames(List<String> roleNames) { this.roleNames = roleNames; }
-        
-        public String getTenantId() { return tenantId; }
-        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+        public String getFirstName() {
+            return firstName;
+        }
 
-        public long getCreatedAt() { return createdAt; }
-        public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
 
-        public long getUpdatedAt() { return updatedAt; }
-        public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+        public String getLastName() {
+            return lastName;
+        }
 
-        public boolean isEnabled() { return enabled; }
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        public List<String> getRoleIds() {
+            return roleIds;
+        }
+
+        public void setRoleIds(List<String> roleIds) {
+            this.roleIds = roleIds;
+        }
+
+        public List<String> getRoleNames() {
+            return roleNames;
+        }
+
+        public void setRoleNames(List<String> roleNames) {
+            this.roleNames = roleNames;
+        }
+
+        public String getTenantId() {
+            return tenantId;
+        }
+
+        public void setTenantId(String tenantId) {
+            this.tenantId = tenantId;
+        }
+
+        public long getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(long createdAt) {
+            this.createdAt = createdAt;
+        }
+
+        public long getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(long updatedAt) {
+            this.updatedAt = updatedAt;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
     }
 }

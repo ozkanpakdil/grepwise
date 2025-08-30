@@ -29,14 +29,14 @@ public class PermissionRepository {
         if (permission.getId() == null || permission.getId().isEmpty()) {
             permission.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (permission.getCreatedAt() == 0) {
             permission.setCreatedAt(now);
         }
         permission.setUpdatedAt(now);
-        
+
         permissions.put(permission.getId(), permission);
         return permission;
     }
@@ -114,7 +114,7 @@ public class PermissionRepository {
     public int count() {
         return permissions.size();
     }
-    
+
     /**
      * Initialize default permissions if none exist.
      * This method creates a set of standard permissions for the application.
@@ -123,48 +123,48 @@ public class PermissionRepository {
         if (count() > 0) {
             return; // Permissions already exist
         }
-        
+
         // User management permissions
         createPermissionIfNotExists("user:view", "View users", "User Management");
         createPermissionIfNotExists("user:create", "Create users", "User Management");
         createPermissionIfNotExists("user:edit", "Edit users", "User Management");
         createPermissionIfNotExists("user:delete", "Delete users", "User Management");
-        
+
         // Role management permissions
         createPermissionIfNotExists("role:view", "View roles", "Role Management");
         createPermissionIfNotExists("role:create", "Create roles", "Role Management");
         createPermissionIfNotExists("role:edit", "Edit roles", "Role Management");
         createPermissionIfNotExists("role:delete", "Delete roles", "Role Management");
-        
+
         // Log management permissions
         createPermissionIfNotExists("log:view", "View logs", "Log Management");
         createPermissionIfNotExists("log:search", "Search logs", "Log Management");
         createPermissionIfNotExists("log:export", "Export logs", "Log Management");
-        
+
         // Dashboard permissions
         createPermissionIfNotExists("dashboard:view", "View dashboards", "Dashboard");
         createPermissionIfNotExists("dashboard:create", "Create dashboards", "Dashboard");
         createPermissionIfNotExists("dashboard:edit", "Edit dashboards", "Dashboard");
         createPermissionIfNotExists("dashboard:delete", "Delete dashboards", "Dashboard");
         createPermissionIfNotExists("dashboard:share", "Share dashboards", "Dashboard");
-        
+
         // Alarm permissions
         createPermissionIfNotExists("alarm:view", "View alarms", "Alarm");
         createPermissionIfNotExists("alarm:create", "Create alarms", "Alarm");
         createPermissionIfNotExists("alarm:edit", "Edit alarms", "Alarm");
         createPermissionIfNotExists("alarm:delete", "Delete alarms", "Alarm");
         createPermissionIfNotExists("alarm:acknowledge", "Acknowledge alarms", "Alarm");
-        
+
         // Settings permissions
         createPermissionIfNotExists("settings:view", "View settings", "Settings");
         createPermissionIfNotExists("settings:edit", "Edit settings", "Settings");
     }
-    
+
     private Permission createPermissionIfNotExists(String name, String description, String category) {
         if (existsByName(name)) {
             return findByName(name);
         }
-        
+
         Permission permission = new Permission();
         permission.setName(name);
         permission.setDescription(description);

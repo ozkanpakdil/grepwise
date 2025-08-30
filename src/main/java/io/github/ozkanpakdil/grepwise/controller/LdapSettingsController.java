@@ -12,12 +12,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -61,7 +56,7 @@ public class LdapSettingsController {
     public ResponseEntity<Map<String, Object>> getLdapSettings() {
         try {
             Map<String, Object> settings = new HashMap<>();
-            
+
             // Get LDAP settings from environment
             settings.put("enabled", Boolean.parseBoolean(environment.getProperty("grepwise.ldap.enabled", "false")));
             settings.put("url", environment.getProperty("grepwise.ldap.url", "ldap://localhost:389"));
@@ -74,7 +69,7 @@ public class LdapSettingsController {
             settings.put("groupSearchBase", environment.getProperty("grepwise.ldap.group-search-base", "ou=groups"));
             settings.put("groupSearchFilter", environment.getProperty("grepwise.ldap.group-search-filter", "(member={0})"));
             settings.put("groupRoleAttribute", environment.getProperty("grepwise.ldap.group-role-attribute", "cn"));
-            
+
             return ResponseEntity.ok(settings);
         } catch (Exception e) {
             logger.error("Error retrieving LDAP settings: {}", e.getMessage(), e);
@@ -98,11 +93,11 @@ public class LdapSettingsController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Map.of("error", "Could not locate application.properties file"));
             }
-            
+
             // Load existing properties
             Properties properties = new Properties();
             properties.load(Files.newInputStream(propertiesPath));
-            
+
             // Update LDAP properties
             properties.setProperty("grepwise.ldap.enabled", String.valueOf(settings.getOrDefault("enabled", false)));
             properties.setProperty("grepwise.ldap.url", (String) settings.getOrDefault("url", "ldap://localhost:389"));
@@ -115,32 +110,32 @@ public class LdapSettingsController {
             properties.setProperty("grepwise.ldap.group-search-base", (String) settings.getOrDefault("groupSearchBase", "ou=groups"));
             properties.setProperty("grepwise.ldap.group-search-filter", (String) settings.getOrDefault("groupSearchFilter", "(member={0})"));
             properties.setProperty("grepwise.ldap.group-role-attribute", (String) settings.getOrDefault("groupRoleAttribute", "cn"));
-            
+
             // Save properties
             try (OutputStream os = new FileOutputStream(propertiesPath.toFile())) {
                 properties.store(os, "Updated LDAP settings");
             }
-            
+
             // Log the update
             auditLogService.createAuthAuditLog(
-                "LDAP_SETTINGS_UPDATE", 
-                "SUCCESS", 
-                "admin", 
-                "LDAP settings updated successfully"
+                    "LDAP_SETTINGS_UPDATE",
+                    "SUCCESS",
+                    "admin",
+                    "LDAP settings updated successfully"
             );
-            
+
             return ResponseEntity.ok(Map.of("message", "LDAP settings updated successfully"));
         } catch (Exception e) {
             logger.error("Error updating LDAP settings: {}", e.getMessage(), e);
-            
+
             // Log the failed update
             auditLogService.createAuthAuditLog(
-                "LDAP_SETTINGS_UPDATE", 
-                "FAILURE", 
-                "admin", 
-                "Error updating LDAP settings: " + e.getMessage()
+                    "LDAP_SETTINGS_UPDATE",
+                    "FAILURE",
+                    "admin",
+                    "Error updating LDAP settings: " + e.getMessage()
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error updating LDAP settings: " + e.getMessage()));
         }
@@ -159,37 +154,37 @@ public class LdapSettingsController {
             String url = environment.getProperty("grepwise.ldap.url", "");
             String managerDn = environment.getProperty("grepwise.ldap.manager-dn", "");
             String managerPassword = environment.getProperty("grepwise.ldap.manager-password", "");
-            
+
             if (!enabled) {
                 return ResponseEntity.badRequest().body(Map.of("error", "LDAP is not enabled"));
             }
-            
+
             // TODO: Implement actual LDAP connection test
             // For now, just return success if LDAP is enabled and URL is not empty
             if (url.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "LDAP URL is not configured"));
             }
-            
+
             // Log the test
             auditLogService.createAuthAuditLog(
-                "LDAP_CONNECTION_TEST", 
-                "SUCCESS", 
-                "admin", 
-                "LDAP connection test successful"
+                    "LDAP_CONNECTION_TEST",
+                    "SUCCESS",
+                    "admin",
+                    "LDAP connection test successful"
             );
-            
+
             return ResponseEntity.ok(Map.of("message", "LDAP connection test successful"));
         } catch (Exception e) {
             logger.error("Error testing LDAP connection: {}", e.getMessage(), e);
-            
+
             // Log the failed test
             auditLogService.createAuthAuditLog(
-                "LDAP_CONNECTION_TEST", 
-                "FAILURE", 
-                "admin", 
-                "Error testing LDAP connection: " + e.getMessage()
+                    "LDAP_CONNECTION_TEST",
+                    "FAILURE",
+                    "admin",
+                    "Error testing LDAP connection: " + e.getMessage()
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error testing LDAP connection: " + e.getMessage()));
         }
@@ -209,20 +204,20 @@ public class LdapSettingsController {
                 File file = resource.getFile();
                 return file.toPath();
             }
-            
+
             // If not found, look in common locations
             Path[] commonLocations = {
-                Paths.get("src/main/resources/application.properties"),
-                Paths.get("config/application.properties"),
-                Paths.get("application.properties")
+                    Paths.get("src/main/resources/application.properties"),
+                    Paths.get("config/application.properties"),
+                    Paths.get("application.properties")
             };
-            
+
             for (Path path : commonLocations) {
                 if (Files.exists(path)) {
                     return path;
                 }
             }
-            
+
             return null;
         } else {
             // If using file path, use it directly

@@ -23,11 +23,9 @@ import java.util.Map;
 public class ProfileController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
-
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     @Autowired
     private UserRepository userRepository;
-
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * Get the current user's profile.
@@ -227,7 +225,7 @@ public class ProfileController {
 
         // Constructor
         public ProfileResponse(String id, String username, String email, String firstName, String lastName,
-                              java.util.List<String> roles, long createdAt, long updatedAt) {
+                               java.util.List<String> roles, long createdAt, long updatedAt) {
             this.id = id;
             this.username = username;
             this.email = email;

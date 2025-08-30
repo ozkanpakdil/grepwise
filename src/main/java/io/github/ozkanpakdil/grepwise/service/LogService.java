@@ -61,14 +61,14 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
     @Override
     public void searchLogs(SearchRequest request, StreamObserver<SearchResponse> responseObserver) {
         List<LogEntry> logs;
-        
+
         // Apply time range filter if provided
         if (request.getStartTime() > 0 && request.getEndTime() > 0) {
             logs = logRepository.findByTimeRange(request.getStartTime(), request.getEndTime());
         } else {
             logs = logRepository.findAll();
         }
-        
+
         // Apply query filter if provided
         if (request.getQuery() != null && !request.getQuery().isEmpty()) {
             logs = logs.stream()
@@ -76,37 +76,37 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
                             log.message().toLowerCase().contains(request.getQuery().toLowerCase()))
                     .collect(Collectors.toList());
         }
-        
+
         // Apply sorting if provided
         if (request.getSortField() != null && !request.getSortField().isEmpty()) {
             logs = sortLogs(logs, request.getSortField(), request.getSortAscending());
         }
-        
+
         // Apply pagination
         int totalResults = logs.size();
         int totalPages = (int) Math.ceil((double) totalResults / request.getSize());
         int page = Math.max(0, Math.min(request.getPage(), totalPages - 1));
         int fromIndex = page * request.getSize();
         int toIndex = Math.min(fromIndex + request.getSize(), totalResults);
-        
+
         if (fromIndex < totalResults) {
             logs = logs.subList(fromIndex, toIndex);
         } else {
             logs = List.of();
         }
-        
+
         // Convert model LogEntry to gRPC LogEntry
         List<io.github.ozkanpakdil.grepwise.grpc.LogEntry> grpcLogs = logs.stream()
                 .map(this::convertToGrpcLogEntry)
                 .collect(Collectors.toList());
-        
+
         SearchResponse response = SearchResponse.newBuilder()
                 .addAllLogs(grpcLogs)
                 .setTotalPages(totalPages)
                 .setCurrentPage(page)
                 .setTotalResults(totalResults)
                 .build();
-        
+
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -126,14 +126,14 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
     @Override
     public void deleteLogs(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
         List<LogEntry> logs;
-        
+
         // Apply time range filter if provided
         if (request.getStartTime() > 0 && request.getEndTime() > 0) {
             logs = logRepository.findByTimeRange(request.getStartTime(), request.getEndTime());
         } else {
             logs = logRepository.findAll();
         }
-        
+
         // Apply query filter if provided
         if (request.getQuery() != null && !request.getQuery().isEmpty()) {
             logs = logs.stream()
@@ -141,7 +141,7 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
                             log.message().toLowerCase().contains(request.getQuery().toLowerCase()))
                     .collect(Collectors.toList());
         }
-        
+
         // Delete the filtered logs
         int deletedCount = 0;
         for (LogEntry log : logs) {
@@ -149,13 +149,13 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
                 deletedCount++;
             }
         }
-        
+
         DeleteResponse response = DeleteResponse.newBuilder()
                 .setDeletedCount(deletedCount)
                 .setSuccess(true)
                 .setMessage("Successfully deleted " + deletedCount + " logs")
                 .build();
-        
+
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -168,7 +168,7 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
      */
     private LogEntry convertToModelLogEntry(io.github.ozkanpakdil.grepwise.grpc.LogEntry grpcLogEntry) {
         Map<String, String> metadata = new HashMap<>(grpcLogEntry.getMetadataMap());
-        
+
         return new LogEntry(
                 grpcLogEntry.getId(),
                 grpcLogEntry.getTimestamp(),
@@ -194,11 +194,11 @@ public class LogService extends LogServiceGrpc.LogServiceImplBase {
                 .setMessage(modelLogEntry.message())
                 .setSource(modelLogEntry.source())
                 .setRawContent(modelLogEntry.rawContent());
-        
+
         if (modelLogEntry.metadata() != null) {
             builder.putAllMetadata(modelLogEntry.metadata());
         }
-        
+
         return builder.build();
     }
 

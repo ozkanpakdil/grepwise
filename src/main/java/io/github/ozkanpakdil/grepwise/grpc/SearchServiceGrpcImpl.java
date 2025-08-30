@@ -10,9 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,39 +67,39 @@ public class SearchServiceGrpcImpl extends SearchServiceGrpc.SearchServiceImplBa
             if (result instanceof List && !((List<?>) result).isEmpty() && ((List<?>) result).get(0) instanceof LogEntry) {
                 @SuppressWarnings("unchecked")
                 List<LogEntry> logs = (List<LogEntry>) result;
-                
+
                 SearchLogsResponse logsResponse = SearchLogsResponse.newBuilder()
                         .addAllLogs(convertToGrpcLogEntries(logs))
                         .setTotalCount(logs.size())
                         .build();
-                
+
                 responseBuilder.setLogs(logsResponse);
             } else if (result instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> statsResult = (Map<String, Object>) result;
-                
+
                 if (statsResult.containsKey("columns") && statsResult.containsKey("rows")) {
                     @SuppressWarnings("unchecked")
                     List<String> columns = (List<String>) statsResult.get("columns");
                     @SuppressWarnings("unchecked")
                     List<List<String>> rows = (List<List<String>>) statsResult.get("rows");
-                    
+
                     StatisticsResult.Builder statsBuilder = StatisticsResult.newBuilder()
                             .addAllColumnNames(columns);
-                    
+
                     for (List<String> row : rows) {
                         StatisticsRow.Builder rowBuilder = StatisticsRow.newBuilder();
                         rowBuilder.addAllValues(row);
                         statsBuilder.addRows(rowBuilder.build());
                     }
-                    
+
                     responseBuilder.setStatistics(statsBuilder.build());
                 } else {
                     responseBuilder.setErrorMessage("Unsupported statistics result format");
                 }
             } else {
-                responseBuilder.setErrorMessage("Unsupported result type: " + 
-                    (result != null ? result.getClass().getName() : "null"));
+                responseBuilder.setErrorMessage("Unsupported result type: " +
+                        (result != null ? result.getClass().getName() : "null"));
             }
 
             responseObserver.onNext(responseBuilder.build());
@@ -124,7 +121,7 @@ public class SearchServiceGrpcImpl extends SearchServiceGrpc.SearchServiceImplBa
             Long startTime = request.getStartTime();
             Long endTime = request.getEndTime();
             String timeRange = request.getTimeRange();
-            
+
             if (timeRange != null && !timeRange.equals("custom")) {
                 long now = System.currentTimeMillis();
                 long hours = 0;
@@ -358,11 +355,11 @@ public class SearchServiceGrpcImpl extends SearchServiceGrpc.SearchServiceImplBa
             if (request.getCacheEnabled()) {
                 searchCacheService.setCacheEnabled(request.getCacheEnabled());
             }
-            
+
             if (request.getMaxCacheSize() > 0) {
                 searchCacheService.setMaxCacheSize(request.getMaxCacheSize());
             }
-            
+
             if (request.getExpirationMs() > 0) {
                 searchCacheService.setExpirationMs(request.getExpirationMs());
             }

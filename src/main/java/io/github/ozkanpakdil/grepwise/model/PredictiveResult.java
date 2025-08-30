@@ -22,10 +22,10 @@ public record PredictiveResult(
         metadata = metadata != null ? metadata : new HashMap<>();
     }
 
-    public PredictiveResult(long timestamp, long predictionTimestamp, double predictedValue, 
-                           double confidenceLevel, String predictionType, String description) {
-        this(null, timestamp, predictionTimestamp, predictedValue, confidenceLevel, 
-             predictionType, description, new HashMap<>());
+    public PredictiveResult(long timestamp, long predictionTimestamp, double predictedValue,
+                            double confidenceLevel, String predictionType, String description) {
+        this(null, timestamp, predictionTimestamp, predictedValue, confidenceLevel,
+                predictionType, description, new HashMap<>());
     }
 
     public PredictiveResult() {
@@ -34,6 +34,7 @@ public record PredictiveResult(
 
     /**
      * Creates a builder for PredictiveResult.
+     *
      * @return a new builder instance
      */
     public static Builder builder() {
@@ -99,8 +100,8 @@ public record PredictiveResult(
         }
 
         public PredictiveResult build() {
-            return new PredictiveResult(id, timestamp, predictionTimestamp, predictedValue, 
-                                       confidenceLevel, predictionType, description, metadata);
+            return new PredictiveResult(id, timestamp, predictionTimestamp, predictedValue,
+                    confidenceLevel, predictionType, description, metadata);
         }
     }
 }

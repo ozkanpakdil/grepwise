@@ -30,18 +30,18 @@ public class LogScannerHealthIndicator implements HealthIndicator {
         try {
             // Check if we can retrieve log directory configurations
             List<LogDirectoryConfig> configs = logScannerService.getAllConfigs();
-            
+
             // Check if configured directories are accessible
             int accessibleDirs = 0;
             int totalDirs = configs.size();
-            
+
             for (LogDirectoryConfig config : configs) {
                 File dir = new File(config.getDirectoryPath());
                 if (dir.exists() && dir.isDirectory() && dir.canRead()) {
                     accessibleDirs++;
                 }
             }
-            
+
             if (totalDirs == 0) {
                 // No directories configured, but service is still operational
                 return Health.up()

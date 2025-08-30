@@ -48,15 +48,15 @@ public class NginxLogParser {
      */
     public boolean isNginxLogFormat(String logLine) {
         return COMBINED_LOG_PATTERN.matcher(logLine).matches() ||
-               COMMON_LOG_PATTERN.matcher(logLine).matches() ||
-               ERROR_LOG_PATTERN.matcher(logLine).matches();
+                COMMON_LOG_PATTERN.matcher(logLine).matches() ||
+                ERROR_LOG_PATTERN.matcher(logLine).matches();
     }
 
     /**
      * Parses a log line in Nginx format into a LogEntry.
      *
      * @param logLine The log line to parse
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields, or null if the log line is not in a recognized Nginx format
      */
     public LogEntry parseNginxLogLine(String logLine, String source) {
@@ -88,7 +88,7 @@ public class NginxLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseCombinedLogFormat(Matcher matcher, String logLine, String source) {
@@ -149,7 +149,7 @@ public class NginxLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseCommonLogFormat(Matcher matcher, String logLine, String source) {
@@ -206,7 +206,7 @@ public class NginxLogParser {
      *
      * @param matcher The matcher with captured groups
      * @param logLine The original log line
-     * @param source The source of the log (filename)
+     * @param source  The source of the log (filename)
      * @return A LogEntry with extracted fields
      */
     private LogEntry parseErrorLogFormat(Matcher matcher, String logLine, String source) {
@@ -279,7 +279,7 @@ public class NginxLogParser {
             String pattern = "(\\d+)/(\\w+)/(\\d+):(\\d+):(\\d+):(\\d+)\\s+([+-]\\d+)";
             java.util.regex.Pattern r = java.util.regex.Pattern.compile(pattern);
             java.util.regex.Matcher m = r.matcher(timestamp);
-            
+
             if (m.find()) {
                 int day = Integer.parseInt(m.group(1));
                 String month = m.group(2);
@@ -288,7 +288,7 @@ public class NginxLogParser {
                 int minute = Integer.parseInt(m.group(5));
                 int second = Integer.parseInt(m.group(6));
                 String timezone = m.group(7);
-                
+
                 // Convert month name to month number
                 int monthNum = switch (month.toLowerCase()) {
                     case "jan" -> 1;
@@ -308,20 +308,20 @@ public class NginxLogParser {
 
                 // Create a ZonedDateTime with the parsed components
                 java.time.ZonedDateTime zdt = java.time.ZonedDateTime.of(
-                    year, monthNum, day, hour, minute, second, 0, 
-                    java.time.ZoneId.of(timezone)
+                        year, monthNum, day, hour, minute, second, 0,
+                        java.time.ZoneId.of(timezone)
                 );
-                
+
                 // Convert to milliseconds since epoch
                 return zdt.toInstant().toEpochMilli();
             }
-            
+
             // If the above parsing fails, try using the DateTimeRegexPatterns directly
             long time = DateTimeRegexPatterns.extractDateTimeToTimestamp(timestamp);
             if (time != -1) {
                 return time;
             }
-            
+
             // If all parsing attempts fail, log a warning and return current time
             logger.warn("Failed to parse Nginx timestamp using all methods: {}", timestamp);
             return System.currentTimeMillis();

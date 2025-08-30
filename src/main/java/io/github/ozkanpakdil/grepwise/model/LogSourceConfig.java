@@ -11,22 +11,22 @@ public class LogSourceConfig {
     private String name;
     private boolean enabled;
     private SourceType sourceType;
-    
+
     // File source specific fields
     private String directoryPath;
     private String filePattern;
     private long scanIntervalSeconds;
-    
+
     // Syslog source specific fields
     private int syslogPort;
     private String syslogProtocol; // UDP or TCP
     private String syslogFormat; // RFC3164 or RFC5424
-    
+
     // HTTP source specific fields
     private String httpEndpoint;
     private String httpAuthToken;
     private boolean requireAuth;
-    
+
     // CloudWatch source specific fields
     private String awsRegion;
     private String awsAccessKey;
@@ -34,16 +34,6 @@ public class LogSourceConfig {
     private String logGroupName;
     private String logStreamName;
     private long queryRefreshIntervalSeconds;
-
-    /**
-     * Enum representing the type of log source.
-     */
-    public enum SourceType {
-        FILE,
-        SYSLOG,
-        HTTP,
-        CLOUDWATCH
-    }
 
     /**
      * Default constructor with default values.
@@ -67,8 +57,8 @@ public class LogSourceConfig {
     /**
      * Constructor for file source type.
      */
-    public static LogSourceConfig createFileSource(String id, String name, String directoryPath, 
-                                                  String filePattern, long scanIntervalSeconds, boolean enabled) {
+    public static LogSourceConfig createFileSource(String id, String name, String directoryPath,
+                                                   String filePattern, long scanIntervalSeconds, boolean enabled) {
         LogSourceConfig config = new LogSourceConfig();
         config.id = id;
         config.name = name;
@@ -83,8 +73,8 @@ public class LogSourceConfig {
     /**
      * Constructor for syslog source type.
      */
-    public static LogSourceConfig createSyslogSource(String id, String name, int syslogPort, 
-                                                    String syslogProtocol, String syslogFormat, boolean enabled) {
+    public static LogSourceConfig createSyslogSource(String id, String name, int syslogPort,
+                                                     String syslogProtocol, String syslogFormat, boolean enabled) {
         LogSourceConfig config = new LogSourceConfig();
         config.id = id;
         config.name = name;
@@ -99,8 +89,8 @@ public class LogSourceConfig {
     /**
      * Constructor for HTTP source type.
      */
-    public static LogSourceConfig createHttpSource(String id, String name, String httpEndpoint, 
-                                                  String httpAuthToken, boolean requireAuth, boolean enabled) {
+    public static LogSourceConfig createHttpSource(String id, String name, String httpEndpoint,
+                                                   String httpAuthToken, boolean requireAuth, boolean enabled) {
         LogSourceConfig config = new LogSourceConfig();
         config.id = id;
         config.name = name;
@@ -111,14 +101,14 @@ public class LogSourceConfig {
         config.enabled = enabled;
         return config;
     }
-    
+
     /**
      * Constructor for CloudWatch source type.
      */
     public static LogSourceConfig createCloudWatchSource(String id, String name, String awsRegion,
-                                                        String logGroupName, String logStreamName,
-                                                        String awsAccessKey, String awsSecretKey,
-                                                        long queryRefreshIntervalSeconds, boolean enabled) {
+                                                         String logGroupName, String logStreamName,
+                                                         String awsAccessKey, String awsSecretKey,
+                                                         long queryRefreshIntervalSeconds, boolean enabled) {
         LogSourceConfig config = new LogSourceConfig();
         config.id = id;
         config.name = name;
@@ -138,12 +128,12 @@ public class LogSourceConfig {
      */
     public static LogSourceConfig fromLogDirectoryConfig(LogDirectoryConfig legacyConfig) {
         return createFileSource(
-            legacyConfig.getId(),
-            "Converted from " + legacyConfig.getDirectoryPath(),
-            legacyConfig.getDirectoryPath(),
-            legacyConfig.getFilePattern(),
-            legacyConfig.getScanIntervalSeconds(),
-            legacyConfig.isEnabled()
+                legacyConfig.getId(),
+                "Converted from " + legacyConfig.getDirectoryPath(),
+                legacyConfig.getDirectoryPath(),
+                legacyConfig.getFilePattern(),
+                legacyConfig.getScanIntervalSeconds(),
+                legacyConfig.isEnabled()
         );
     }
 
@@ -154,7 +144,7 @@ public class LogSourceConfig {
         if (sourceType != SourceType.FILE) {
             throw new IllegalStateException("Only FILE source type can be converted to LogDirectoryConfig");
         }
-        
+
         LogDirectoryConfig legacyConfig = new LogDirectoryConfig();
         legacyConfig.setId(id);
         legacyConfig.setDirectoryPath(directoryPath);
@@ -164,11 +154,11 @@ public class LogSourceConfig {
         return legacyConfig;
     }
 
-    // Getters and setters
-
     public String getId() {
         return id;
     }
+
+    // Getters and setters
 
     public void setId(String id) {
         this.id = id;
@@ -269,7 +259,7 @@ public class LogSourceConfig {
     public void setRequireAuth(boolean requireAuth) {
         this.requireAuth = requireAuth;
     }
-    
+
     public String getAwsRegion() {
         return awsRegion;
     }
@@ -374,5 +364,15 @@ public class LogSourceConfig {
                 ", logStreamName='" + logStreamName + '\'' +
                 ", queryRefreshIntervalSeconds=" + queryRefreshIntervalSeconds +
                 '}';
+    }
+
+    /**
+     * Enum representing the type of log source.
+     */
+    public enum SourceType {
+        FILE,
+        SYSLOG,
+        HTTP,
+        CLOUDWATCH
     }
 }

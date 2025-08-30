@@ -85,12 +85,12 @@ public class RoleController {
             if (roleRepository.existsByName(roleRequest.getName())) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Role name already exists"));
             }
-            
+
             // Create new role
             Role role = new Role();
             role.setName(roleRequest.getName());
             role.setDescription(roleRequest.getDescription());
-            
+
             // Add permissions if provided
             if (roleRequest.getPermissionIds() != null && !roleRequest.getPermissionIds().isEmpty()) {
                 for (String permissionId : roleRequest.getPermissionIds()) {
@@ -100,9 +100,9 @@ public class RoleController {
                     }
                 }
             }
-            
+
             Role createdRole = roleRepository.save(role);
-            
+
             return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid role creation request: {}", e.getMessage());
@@ -117,7 +117,7 @@ public class RoleController {
     /**
      * Update an existing role.
      *
-     * @param id The role ID
+     * @param id          The role ID
      * @param roleRequest The role update request
      * @return The updated role
      */
@@ -128,27 +128,27 @@ public class RoleController {
             if (existingRole == null) {
                 return ResponseEntity.notFound().build();
             }
-            
+
             // Check if role name already exists (if changed)
-            if (roleRequest.getName() != null && !roleRequest.getName().equals(existingRole.getName()) 
+            if (roleRequest.getName() != null && !roleRequest.getName().equals(existingRole.getName())
                     && roleRepository.existsByName(roleRequest.getName())) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Role name already exists"));
             }
-            
+
             // Update role fields if provided
             if (roleRequest.getName() != null) {
                 existingRole.setName(roleRequest.getName());
             }
-            
+
             if (roleRequest.getDescription() != null) {
                 existingRole.setDescription(roleRequest.getDescription());
             }
-            
+
             // Update permissions if provided
             if (roleRequest.getPermissionIds() != null) {
                 // Clear existing permissions
                 existingRole.getPermissions().clear();
-                
+
                 // Add new permissions
                 for (String permissionId : roleRequest.getPermissionIds()) {
                     Permission permission = permissionRepository.findById(permissionId);
@@ -157,9 +157,9 @@ public class RoleController {
                     }
                 }
             }
-            
+
             Role updatedRole = roleRepository.save(existingRole);
-            
+
             return ResponseEntity.ok(updatedRole);
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid role update request for {}: {}", id, e.getMessage());
@@ -184,12 +184,12 @@ public class RoleController {
             if (role == null) {
                 return ResponseEntity.notFound().build();
             }
-            
+
             // Check if role is in use by any users
             if (!userRepository.findByRole(role.getName()).isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Cannot delete role that is assigned to users"));
             }
-            
+
             boolean deleted = roleRepository.deleteById(id);
             if (deleted) {
                 return ResponseEntity.ok(Map.of("message", "Role deleted successfully"));
@@ -264,13 +264,28 @@ public class RoleController {
         private List<String> permissionIds;
 
         // Getters and setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
+        public String getName() {
+            return name;
+        }
 
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-        public List<String> getPermissionIds() { return permissionIds; }
-        public void setPermissionIds(List<String> permissionIds) { this.permissionIds = permissionIds; }
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public List<String> getPermissionIds() {
+            return permissionIds;
+        }
+
+        public void setPermissionIds(List<String> permissionIds) {
+            this.permissionIds = permissionIds;
+        }
     }
 }

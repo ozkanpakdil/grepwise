@@ -371,7 +371,7 @@ public class PluginManagerServiceImpl implements PluginManagerService {
 
         // Get all registered plugins
         List<Plugin> plugins = pluginRegistry.getAllPlugins();
-        
+
         // Disable all enabled plugins
         for (Plugin plugin : plugins) {
             if (pluginRegistry.isPluginEnabled(plugin.getId())) {
@@ -417,11 +417,11 @@ public class PluginManagerServiceImpl implements PluginManagerService {
                 Class<?> clazz = Class.forName(className);
 
                 // Check if it's a plugin implementation (not an interface or abstract class)
-                if (Plugin.class.isAssignableFrom(clazz) && 
-                        !clazz.isInterface() && 
+                if (Plugin.class.isAssignableFrom(clazz) &&
+                        !clazz.isInterface() &&
                         !java.lang.reflect.Modifier.isAbstract(clazz.getModifiers()) &&
                         !clazz.equals(AbstractPlugin.class)) {
-                    
+
                     // Instantiate the plugin
                     try {
                         Plugin plugin = (Plugin) clazz.getDeclaredConstructor().newInstance();
@@ -473,8 +473,8 @@ public class PluginManagerServiceImpl implements PluginManagerService {
                     Class<?> clazz = Class.forName(className, false, classLoader);
 
                     // Check if it's a plugin implementation (not an interface or abstract class)
-                    if (Plugin.class.isAssignableFrom(clazz) && 
-                            !clazz.isInterface() && 
+                    if (Plugin.class.isAssignableFrom(clazz) &&
+                            !clazz.isInterface() &&
                             !java.lang.reflect.Modifier.isAbstract(clazz.getModifiers())) {
                         pluginClasses.add(clazz);
                         logger.debug("Found plugin class in JAR: {}", className);

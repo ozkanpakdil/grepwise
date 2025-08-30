@@ -28,9 +28,9 @@ public class PagerDutyService {
     /**
      * Send an alert to PagerDuty.
      *
-     * @param alarm The alarm that was triggered
+     * @param alarm          The alarm that was triggered
      * @param integrationKey The PagerDuty integration key (routing key)
-     * @param message The alert message
+     * @param message        The alert message
      * @return true if the alert was sent successfully, false otherwise
      */
     public boolean sendAlert(Alarm alarm, String integrationKey, String message) {
@@ -39,13 +39,13 @@ public class PagerDutyService {
             Map<String, Object> payload = new HashMap<>();
             payload.put("routing_key", integrationKey);
             payload.put("event_action", "trigger");
-            
+
             Map<String, Object> payload_details = new HashMap<>();
             payload_details.put("summary", "Alarm Triggered: " + alarm.getName());
             payload_details.put("source", "GrepWise");
             payload_details.put("severity", "critical");
             payload_details.put("component", "Log Monitoring");
-            
+
             Map<String, Object> custom_details = new HashMap<>();
             custom_details.put("alarm_id", alarm.getId());
             custom_details.put("alarm_name", alarm.getName());
@@ -55,24 +55,24 @@ public class PagerDutyService {
             custom_details.put("threshold", alarm.getThreshold());
             custom_details.put("time_window_minutes", alarm.getTimeWindowMinutes());
             custom_details.put("full_message", message);
-            
+
             payload_details.put("custom_details", custom_details);
             payload.put("payload", payload_details);
-            
+
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            
+
             // Create the request entity
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-            
+
             // Send the request
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                PAGERDUTY_EVENTS_API_URL, 
-                requestEntity, 
-                Map.class
+                    PAGERDUTY_EVENTS_API_URL,
+                    requestEntity,
+                    Map.class
             );
-            
+
             if (response.getStatusCode().is2xxSuccessful()) {
                 logger.info("Successfully sent alert to PagerDuty for alarm: {}", alarm.getName());
                 return true;
@@ -85,14 +85,14 @@ public class PagerDutyService {
             return false;
         }
     }
-    
+
     /**
      * Send a grouped alert to PagerDuty.
      *
-     * @param groupingKey The grouping key
+     * @param groupingKey    The grouping key
      * @param integrationKey The PagerDuty integration key (routing key)
-     * @param message The grouped alert message
-     * @param alarmCount The number of alarms in the group
+     * @param message        The grouped alert message
+     * @param alarmCount     The number of alarms in the group
      * @return true if the alert was sent successfully, false otherwise
      */
     public boolean sendGroupedAlert(String groupingKey, String integrationKey, String message, int alarmCount) {
@@ -101,35 +101,35 @@ public class PagerDutyService {
             Map<String, Object> payload = new HashMap<>();
             payload.put("routing_key", integrationKey);
             payload.put("event_action", "trigger");
-            
+
             Map<String, Object> payload_details = new HashMap<>();
             payload_details.put("summary", "Grouped Alarms Triggered (" + alarmCount + " alarms)");
             payload_details.put("source", "GrepWise");
             payload_details.put("severity", "critical");
             payload_details.put("component", "Log Monitoring");
-            
+
             Map<String, Object> custom_details = new HashMap<>();
             custom_details.put("grouping_key", groupingKey);
             custom_details.put("alarm_count", alarmCount);
             custom_details.put("full_message", message);
-            
+
             payload_details.put("custom_details", custom_details);
             payload.put("payload", payload_details);
-            
+
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            
+
             // Create the request entity
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-            
+
             // Send the request
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                PAGERDUTY_EVENTS_API_URL, 
-                requestEntity, 
-                Map.class
+                    PAGERDUTY_EVENTS_API_URL,
+                    requestEntity,
+                    Map.class
             );
-            
+
             if (response.getStatusCode().is2xxSuccessful()) {
                 logger.info("Successfully sent grouped alert to PagerDuty for grouping key: {}", groupingKey);
                 return true;

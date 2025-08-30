@@ -6,7 +6,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -30,6 +29,12 @@ public class TokenService {
 
     @Value("${jwt.refresh-expiration:604800000}") // 7 days in milliseconds
     private long refreshExpiration;
+    /**
+     * Get the signing key for JWT.
+     *
+     * @return The signing key
+     */
+    private volatile SecretKey cachedKey;
 
     /**
      * Generate a JWT token for a user.
@@ -62,7 +67,7 @@ public class TokenService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", user.getUsername());
         claims.put("roles", user.getRoleNames());
-        
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getId())
@@ -159,13 +164,6 @@ public class TokenService {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-
-    /**
-     * Get the signing key for JWT.
-     *
-     * @return The signing key
-     */
-    private volatile SecretKey cachedKey;
 
     private SecretKey getSigningKey() {
         if (cachedKey != null) return cachedKey;

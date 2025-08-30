@@ -86,7 +86,7 @@ public class LdapAuthController {
 
             // If authentication is successful, check if user exists in local database
             User user = userRepository.findByUsername(loginRequest.getUsername());
-            
+
             if (user == null) {
                 // User doesn't exist in local database, create a new user
                 user = createUserFromLdapAuthentication(authentication, loginRequest.getUsername());
@@ -102,10 +102,10 @@ public class LdapAuthController {
             // Log the successful login
             logger.info("LDAP user logged in successfully: {}", user.getUsername());
             auditLogService.createAuthAuditLog(
-                "LDAP_LOGIN",
-                "SUCCESS",
-                user.getUsername(),
-                "LDAP login successful"
+                    "LDAP_LOGIN",
+                    "SUCCESS",
+                    user.getUsername(),
+                    "LDAP login successful"
             );
 
             // Build response
@@ -120,28 +120,28 @@ public class LdapAuthController {
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
             logger.warn("LDAP login failed: Invalid username or password for: {}", loginRequest.getUsername());
-            
+
             // Log the failed login attempt
             auditLogService.createAuthAuditLog(
-                "LDAP_LOGIN",
-                "FAILURE",
-                loginRequest.getUsername(),
-                "LDAP login failed: " + e.getMessage()
+                    "LDAP_LOGIN",
+                    "FAILURE",
+                    loginRequest.getUsername(),
+                    "LDAP login failed: " + e.getMessage()
             );
-            
+
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid username or password"));
         } catch (Exception e) {
             logger.error("LDAP login error: {}", e.getMessage(), e);
-            
+
             // Log the failed login attempt
             auditLogService.createAuthAuditLog(
-                "LDAP_LOGIN",
-                "FAILURE",
-                loginRequest.getUsername(),
-                "LDAP login error: " + e.getMessage()
+                    "LDAP_LOGIN",
+                    "FAILURE",
+                    loginRequest.getUsername(),
+                    "LDAP login error: " + e.getMessage()
             );
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
@@ -151,7 +151,7 @@ public class LdapAuthController {
      * Create a new user from LDAP authentication.
      *
      * @param authentication The authentication object
-     * @param username The username
+     * @param username       The username
      * @return The created user
      */
     private User createUserFromLdapAuthentication(Authentication authentication, String username) {
@@ -162,10 +162,10 @@ public class LdapAuthController {
         user.setFirstName("");
         user.setLastName("");
         user.setEnabled(true);
-        
+
         // Add roles from LDAP
         addRolesToUser(user, authentication);
-        
+
         // Save the user
         return userRepository.save(user);
     }
@@ -173,16 +173,16 @@ public class LdapAuthController {
     /**
      * Update user roles from LDAP authentication.
      *
-     * @param user The user to update
+     * @param user           The user to update
      * @param authentication The authentication object
      */
     private void updateUserRolesFromLdapAuthentication(User user, Authentication authentication) {
         // Clear existing roles
         user.getRoles().clear();
-        
+
         // Add roles from LDAP
         addRolesToUser(user, authentication);
-        
+
         // Save the updated user
         userRepository.save(user);
     }
@@ -190,7 +190,7 @@ public class LdapAuthController {
     /**
      * Add roles to a user from LDAP authentication.
      *
-     * @param user The user to add roles to
+     * @param user           The user to add roles to
      * @param authentication The authentication object
      */
     private void addRolesToUser(User user, Authentication authentication) {
@@ -198,12 +198,12 @@ public class LdapAuthController {
         List<String> authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        
+
         // Add roles based on authorities
         for (String authority : authorities) {
             // Remove ROLE_ prefix if present
             String roleName = authority.startsWith("ROLE_") ? authority.substring(5) : authority;
-            
+
             // Find or create role
             Role role = roleRepository.findByName(roleName);
             if (role == null) {
@@ -214,11 +214,11 @@ public class LdapAuthController {
                     continue;
                 }
             }
-            
+
             // Add role to user
             user.addRole(role);
         }
-        
+
         // If no roles were added, add USER role
         if (user.getRoles().isEmpty()) {
             Role userRole = roleRepository.findByName("USER");

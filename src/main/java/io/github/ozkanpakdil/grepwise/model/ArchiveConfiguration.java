@@ -34,12 +34,12 @@ public class ArchiveConfiguration {
      * Number of days to retain archives before they can be deleted.
      */
     private int archiveRetentionDays = 90;
-    
+
     /**
      * When this configuration was created.
      */
     private Instant createdAt;
-    
+
     /**
      * When this configuration was last updated.
      */
@@ -100,53 +100,53 @@ public class ArchiveConfiguration {
     public void setArchiveRetentionDays(int archiveRetentionDays) {
         this.archiveRetentionDays = archiveRetentionDays;
     }
-    
+
     public Instant getCreatedAt() {
         return createdAt;
     }
-    
+
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
-    
+
     public Instant getUpdatedAt() {
         return updatedAt;
     }
-    
+
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ArchiveConfiguration that = (ArchiveConfiguration) o;
         return autoArchiveEnabled == that.autoArchiveEnabled &&
-               compressionLevel == that.compressionLevel &&
-               maxArchiveSizeMb == that.maxArchiveSizeMb &&
-               archiveRetentionDays == that.archiveRetentionDays &&
-               Objects.equals(id, that.id) &&
-               Objects.equals(archiveDirectory, that.archiveDirectory);
+                compressionLevel == that.compressionLevel &&
+                maxArchiveSizeMb == that.maxArchiveSizeMb &&
+                archiveRetentionDays == that.archiveRetentionDays &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(archiveDirectory, that.archiveDirectory);
     }
-    
+
     @Override
     public int hashCode() {
-        return Objects.hash(id, archiveDirectory, autoArchiveEnabled, 
-                           compressionLevel, maxArchiveSizeMb, archiveRetentionDays);
+        return Objects.hash(id, archiveDirectory, autoArchiveEnabled,
+                compressionLevel, maxArchiveSizeMb, archiveRetentionDays);
     }
-    
+
     @Override
     public String toString() {
         return "ArchiveConfiguration{" +
-               "id='" + id + '\'' +
-               ", archiveDirectory='" + archiveDirectory + '\'' +
-               ", autoArchiveEnabled=" + autoArchiveEnabled +
-               ", compressionLevel=" + compressionLevel +
-               ", maxArchiveSizeMb=" + maxArchiveSizeMb +
-               ", archiveRetentionDays=" + archiveRetentionDays +
-               ", createdAt=" + createdAt +
-               ", updatedAt=" + updatedAt +
-               '}';
+                "id='" + id + '\'' +
+                ", archiveDirectory='" + archiveDirectory + '\'' +
+                ", autoArchiveEnabled=" + autoArchiveEnabled +
+                ", compressionLevel=" + compressionLevel +
+                ", maxArchiveSizeMb=" + maxArchiveSizeMb +
+                ", archiveRetentionDays=" + archiveRetentionDays +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
     }
 }

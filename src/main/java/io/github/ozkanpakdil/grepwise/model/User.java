@@ -39,7 +39,7 @@ public class User {
         this.updatedAt = updatedAt;
         this.enabled = enabled;
     }
-    
+
     /**
      * Constructor without tenantId for backward compatibility.
      */
@@ -120,7 +120,7 @@ public class User {
     public void setRoles(List<Role> roles) {
         this.roles = roles;
     }
-    
+
     /**
      * Get the role names for this user.
      * This is used for backward compatibility with code that expects role names.
@@ -132,7 +132,7 @@ public class User {
                 .map(Role::getName)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Add a role to this user if they don't already have it.
      *
@@ -145,7 +145,7 @@ public class User {
         }
         return roles.add(role);
     }
-    
+
     /**
      * Remove a role from this user.
      *
@@ -155,7 +155,7 @@ public class User {
     public boolean removeRole(String roleName) {
         return roles.removeIf(role -> role.getName().equals(roleName));
     }
-    
+
     /**
      * Check if this user has a specific role.
      *
@@ -166,7 +166,7 @@ public class User {
         return roles.stream()
                 .anyMatch(role -> role.getName().equals(roleName));
     }
-    
+
     /**
      * Check if this user has a specific permission through any of their roles.
      *

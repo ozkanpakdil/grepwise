@@ -40,13 +40,13 @@ public class TenantService {
         Tenant savedTenant = tenantRepository.save(tenant);
         logger.info("Created tenant: {}", savedTenant.getName());
         auditLogService.createAuditLog(
-            "TENANT", 
-            "CREATE", 
-            "SUCCESS", 
-            "Created tenant: " + savedTenant.getName(),
-            savedTenant.getId(),
-            "TENANT",
-            null
+                "TENANT",
+                "CREATE",
+                "SUCCESS",
+                "Created tenant: " + savedTenant.getName(),
+                savedTenant.getId(),
+                "TENANT",
+                null
         );
         return savedTenant;
     }
@@ -112,18 +112,18 @@ public class TenantService {
         tenant.setId(id);
         tenant.setCreatedAt(existingTenant.getCreatedAt());
         Tenant updatedTenant = tenantRepository.save(tenant);
-        
+
         logger.info("Updated tenant: {}", updatedTenant.getName());
         auditLogService.createAuditLog(
-            "TENANT", 
-            "UPDATE", 
-            "SUCCESS", 
-            "Updated tenant: " + updatedTenant.getName(),
-            updatedTenant.getId(),
-            "TENANT",
-            null
+                "TENANT",
+                "UPDATE",
+                "SUCCESS",
+                "Updated tenant: " + updatedTenant.getName(),
+                updatedTenant.getId(),
+                "TENANT",
+                null
         );
-        
+
         return updatedTenant;
     }
 
@@ -143,16 +143,16 @@ public class TenantService {
         if (deleted) {
             logger.info("Deleted tenant: {}", tenant.getName());
             auditLogService.createAuditLog(
-                "TENANT", 
-                "DELETE", 
-                "SUCCESS", 
-                "Deleted tenant: " + tenant.getName(),
-                id,
-                "TENANT",
-                null
+                    "TENANT",
+                    "DELETE",
+                    "SUCCESS",
+                    "Deleted tenant: " + tenant.getName(),
+                    id,
+                    "TENANT",
+                    null
             );
         }
-        
+
         return deleted;
     }
 
@@ -172,20 +172,20 @@ public class TenantService {
 
         tenant.setActive(active);
         Tenant updatedTenant = tenantRepository.save(tenant);
-        
+
         String status = active ? "activated" : "deactivated";
         String action = active ? "ACTIVATE" : "DEACTIVATE";
         logger.info("{} tenant: {}", status, updatedTenant.getName());
         auditLogService.createAuditLog(
-            "TENANT", 
-            action, 
-            "SUCCESS", 
-            status + " tenant: " + updatedTenant.getName(),
-            updatedTenant.getId(),
-            "TENANT",
-            null
+                "TENANT",
+                action,
+                "SUCCESS",
+                status + " tenant: " + updatedTenant.getName(),
+                updatedTenant.getId(),
+                "TENANT",
+                null
         );
-        
+
         return updatedTenant;
     }
 

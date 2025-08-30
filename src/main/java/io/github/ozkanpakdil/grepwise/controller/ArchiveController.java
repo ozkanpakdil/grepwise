@@ -22,15 +22,15 @@ import java.util.Map;
 @RequestMapping("/api/archives")
 public class ArchiveController {
     private static final Logger logger = LoggerFactory.getLogger(ArchiveController.class);
-    
+
     private final ArchiveService archiveService;
-    
+
     @Autowired
     public ArchiveController(ArchiveService archiveService) {
         this.archiveService = archiveService;
         logger.info("ArchiveController initialized");
     }
-    
+
     /**
      * Get all archive metadata.
      *
@@ -41,7 +41,7 @@ public class ArchiveController {
         logger.debug("Getting all archive metadata");
         return ResponseEntity.ok(archiveService.getAllArchiveMetadata());
     }
-    
+
     /**
      * Get archive metadata by ID.
      *
@@ -57,7 +57,7 @@ public class ArchiveController {
         }
         return ResponseEntity.ok(metadata);
     }
-    
+
     /**
      * Get archive metadata by source.
      *
@@ -69,12 +69,12 @@ public class ArchiveController {
         logger.debug("Getting archive metadata by source: {}", source);
         return ResponseEntity.ok(archiveService.getArchiveMetadataBySource(source));
     }
-    
+
     /**
      * Get archive metadata by time range.
      *
      * @param startTimestamp The start timestamp
-     * @param endTimestamp The end timestamp
+     * @param endTimestamp   The end timestamp
      * @return A list of archive metadata that overlap with the specified time range
      */
     @GetMapping("/timerange")
@@ -84,7 +84,7 @@ public class ArchiveController {
         logger.debug("Getting archive metadata by time range: {} - {}", startTimestamp, endTimestamp);
         return ResponseEntity.ok(archiveService.getArchiveMetadataByTimeRange(startTimestamp, endTimestamp));
     }
-    
+
     /**
      * Extract logs from an archive.
      *
@@ -105,7 +105,7 @@ public class ArchiveController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * Delete an archive.
      *
@@ -129,7 +129,7 @@ public class ArchiveController {
                     .body(Map.of("success", false, "message", "Error deleting archive: " + e.getMessage()));
         }
     }
-    
+
     /**
      * Get the archive configuration.
      *
@@ -140,7 +140,7 @@ public class ArchiveController {
         logger.debug("Getting archive configuration");
         return ResponseEntity.ok(archiveService.getArchiveConfiguration());
     }
-    
+
     /**
      * Update the archive configuration.
      *
@@ -153,13 +153,13 @@ public class ArchiveController {
         logger.debug("Updating archive configuration: {}", configuration);
         return ResponseEntity.ok(archiveService.updateArchiveConfiguration(configuration));
     }
-    
+
     /**
      * Manually create an archive with logs matching the specified criteria.
      *
      * @param startTimestamp The start timestamp
-     * @param endTimestamp The end timestamp
-     * @param source The source to filter by (optional)
+     * @param endTimestamp   The end timestamp
+     * @param source         The source to filter by (optional)
      * @return The created archive metadata
      */
     @PostMapping("/create")

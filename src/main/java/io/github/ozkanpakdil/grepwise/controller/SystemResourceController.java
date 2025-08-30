@@ -4,7 +4,6 @@ import io.github.ozkanpakdil.grepwise.service.SystemResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,16 +65,16 @@ public class SystemResourceController {
     public ResponseEntity<Map<String, Object>> evaluateCpuLoad(
             @Parameter(description = "Duration of the test in seconds", required = true)
             @RequestParam(defaultValue = "10") int duration,
-            
+
             @Parameter(description = "Number of threads to use", required = true)
             @RequestParam(defaultValue = "4") int threads) {
-        
+
         Map<String, Object> results = systemResourceService.evaluateCpuIntensiveLoad(duration, threads);
         Map<String, Object> analysis = systemResourceService.analyzeResourceUsage(results);
-        
+
         // Combine results and analysis
         results.put("analysis", analysis);
-        
+
         return ResponseEntity.ok(results);
     }
 
@@ -97,16 +96,16 @@ public class SystemResourceController {
     public ResponseEntity<Map<String, Object>> evaluateMemoryLoad(
             @Parameter(description = "Duration of the test in seconds", required = true)
             @RequestParam(defaultValue = "10") int duration,
-            
+
             @Parameter(description = "Amount of memory to allocate in MB", required = true)
             @RequestParam(defaultValue = "100") int memoryMB) {
-        
+
         Map<String, Object> results = systemResourceService.evaluateMemoryIntensiveLoad(duration, memoryMB);
         Map<String, Object> analysis = systemResourceService.analyzeResourceUsage(results);
-        
+
         // Combine results and analysis
         results.put("analysis", analysis);
-        
+
         return ResponseEntity.ok(results);
     }
 
@@ -128,16 +127,16 @@ public class SystemResourceController {
     public ResponseEntity<Map<String, Object>> evaluateIoLoad(
             @Parameter(description = "Duration of the test in seconds", required = true)
             @RequestParam(defaultValue = "10") int duration,
-            
+
             @Parameter(description = "Number of threads to use", required = true)
             @RequestParam(defaultValue = "4") int threads) {
-        
+
         Map<String, Object> results = systemResourceService.evaluateIoIntensiveLoad(duration, threads);
         Map<String, Object> analysis = systemResourceService.analyzeResourceUsage(results);
-        
+
         // Combine results and analysis
         results.put("analysis", analysis);
-        
+
         return ResponseEntity.ok(results);
     }
 
@@ -159,26 +158,26 @@ public class SystemResourceController {
     public ResponseEntity<Map<String, Object>> runComprehensiveEvaluation(
             @Parameter(description = "Duration of each test in seconds", required = true)
             @RequestParam(defaultValue = "10") int duration) {
-        
+
         // Initial metrics
         Map<String, Object> initialMetrics = systemResourceService.collectSystemMetrics();
-        
+
         // Run CPU test
-        Map<String, Object> cpuResults = systemResourceService.evaluateCpuIntensiveLoad(duration, 
+        Map<String, Object> cpuResults = systemResourceService.evaluateCpuIntensiveLoad(duration,
                 (int) initialMetrics.get("availableProcessors"));
         Map<String, Object> cpuAnalysis = systemResourceService.analyzeResourceUsage(cpuResults);
-        
+
         // Run memory test (allocate 10% of max heap)
         long maxHeapMB = (long) initialMetrics.get("heapMemoryMax") / (1024 * 1024);
         int memoryToAllocate = (int) (maxHeapMB * 0.1);
-        Map<String, Object> memoryResults = systemResourceService.evaluateMemoryIntensiveLoad(duration, 
+        Map<String, Object> memoryResults = systemResourceService.evaluateMemoryIntensiveLoad(duration,
                 memoryToAllocate > 0 ? memoryToAllocate : 100);
         Map<String, Object> memoryAnalysis = systemResourceService.analyzeResourceUsage(memoryResults);
-        
+
         // Run I/O test
         Map<String, Object> ioResults = systemResourceService.evaluateIoIntensiveLoad(duration, 2);
         Map<String, Object> ioAnalysis = systemResourceService.analyzeResourceUsage(ioResults);
-        
+
         // Combine all results
         Map<String, Object> comprehensiveResults = Map.of(
                 "initialMetrics", initialMetrics,
@@ -186,7 +185,7 @@ public class SystemResourceController {
                 "memoryTest", Map.of("results", memoryResults, "analysis", memoryAnalysis),
                 "ioTest", Map.of("results", ioResults, "analysis", ioAnalysis)
         );
-        
+
         return ResponseEntity.ok(comprehensiveResults);
     }
 }

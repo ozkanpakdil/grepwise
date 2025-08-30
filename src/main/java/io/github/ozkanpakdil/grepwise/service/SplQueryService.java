@@ -1,13 +1,6 @@
 package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +38,7 @@ public class SplQueryService {
         List<LogEntry> currentData = new ArrayList<>();
 
         for (SplCommand command : commands) {
-            switch (command.getCommand().toLowerCase()) {
+            switch (command.command().toLowerCase()) {
                 case "search":
                     currentData = executeSearchCommand(command);
                     break;
@@ -68,7 +61,7 @@ public class SplQueryService {
                     currentData = executeTailCommand(command, currentData);
                     break;
                 default:
-                    logger.warn("Unknown SPL command: {}", command.getCommand());
+                    logger.warn("Unknown SPL command: {}", command.command());
             }
         }
 
@@ -137,9 +130,9 @@ public class SplQueryService {
      * Execute search command.
      */
     private List<LogEntry> executeSearchCommand(SplCommand command) throws IOException {
-        String query = command.getArguments().get("query");
+        String query = command.arguments().get("query");
         if (query == null) {
-            query = command.getArgs(); // Use raw args if no structured query
+            query = command.args(); // Use raw args if no structured query
         }
 
         // Remove quotes if present
@@ -188,7 +181,7 @@ public class SplQueryService {
      * Execute where command for filtering.
      */
     private List<LogEntry> executeWhereCommand(SplCommand command, List<LogEntry> data) {
-        String condition = command.getArgs();
+        String condition = command.args();
 
         return data.stream()
                 .filter(entry -> evaluateCondition(entry, condition))
@@ -202,7 +195,7 @@ public class SplQueryService {
         SplQueryResult result = new SplQueryResult();
         result.setResultType(SplQueryResult.ResultType.STATISTICS);
 
-        String args = command.getArgs();
+        String args = command.args();
         Map<String, Object> stats = new HashMap<>();
 
         if (args.contains("count")) {
@@ -228,7 +221,7 @@ public class SplQueryService {
      */
     private List<LogEntry> executeEvalCommand(SplCommand command, List<LogEntry> data) {
         // Simple eval implementation - can be enhanced
-        String args = command.getArgs();
+        String args = command.args();
 
         // For now, just return data unchanged
         // TODO: Implement field evaluation logic
@@ -240,7 +233,7 @@ public class SplQueryService {
      * Execute sort command.
      */
     private List<LogEntry> executeSortCommand(SplCommand command, List<LogEntry> data) {
-        String field = command.getArgs().trim();
+        String field = command.args().trim();
         boolean descending = field.startsWith("-");
 
         if (descending) {
@@ -250,15 +243,15 @@ public class SplQueryService {
         switch (field.toLowerCase()) {
             case "timestamp":
                 return data.stream()
-                        .sorted(descending ? 
-                            Comparator.comparing(LogEntry::timestamp).reversed() :
-                            Comparator.comparing(LogEntry::timestamp))
+                        .sorted(descending ?
+                                Comparator.comparing(LogEntry::timestamp).reversed() :
+                                Comparator.comparing(LogEntry::timestamp))
                         .collect(Collectors.toList());
             case "level":
                 return data.stream()
                         .sorted(descending ?
-                            Comparator.comparing(LogEntry::level).reversed() :
-                            Comparator.comparing(LogEntry::level))
+                                Comparator.comparing(LogEntry::level).reversed() :
+                                Comparator.comparing(LogEntry::level))
                         .collect(Collectors.toList());
             default:
                 return data;
@@ -271,9 +264,9 @@ public class SplQueryService {
     private List<LogEntry> executeHeadCommand(SplCommand command, List<LogEntry> data) {
         int limit = 10; // default
         try {
-            limit = Integer.parseInt(command.getArgs().trim());
+            limit = Integer.parseInt(command.args().trim());
         } catch (NumberFormatException e) {
-            logger.warn("Invalid head limit, using default: {}", command.getArgs());
+            logger.warn("Invalid head limit, using default: {}", command.args());
         }
 
         return data.stream().limit(limit).collect(Collectors.toList());
@@ -285,9 +278,9 @@ public class SplQueryService {
     private List<LogEntry> executeTailCommand(SplCommand command, List<LogEntry> data) {
         int limit = 10; // default
         try {
-            limit = Integer.parseInt(command.getArgs().trim());
+            limit = Integer.parseInt(command.args().trim());
         } catch (NumberFormatException e) {
-            logger.warn("Invalid tail limit, using default: {}", command.getArgs());
+            logger.warn("Invalid tail limit, using default: {}", command.args());
         }
 
         int size = data.size();
@@ -351,44 +344,46 @@ public class SplQueryService {
     }
 
     /**
-     * SPL Command representation.
-     */
-    public static class SplCommand {
-        private final String command;
-        private final String args;
-        private final Map<String, String> arguments;
-
-        public SplCommand(String command, String args, Map<String, String> arguments) {
-            this.command = command;
-            this.args = args;
-            this.arguments = arguments;
-        }
-
-        public String getCommand() { return command; }
-        public String getArgs() { return args; }
-        public Map<String, String> getArguments() { return arguments; }
+         * SPL Command representation.
+         */
+        public record SplCommand(String command, String args, Map<String, String> arguments) {
     }
 
     /**
      * SPL Query Result representation.
      */
     public static class SplQueryResult {
-        public enum ResultType {
-            LOG_ENTRIES,
-            STATISTICS
-        }
-
         private ResultType resultType;
         private List<LogEntry> logEntries;
         private Map<String, Object> statistics;
 
-        public ResultType getResultType() { return resultType; }
-        public void setResultType(ResultType resultType) { this.resultType = resultType; }
+        public ResultType getResultType() {
+            return resultType;
+        }
 
-        public List<LogEntry> getLogEntries() { return logEntries; }
-        public void setLogEntries(List<LogEntry> logEntries) { this.logEntries = logEntries; }
+        public void setResultType(ResultType resultType) {
+            this.resultType = resultType;
+        }
 
-        public Map<String, Object> getStatistics() { return statistics; }
-        public void setStatistics(Map<String, Object> statistics) { this.statistics = statistics; }
+        public List<LogEntry> getLogEntries() {
+            return logEntries;
+        }
+
+        public void setLogEntries(List<LogEntry> logEntries) {
+            this.logEntries = logEntries;
+        }
+
+        public Map<String, Object> getStatistics() {
+            return statistics;
+        }
+
+        public void setStatistics(Map<String, Object> statistics) {
+            this.statistics = statistics;
+        }
+
+        public enum ResultType {
+            LOG_ENTRIES,
+            STATISTICS
+        }
     }
 }

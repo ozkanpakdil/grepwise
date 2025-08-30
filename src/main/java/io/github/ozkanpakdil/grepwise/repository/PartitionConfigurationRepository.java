@@ -30,7 +30,7 @@ public class PartitionConfigurationRepository {
 
         // Create default partition configuration
         createDefaultPartitionConfiguration();
-        
+
         logger.info("Initialized PartitionConfigurationRepository with {} default configurations", configurations.size());
     }
 
@@ -45,7 +45,7 @@ public class PartitionConfigurationRepository {
         defaultConfig.setAutoArchivePartitions(true);
         defaultConfig.setPartitionBaseDirectory("./lucene-index/partitions");
         defaultConfig.setPartitioningEnabled(true);
-        
+
         save(defaultConfig);
         logger.debug("Created default partition configuration: {}", defaultConfig);
     }
@@ -86,7 +86,7 @@ public class PartitionConfigurationRepository {
 
     /**
      * Get the default partition configuration.
-     * 
+     *
      * @return The default partition configuration
      */
     public PartitionConfiguration getDefaultConfiguration() {

@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +70,8 @@ public class DashboardService {
         }
 
         // Check if name conflicts with another dashboard for the same user
-        if (!existingDashboard.getName().equals(dashboard.getName()) && 
-            dashboardRepository.existsByNameAndCreatedBy(dashboard.getName(), dashboard.getCreatedBy())) {
+        if (!existingDashboard.getName().equals(dashboard.getName()) &&
+                dashboardRepository.existsByNameAndCreatedBy(dashboard.getName(), dashboard.getCreatedBy())) {
             throw new IllegalArgumentException("Dashboard with name '" + dashboard.getName() + "' already exists for this user");
         }
 
@@ -100,7 +99,7 @@ public class DashboardService {
     /**
      * Get a dashboard by ID.
      *
-     * @param id The dashboard ID
+     * @param id     The dashboard ID
      * @param userId The requesting user ID (for access control)
      * @return The dashboard with widgets
      */
@@ -125,7 +124,7 @@ public class DashboardService {
     /**
      * Delete a dashboard and all its widgets.
      *
-     * @param id The dashboard ID
+     * @param id     The dashboard ID
      * @param userId The requesting user ID (for access control)
      * @return true if deleted successfully
      */
@@ -153,9 +152,9 @@ public class DashboardService {
     /**
      * Share or unshare a dashboard.
      *
-     * @param id The dashboard ID
+     * @param id       The dashboard ID
      * @param isShared Whether to share the dashboard
-     * @param userId The requesting user ID (for access control)
+     * @param userId   The requesting user ID (for access control)
      * @return The updated dashboard
      */
     public Dashboard shareDashboard(String id, boolean isShared, String userId) {
@@ -234,8 +233,8 @@ public class DashboardService {
         }
 
         // Check if title conflicts with another widget in the same dashboard
-        if (!existingWidget.getTitle().equals(widget.getTitle()) && 
-            widgetRepository.existsByTitleAndDashboardId(widget.getTitle(), widget.getDashboardId())) {
+        if (!existingWidget.getTitle().equals(widget.getTitle()) &&
+                widgetRepository.existsByTitleAndDashboardId(widget.getTitle(), widget.getDashboardId())) {
             throw new IllegalArgumentException("Widget with title '" + widget.getTitle() + "' already exists in this dashboard");
         }
 
@@ -246,7 +245,7 @@ public class DashboardService {
      * Delete a widget.
      *
      * @param widgetId The widget ID
-     * @param userId The requesting user ID (for access control)
+     * @param userId   The requesting user ID (for access control)
      * @return true if deleted successfully
      */
     public boolean deleteWidget(String widgetId, String userId) {
@@ -272,7 +271,7 @@ public class DashboardService {
      * Update widget positions (for drag-and-drop operations).
      *
      * @param widgetPositions Map of widget ID to position updates
-     * @param userId The requesting user ID (for access control)
+     * @param userId          The requesting user ID (for access control)
      * @return The number of widgets updated
      */
     public int updateWidgetPositions(Map<String, Map<String, Integer>> widgetPositions, String userId) {
@@ -301,7 +300,7 @@ public class DashboardService {
      * Execute a widget query and return the results.
      *
      * @param widgetId The widget ID
-     * @param userId The requesting user ID (for access control)
+     * @param userId   The requesting user ID (for access control)
      * @return The query results
      */
     public Map<String, Object> executeWidgetQuery(String widgetId, String userId) {

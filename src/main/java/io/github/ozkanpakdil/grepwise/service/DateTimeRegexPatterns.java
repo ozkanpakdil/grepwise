@@ -10,10 +10,12 @@ public class DateTimeRegexPatterns {
 
     // Simplified: only match ISO-8601 timestamps (with or without timezone) to reduce complexity
     // Examples matched: 2025-08-30T09:44:41.814Z, 2025-08-30T09:44:41Z, 2025-08-30T09:44:41.814+05:30, 2025-08-30T09:44:41.814, 2025-08-30T09:44:41
-    private static final List<String> DATE_TIME_PATTERNS = Arrays.asList(
+    private static final List<String> DATE_TIME_PATTERNS = List.of(
             // ISO 8601 with optional fractional seconds and optional timezone (Z or +HH:mm or +HHmm)
             "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:?\\d{2})?"
     );
+    // Development logging flag: show parse errors when -Dgrepwise.dev=true, otherwise keep quiet to avoid spam
+    private static final boolean DEV_LOG = Boolean.parseBoolean(System.getProperty("grepwise.dev", "false"));
 
     public static void main(String[] args) {
         // Test with sample text
@@ -106,11 +108,9 @@ public class DateTimeRegexPatterns {
         return matches;
     }
 
-    // Development logging flag: show parse errors when -Dgrepwise.dev=true, otherwise keep quiet to avoid spam
-    private static final boolean DEV_LOG = Boolean.parseBoolean(System.getProperty("grepwise.dev", "false"));
-
     /**
      * Extract date string and convert to timestamp (milliseconds since epoch)
+     *
      * @param text The text to search for date-time
      * @return timestamp in milliseconds, or -1 if no date found
      */
@@ -124,6 +124,7 @@ public class DateTimeRegexPatterns {
 
     /**
      * Convert date string to timestamp using multiple format patterns
+     *
      * @param dateStr The date string to parse
      * @return timestamp in milliseconds, or -1 if parsing fails
      */
@@ -172,6 +173,7 @@ public class DateTimeRegexPatterns {
 
     /**
      * Extract all date strings and convert to timestamps
+     *
      * @param text The text to search for date-times
      * @return List of timestamps in milliseconds
      */
@@ -190,6 +192,7 @@ public class DateTimeRegexPatterns {
 
     /**
      * Convert timestamp back to readable date string
+     *
      * @param timestamp milliseconds since epoch
      * @return formatted date string
      */

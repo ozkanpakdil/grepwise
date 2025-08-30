@@ -29,14 +29,14 @@ public class TenantRepository {
         if (tenant.getId() == null || tenant.getId().isEmpty()) {
             tenant.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (tenant.getCreatedAt() == 0) {
             tenant.setCreatedAt(now);
         }
         tenant.setUpdatedAt(now);
-        
+
         tenants.put(tenant.getId(), tenant);
         return tenant;
     }

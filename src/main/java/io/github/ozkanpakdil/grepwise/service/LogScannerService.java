@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import java.util.Map;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,16 +36,16 @@ public class LogScannerService {
     private final LogBufferService logBufferService;
     private final NginxLogParser nginxLogParser;
     private final ApacheLogParser apacheLogParser;
-    
+
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
 
-    public LogScannerService(LogDirectoryConfigRepository configRepository, 
-                            LuceneService luceneService,
-                            LogBufferService logBufferService,
-                            NginxLogParser nginxLogParser,
-                            ApacheLogParser apacheLogParser,
-                            LogPatternRecognitionService patternRecognitionService, RealTimeUpdateService realTimeUpdateService) {
+    public LogScannerService(LogDirectoryConfigRepository configRepository,
+                             LuceneService luceneService,
+                             LogBufferService logBufferService,
+                             NginxLogParser nginxLogParser,
+                             ApacheLogParser apacheLogParser,
+                             LogPatternRecognitionService patternRecognitionService, RealTimeUpdateService realTimeUpdateService) {
         this.configRepository = configRepository;
         this.luceneService = luceneService;
         this.logBufferService = logBufferService;
@@ -109,7 +108,7 @@ public class LogScannerService {
         }
 
         int totalProcessed = 0;
-        
+
         for (Path logFile : logFiles) {
             try {
                 int processed = processLogFile(logFile.toFile());
@@ -119,7 +118,7 @@ public class LogScannerService {
                 logger.error("Error processing log file: {}", logFile, e);
             }
         }
-        
+
         return totalProcessed;
     }
 
@@ -131,15 +130,15 @@ public class LogScannerService {
      */
     private int processLogFile(File file) {
         logger.debug("Processing log file: {}", file.getAbsolutePath());
-        
+
         // If buffering is disabled, use the original approach
         if (!useBuffer) {
             return processLogFileDirectIndexing(file);
         }
-        
+
         // Use buffering approach
         int processedCount = 0;
-        
+
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             int lineCount = 0;
@@ -148,7 +147,7 @@ public class LogScannerService {
                 lineCount++;
                 // Create a log entry for each line
                 LogEntry entry = parseLogLine(line, file.getName());
-                
+
                 // Add to buffer instead of collecting in memory
                 logBufferService.addToBuffer(entry);
                 processedCount++;
@@ -164,7 +163,7 @@ public class LogScannerService {
             return 0;
         }
     }
-    
+
     /**
      * Process a log file using direct indexing (no buffering).
      * This is the original implementation before buffering was added.
@@ -210,7 +209,7 @@ public class LogScannerService {
     /**
      * Parse a log line and extract a log entry.
      *
-     * @param line The log line to parse
+     * @param line   The log line to parse
      * @param source The source of the log (filename)
      * @return A LogEntry with the entire line as the message
      */
@@ -223,7 +222,7 @@ public class LogScannerService {
                 return nginxLogEntry;
             }
         }
-        
+
         // Next, check if this is an Apache log format
         if (apacheLogParser.isApacheLogFormat(line)) {
             logger.trace("Detected Apache log format: {}", line);
@@ -232,9 +231,9 @@ public class LogScannerService {
                 return apacheLogEntry;
             }
         }
-        
+
         // If not a recognized log format or parsing failed, fall back to generic parsing
-        
+
         // Extract log level if possible
         String LOGLEVEL = switch (line) {
             case String s when s.contains("ERROR") -> "ERROR";
@@ -322,5 +321,5 @@ public class LogScannerService {
         scanAllDirectories();
         return configRepository.count();
     }
-    
+
 }

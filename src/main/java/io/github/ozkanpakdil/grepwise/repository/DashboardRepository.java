@@ -29,14 +29,14 @@ public class DashboardRepository {
         if (dashboard.getId() == null || dashboard.getId().isEmpty()) {
             dashboard.setId(UUID.randomUUID().toString());
         }
-        
+
         // Set timestamps if not already set
         long now = System.currentTimeMillis();
         if (dashboard.getCreatedAt() == 0) {
             dashboard.setCreatedAt(now);
         }
         dashboard.setUpdatedAt(now);
-        
+
         dashboards.put(dashboard.getId(), dashboard);
         return dashboard;
     }
@@ -91,7 +91,7 @@ public class DashboardRepository {
      */
     public List<Dashboard> findByNameContaining(String name) {
         return dashboards.values().stream()
-                .filter(dashboard -> dashboard.getName() != null && 
+                .filter(dashboard -> dashboard.getName() != null &&
                         dashboard.getName().toLowerCase().contains(name.toLowerCase()))
                 .collect(Collectors.toList());
     }
@@ -121,14 +121,14 @@ public class DashboardRepository {
     /**
      * Check if a dashboard with the given name already exists for a user.
      *
-     * @param name The name to check
+     * @param name      The name to check
      * @param createdBy The creator
      * @return true if a dashboard with the name exists for the user, false otherwise
      */
     public boolean existsByNameAndCreatedBy(String name, String createdBy) {
         return dashboards.values().stream()
-                .anyMatch(dashboard -> name.equals(dashboard.getName()) && 
-                         createdBy.equals(dashboard.getCreatedBy()));
+                .anyMatch(dashboard -> name.equals(dashboard.getName()) &&
+                        createdBy.equals(dashboard.getCreatedBy()));
     }
 
     /**
@@ -161,7 +161,7 @@ public class DashboardRepository {
         if (dashboard.getId() == null || !dashboards.containsKey(dashboard.getId())) {
             return null;
         }
-        
+
         dashboard.updateTimestamp();
         dashboards.put(dashboard.getId(), dashboard);
         return dashboard;

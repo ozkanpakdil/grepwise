@@ -20,10 +20,10 @@ public class ClusterNode {
     /**
      * Constructor with all fields.
      *
-     * @param id The node ID
-     * @param url The node URL
+     * @param id            The node ID
+     * @param url           The node URL
      * @param lastHeartbeat The timestamp of the last heartbeat
-     * @param active Whether the node is active
+     * @param active        Whether the node is active
      */
     public ClusterNode(String id, String url, long lastHeartbeat, boolean active) {
         this.id = id;

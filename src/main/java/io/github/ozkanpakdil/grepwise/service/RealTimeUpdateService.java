@@ -21,32 +21,28 @@ public class RealTimeUpdateService {
     private static final Logger logger = LoggerFactory.getLogger(RealTimeUpdateService.class);
     private static final long SSE_TIMEOUT = 300000L; // 5 minutes
     private static final long HEARTBEAT_INTERVAL = 15000L; // 15 seconds
-
-    private LuceneService luceneService;
     private final ExecutorService executorService;
-
     // Store active SSE connections
     private final Map<String, List<SseEmitter>> logUpdateEmitters = new ConcurrentHashMap<>();
     private final Map<String, List<SseEmitter>> widgetUpdateEmitters = new ConcurrentHashMap<>();
-    
     // Store query parameters for each emitter
     private final Map<SseEmitter, Map<String, Object>> emitterQueries = new ConcurrentHashMap<>();
-    
     // Track connection statistics
     private final Map<String, Long> connectionStats = new ConcurrentHashMap<>();
-    private long totalConnections = 0;
-    private long activeConnections = 0;
+    private LuceneService luceneService;
+    private final long totalConnections = 0;
+    private final long activeConnections = 0;
 
     public RealTimeUpdateService() {
         this.executorService = Executors.newCachedThreadPool();
-        
+
         // Initialize connection stats
         connectionStats.put("totalConnections", 0L);
         connectionStats.put("activeConnections", 0L);
         connectionStats.put("logUpdateConnections", 0L);
         connectionStats.put("widgetUpdateConnections", 0L);
     }
-    
+
     @Autowired
     @org.springframework.context.annotation.Lazy
     public void setLuceneService(LuceneService luceneService) {
@@ -58,7 +54,7 @@ public class RealTimeUpdateService {
      */
     public SseEmitter createLogUpdateEmitter(String query, boolean isRegex, String timeRange) {
         SseEmitter emitter = createEmitter();
-        
+
         // Store query parameters
         Map<String, Object> queryParams = new HashMap<>();
         queryParams.put("query", query);
@@ -66,17 +62,17 @@ public class RealTimeUpdateService {
         queryParams.put("timeRange", timeRange);
         queryParams.put("type", "log");
         emitterQueries.put(emitter, queryParams);
-        
+
         // Add to appropriate collection
         String queryKey = generateQueryKey(query, isRegex, timeRange);
         logUpdateEmitters.computeIfAbsent(queryKey, k -> new CopyOnWriteArrayList<>()).add(emitter);
-        
+
         // Update stats
         updateConnectionStats("logUpdateConnections", 1);
-        
+
         // Send initial data
         sendInitialLogData(emitter, query, isRegex, timeRange);
-        
+
         return emitter;
     }
 
@@ -85,24 +81,24 @@ public class RealTimeUpdateService {
      */
     public SseEmitter createWidgetUpdateEmitter(String dashboardId, String widgetId) {
         SseEmitter emitter = createEmitter();
-        
+
         // Store widget parameters
         Map<String, Object> widgetParams = new HashMap<>();
         widgetParams.put("dashboardId", dashboardId);
         widgetParams.put("widgetId", widgetId);
         widgetParams.put("type", "widget");
         emitterQueries.put(emitter, widgetParams);
-        
+
         // Add to appropriate collection
         String widgetKey = dashboardId + ":" + widgetId;
         widgetUpdateEmitters.computeIfAbsent(widgetKey, k -> new CopyOnWriteArrayList<>()).add(emitter);
-        
+
         // Update stats
         updateConnectionStats("widgetUpdateConnections", 1);
-        
+
         // Send initial data
         sendInitialWidgetData(emitter, dashboardId, widgetId);
-        
+
         return emitter;
     }
 
@@ -111,30 +107,30 @@ public class RealTimeUpdateService {
      */
     private SseEmitter createEmitter() {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
-        
+
         // Update connection stats
         updateConnectionStats("totalConnections", 1);
         updateConnectionStats("activeConnections", 1);
-        
+
         // Set up callbacks
         emitter.onCompletion(() -> {
             removeEmitter(emitter);
             updateConnectionStats("activeConnections", -1);
             logger.debug("SSE connection completed");
         });
-        
+
         emitter.onTimeout(() -> {
             removeEmitter(emitter);
             updateConnectionStats("activeConnections", -1);
             logger.debug("SSE connection timed out");
         });
-        
+
         emitter.onError(ex -> {
             removeEmitter(emitter);
             updateConnectionStats("activeConnections", -1);
             logger.error("SSE connection error", ex);
         });
-        
+
         // Send initial connection event
         try {
             emitter.send(SseEmitter.event()
@@ -144,7 +140,7 @@ public class RealTimeUpdateService {
         } catch (IOException e) {
             logger.error("Error sending initial connection event", e);
         }
-        
+
         return emitter;
     }
 
@@ -154,13 +150,13 @@ public class RealTimeUpdateService {
     private void removeEmitter(SseEmitter emitter) {
         Map<String, Object> params = emitterQueries.remove(emitter);
         if (params == null) return;
-        
+
         if ("log".equals(params.get("type"))) {
             String query = (String) params.get("query");
             boolean isRegex = (boolean) params.get("isRegex");
             String timeRange = (String) params.get("timeRange");
             String queryKey = generateQueryKey(query, isRegex, timeRange);
-            
+
             List<SseEmitter> emitters = logUpdateEmitters.get(queryKey);
             if (emitters != null) {
                 emitters.remove(emitter);
@@ -173,7 +169,7 @@ public class RealTimeUpdateService {
             String dashboardId = (String) params.get("dashboardId");
             String widgetId = (String) params.get("widgetId");
             String widgetKey = dashboardId + ":" + widgetId;
-            
+
             List<SseEmitter> emitters = widgetUpdateEmitters.get(widgetKey);
             if (emitters != null) {
                 emitters.remove(emitter);
@@ -201,16 +197,16 @@ public class RealTimeUpdateService {
                             .id(UUID.randomUUID().toString()));
                     return;
                 }
-                
+
                 // Fetch initial data
                 List<LogEntry> logs = luceneService.search(query, isRegex, null, null);
-                
+
                 // Send data to client
                 emitter.send(SseEmitter.event()
                         .name("initialData")
                         .data(logs)
                         .id(UUID.randomUUID().toString()));
-                
+
                 logger.debug("Sent initial log data for query: {}", query);
             } catch (Exception e) {
                 logger.error("Error sending initial log data", e);
@@ -232,13 +228,13 @@ public class RealTimeUpdateService {
                 widgetData.put("widgetId", widgetId);
                 widgetData.put("timestamp", System.currentTimeMillis());
                 widgetData.put("message", "Initial widget data");
-                
+
                 // Send data to client
                 emitter.send(SseEmitter.event()
                         .name("initialData")
                         .data(widgetData)
                         .id(UUID.randomUUID().toString()));
-                
+
                 logger.debug("Sent initial widget data for widget: {}", widgetId);
             } catch (Exception e) {
                 logger.error("Error sending initial widget data", e);
@@ -257,11 +253,11 @@ public class RealTimeUpdateService {
             // Parse the query key to get query parameters
             String[] parts = queryKey.split(":");
             if (parts.length < 3) return;
-            
+
             String query = parts[0];
             boolean isRegex = Boolean.parseBoolean(parts[1]);
             String timeRange = parts[2];
-            
+
             // Check if this log entry matches the query
             // This is a simplified check - in a real implementation, you would use the search logic
             if (query == null || query.isEmpty() || logEntry.message().contains(query)) {
@@ -277,7 +273,7 @@ public class RealTimeUpdateService {
     public void broadcastWidgetUpdate(String dashboardId, String widgetId, Object data) {
         String widgetKey = dashboardId + ":" + widgetId;
         List<SseEmitter> emitters = widgetUpdateEmitters.get(widgetKey);
-        
+
         if (emitters != null && !emitters.isEmpty()) {
             broadcastToEmitters(emitters, "widgetUpdate", data);
         }
@@ -288,7 +284,7 @@ public class RealTimeUpdateService {
      */
     private void broadcastToEmitters(List<SseEmitter> emitters, String eventName, Object data) {
         List<SseEmitter> deadEmitters = new ArrayList<>();
-        
+
         emitters.forEach(emitter -> {
             try {
                 emitter.send(SseEmitter.event()
@@ -300,7 +296,7 @@ public class RealTimeUpdateService {
                 deadEmitters.add(emitter);
             }
         });
-        
+
         // Remove dead emitters
         deadEmitters.forEach(this::removeEmitter);
     }
@@ -314,7 +310,7 @@ public class RealTimeUpdateService {
         List<SseEmitter> allEmitters = new ArrayList<>();
         logUpdateEmitters.values().forEach(allEmitters::addAll);
         widgetUpdateEmitters.values().forEach(allEmitters::addAll);
-        
+
         // Send heartbeat to each emitter
         List<SseEmitter> deadEmitters = new ArrayList<>();
         allEmitters.forEach(emitter -> {
@@ -328,7 +324,7 @@ public class RealTimeUpdateService {
                 deadEmitters.add(emitter);
             }
         });
-        
+
         // Remove dead emitters
         deadEmitters.forEach(this::removeEmitter);
     }

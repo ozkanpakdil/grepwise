@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,11 +43,11 @@ public class PredictiveAnalyticsService {
      * Predicts future log volume based on historical data.
      * Uses simple exponential smoothing for time series forecasting.
      *
-     * @param source The log source to analyze (null for all sources)
-     * @param level The log level to filter by (null for all levels)
-     * @param startTime The start timestamp for historical data analysis
-     * @param endTime The end timestamp for historical data analysis
-     * @param intervalMinutes The size of time intervals to analyze and predict (in minutes)
+     * @param source           The log source to analyze (null for all sources)
+     * @param level            The log level to filter by (null for all levels)
+     * @param startTime        The start timestamp for historical data analysis
+     * @param endTime          The end timestamp for historical data analysis
+     * @param intervalMinutes  The size of time intervals to analyze and predict (in minutes)
      * @param horizonIntervals Number of future intervals to predict
      * @return A list of prediction results
      */
@@ -66,7 +65,7 @@ public class PredictiveAnalyticsService {
         }
 
         if (startTime == null) {
-            startTime = System.currentTimeMillis() - (timeWindowMinutes * 60 * 1000);
+            startTime = System.currentTimeMillis() - ((long) timeWindowMinutes * 60 * 1000);
         }
 
         if (endTime == null) {
@@ -136,22 +135,22 @@ public class PredictiveAnalyticsService {
         double mean = calculateMean(timeSeries);
         double stdDev = calculateStandardDeviation(timeSeries, mean);
         double coefficientOfVariation = mean > 0 ? stdDev / mean : 1.0;
-        
+
         // Higher variation means lower confidence
         double baseConfidence = Math.max(0.1, Math.min(0.9, 1.0 - coefficientOfVariation));
 
         // Create prediction results
         List<PredictiveResult> predictions = new ArrayList<>();
         long lastIntervalStart = endTime;
-        long intervalMs = intervalMinutes * 60 * 1000;
+        long intervalMs = (long) intervalMinutes * 60 * 1000;
 
         for (int i = 0; i < forecast.size(); i++) {
             long predictionTime = lastIntervalStart + (i + 1) * intervalMs;
             double predictedValue = forecast.get(i);
-            
+
             // Confidence decreases as we predict further into the future
             double confidenceLevel = baseConfidence * Math.exp(-0.05 * i);
-            
+
             PredictiveResult prediction = PredictiveResult.builder()
                     .timestamp(System.currentTimeMillis())
                     .predictionTimestamp(predictionTime)
@@ -174,10 +173,10 @@ public class PredictiveAnalyticsService {
      * Predicts trends in log patterns based on historical data.
      * Identifies increasing or decreasing trends in log volume.
      *
-     * @param source The log source to analyze (null for all sources)
-     * @param level The log level to filter by (null for all levels)
-     * @param startTime The start timestamp for historical data analysis
-     * @param endTime The end timestamp for historical data analysis
+     * @param source          The log source to analyze (null for all sources)
+     * @param level           The log level to filter by (null for all levels)
+     * @param startTime       The start timestamp for historical data analysis
+     * @param endTime         The end timestamp for historical data analysis
      * @param intervalMinutes The size of time intervals to analyze (in minutes)
      * @return A trend prediction result
      */
@@ -194,7 +193,7 @@ public class PredictiveAnalyticsService {
         }
 
         if (startTime == null) {
-            startTime = System.currentTimeMillis() - (timeWindowMinutes * 60 * 1000);
+            startTime = System.currentTimeMillis() - ((long) timeWindowMinutes * 60 * 1000);
         }
 
         if (endTime == null) {
@@ -250,7 +249,7 @@ public class PredictiveAnalyticsService {
         // Convert to time series (sorted by time)
         List<Long> times = new ArrayList<>(logCountsByInterval.keySet());
         Collections.sort(times);
-        
+
         List<Integer> counts = new ArrayList<>();
         for (Long time : times) {
             counts.add(logCountsByInterval.get(time));
@@ -275,10 +274,10 @@ public class PredictiveAnalyticsService {
         // Calculate projected change over next day
         int intervalsPerDay = 24 * 60 / intervalMinutes;
         double projectedDailyChange = slope * intervalsPerDay;
-        
+
         // Calculate average log count
         double averageCount = calculateMean(counts.stream().map(Double::valueOf).collect(Collectors.toList()));
-        
+
         // Calculate percentage change
         double percentageChange = averageCount > 0 ? (projectedDailyChange / averageCount) * 100 : 0;
 
@@ -304,9 +303,9 @@ public class PredictiveAnalyticsService {
     /**
      * Predicts the distribution of log levels in future logs.
      *
-     * @param source The log source to analyze (null for all sources)
+     * @param source    The log source to analyze (null for all sources)
      * @param startTime The start timestamp for historical data analysis
-     * @param endTime The end timestamp for historical data analysis
+     * @param endTime   The end timestamp for historical data analysis
      * @return A prediction result for log level distribution
      */
     public PredictiveResult predictLogLevelDistribution(
@@ -320,7 +319,7 @@ public class PredictiveAnalyticsService {
         }
 
         if (startTime == null) {
-            startTime = System.currentTimeMillis() - (timeWindowMinutes * 60 * 1000);
+            startTime = System.currentTimeMillis() - ((long) timeWindowMinutes * 60 * 1000);
         }
 
         if (endTime == null) {
@@ -360,7 +359,7 @@ public class PredictiveAnalyticsService {
 
         // Calculate total logs with levels
         long totalLogs = logCountsByLevel.values().stream().mapToLong(Long::longValue).sum();
-        
+
         if (totalLogs == 0) {
             logger.info("No logs with level information found");
             return null;
@@ -399,7 +398,7 @@ public class PredictiveAnalyticsService {
         Map<Long, Integer> logCountsByInterval = new TreeMap<>();
 
         // Initialize all intervals with zero counts
-        long intervalMs = intervalMinutes * 60 * 1000;
+        long intervalMs = (long) intervalMinutes * 60 * 1000;
         for (long time = startTime; time < endTime; time += intervalMs) {
             logCountsByInterval.put(time, 0);
         }
@@ -420,8 +419,8 @@ public class PredictiveAnalyticsService {
      * Performs simple exponential smoothing for time series forecasting.
      *
      * @param timeSeries The historical time series data
-     * @param horizon The number of future points to forecast
-     * @param alpha The smoothing factor (0 < alpha < 1)
+     * @param horizon    The number of future points to forecast
+     * @param alpha      The smoothing factor (0 < alpha < 1)
      * @return The forecasted values
      */
     private List<Double> exponentialSmoothing(List<Double> timeSeries, int horizon, double alpha) {
@@ -431,18 +430,18 @@ public class PredictiveAnalyticsService {
 
         // Initialize with the first value
         double lastSmoothed = timeSeries.get(0);
-        
+
         // Apply smoothing to historical data
         for (int i = 1; i < timeSeries.size(); i++) {
             lastSmoothed = alpha * timeSeries.get(i) + (1 - alpha) * lastSmoothed;
         }
-        
+
         // Generate forecast
         List<Double> forecast = new ArrayList<>();
         for (int i = 0; i < horizon; i++) {
             forecast.add(lastSmoothed);
         }
-        
+
         return forecast;
     }
 
@@ -452,22 +451,22 @@ public class PredictiveAnalyticsService {
      */
     private double[] calculateLinearRegression(List<Integer> values) {
         int n = values.size();
-        
+
         // Create x values (0, 1, 2, ...)
         List<Integer> x = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             x.add(i);
         }
-        
+
         // Calculate means
         double meanX = calculateMean(x.stream().map(Double::valueOf).collect(Collectors.toList()));
         double meanY = calculateMean(values.stream().map(Double::valueOf).collect(Collectors.toList()));
-        
+
         // Calculate sums for regression formula
         double sumXY = 0;
         double sumXX = 0;
         double sumYY = 0;
-        
+
         for (int i = 0; i < n; i++) {
             double xDiff = x.get(i) - meanX;
             double yDiff = values.get(i) - meanY;
@@ -475,15 +474,15 @@ public class PredictiveAnalyticsService {
             sumXX += xDiff * xDiff;
             sumYY += yDiff * yDiff;
         }
-        
+
         // Calculate slope and intercept
         double slope = sumXY / sumXX;
         double intercept = meanY - slope * meanX;
-        
+
         // Calculate R-squared
         double rSquared = (sumXY * sumXY) / (sumXX * sumYY);
-        
-        return new double[] { slope, intercept, rSquared };
+
+        return new double[]{slope, intercept, rSquared};
     }
 
     /**
@@ -517,13 +516,6 @@ public class PredictiveAnalyticsService {
     }
 
     /**
-     * Enables or disables predictive analytics.
-     */
-    public void setPredictiveAnalyticsEnabled(boolean enabled) {
-        this.predictiveAnalyticsEnabled = enabled;
-    }
-
-    /**
      * Checks if predictive analytics is enabled.
      */
     public boolean isPredictiveAnalyticsEnabled() {
@@ -531,10 +523,10 @@ public class PredictiveAnalyticsService {
     }
 
     /**
-     * Sets the minimum sample size required for predictions.
+     * Enables or disables predictive analytics.
      */
-    public void setMinSampleSize(int size) {
-        this.minSampleSize = size;
+    public void setPredictiveAnalyticsEnabled(boolean enabled) {
+        this.predictiveAnalyticsEnabled = enabled;
     }
 
     /**
@@ -545,10 +537,10 @@ public class PredictiveAnalyticsService {
     }
 
     /**
-     * Sets the default time window for historical data in minutes.
+     * Sets the minimum sample size required for predictions.
      */
-    public void setTimeWindowMinutes(int minutes) {
-        this.timeWindowMinutes = minutes;
+    public void setMinSampleSize(int size) {
+        this.minSampleSize = size;
     }
 
     /**
@@ -559,10 +551,10 @@ public class PredictiveAnalyticsService {
     }
 
     /**
-     * Sets the default forecast horizon in minutes.
+     * Sets the default time window for historical data in minutes.
      */
-    public void setForecastHorizonMinutes(int minutes) {
-        this.forecastHorizonMinutes = minutes;
+    public void setTimeWindowMinutes(int minutes) {
+        this.timeWindowMinutes = minutes;
     }
 
     /**
@@ -570,5 +562,12 @@ public class PredictiveAnalyticsService {
      */
     public int getForecastHorizonMinutes() {
         return forecastHorizonMinutes;
+    }
+
+    /**
+     * Sets the default forecast horizon in minutes.
+     */
+    public void setForecastHorizonMinutes(int minutes) {
+        this.forecastHorizonMinutes = minutes;
     }
 }

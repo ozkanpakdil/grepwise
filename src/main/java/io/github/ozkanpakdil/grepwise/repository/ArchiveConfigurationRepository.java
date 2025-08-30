@@ -30,7 +30,7 @@ public class ArchiveConfigurationRepository {
 
         // Create default archive configuration
         createDefaultArchiveConfiguration();
-        
+
         logger.info("Initialized ArchiveConfigurationRepository with {} default configurations", configurations.size());
     }
 
@@ -45,7 +45,7 @@ public class ArchiveConfigurationRepository {
         defaultConfig.setCompressionLevel(5);
         defaultConfig.setMaxArchiveSizeMb(100);
         defaultConfig.setArchiveRetentionDays(90);
-        
+
         save(defaultConfig);
         logger.debug("Created default archive configuration: {}", defaultConfig);
     }
@@ -86,7 +86,7 @@ public class ArchiveConfigurationRepository {
 
     /**
      * Get the default archive configuration.
-     * 
+     *
      * @return The default archive configuration
      */
     public ArchiveConfiguration getDefaultConfiguration() {

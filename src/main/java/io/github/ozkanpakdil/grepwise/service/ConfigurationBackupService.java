@@ -46,25 +46,25 @@ public class ConfigurationBackupService {
     public String exportConfigurations() {
         try {
             Map<String, Object> configurations = new HashMap<>();
-            
+
             // Add metadata
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("exportedAt", System.currentTimeMillis());
             metadata.put("version", "1.0");
             configurations.put("metadata", metadata);
-            
+
             // Add log directory configurations
             List<LogDirectoryConfig> logDirectoryConfigs = logScannerService.getAllConfigs();
             configurations.put("logDirectoryConfigs", logDirectoryConfigs);
-            
+
             // Add retention policies
             List<RetentionPolicy> retentionPolicies = retentionPolicyService.getAllPolicies();
             configurations.put("retentionPolicies", retentionPolicies);
-            
+
             // Add field configurations
             List<FieldConfiguration> fieldConfigurations = fieldConfigurationService.getAllFieldConfigurations();
             configurations.put("fieldConfigurations", fieldConfigurations);
-            
+
             // Convert to JSON
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configurations);
         } catch (Exception e) {
@@ -76,7 +76,7 @@ public class ConfigurationBackupService {
     /**
      * Import configurations from a JSON string.
      *
-     * @param json JSON string containing configurations
+     * @param json      JSON string containing configurations
      * @param overwrite Whether to overwrite existing configurations
      * @return Summary of the import operation
      */
@@ -84,18 +84,18 @@ public class ConfigurationBackupService {
         try {
             // Parse JSON
             Map<String, Object> configurations = objectMapper.readValue(json, Map.class);
-            
+
             // Initialize counters for summary
             int logDirConfigsImported = 0;
             int retentionPoliciesImported = 0;
             int fieldConfigsImported = 0;
-            
+
             // Import log directory configurations
             if (configurations.containsKey("logDirectoryConfigs")) {
                 List<Map<String, Object>> logDirConfigs = (List<Map<String, Object>>) configurations.get("logDirectoryConfigs");
                 for (Map<String, Object> configMap : logDirConfigs) {
                     LogDirectoryConfig config = objectMapper.convertValue(configMap, LogDirectoryConfig.class);
-                    
+
                     // If not overwriting, skip if a config with the same path already exists
                     if (!overwrite) {
                         boolean exists = logScannerService.getAllConfigs().stream()
@@ -104,20 +104,20 @@ public class ConfigurationBackupService {
                             continue;
                         }
                     }
-                    
+
                     // Clear ID to create a new config
                     config.setId(null);
                     logScannerService.saveConfig(config);
                     logDirConfigsImported++;
                 }
             }
-            
+
             // Import retention policies
             if (configurations.containsKey("retentionPolicies")) {
                 List<Map<String, Object>> retentionPolicies = (List<Map<String, Object>>) configurations.get("retentionPolicies");
                 for (Map<String, Object> policyMap : retentionPolicies) {
                     RetentionPolicy policy = objectMapper.convertValue(policyMap, RetentionPolicy.class);
-                    
+
                     // If not overwriting, skip if a policy with the same name already exists
                     if (!overwrite) {
                         boolean exists = retentionPolicyService.getAllPolicies().stream()
@@ -126,20 +126,20 @@ public class ConfigurationBackupService {
                             continue;
                         }
                     }
-                    
+
                     // Clear ID to create a new policy
                     policy.setId(null);
                     retentionPolicyService.savePolicy(policy);
                     retentionPoliciesImported++;
                 }
             }
-            
+
             // Import field configurations
             if (configurations.containsKey("fieldConfigurations")) {
                 List<Map<String, Object>> fieldConfigs = (List<Map<String, Object>>) configurations.get("fieldConfigurations");
                 for (Map<String, Object> configMap : fieldConfigs) {
                     FieldConfiguration config = objectMapper.convertValue(configMap, FieldConfiguration.class);
-                    
+
                     // If not overwriting, skip if a config with the same name already exists
                     if (!overwrite) {
                         boolean exists = fieldConfigurationService.getAllFieldConfigurations().stream()
@@ -148,21 +148,21 @@ public class ConfigurationBackupService {
                             continue;
                         }
                     }
-                    
+
                     // Clear ID to create a new config
                     config.setId(null);
                     fieldConfigurationService.saveFieldConfiguration(config);
                     fieldConfigsImported++;
                 }
             }
-            
+
             // Create summary
             Map<String, Object> summary = new HashMap<>();
             summary.put("logDirectoryConfigsImported", logDirConfigsImported);
             summary.put("retentionPoliciesImported", retentionPoliciesImported);
             summary.put("fieldConfigurationsImported", fieldConfigsImported);
             summary.put("totalImported", logDirConfigsImported + retentionPoliciesImported + fieldConfigsImported);
-            
+
             return summary;
         } catch (Exception e) {
             logger.error("Error importing configurations", e);

@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Service for managing alarms and alarm evaluation.
@@ -25,54 +24,32 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AlarmService {
     private static final Logger logger = LoggerFactory.getLogger(AlarmService.class);
-
+    // Throttling: Track notification history for each alarm
+    // Key: alarmId, Value: List of notification timestamps
+    private final Map<String, List<Long>> notificationHistory = new ConcurrentHashMap<>();
+    // Grouping: Track pending grouped notifications
+    // Key: groupingKey, Value: List of alarms waiting to be grouped
+    private final Map<String, List<GroupedAlarmNotification>> pendingGroupedNotifications = new ConcurrentHashMap<>();
     @Autowired
     private AlarmRepository alarmRepository;
-
     @Autowired
     private LuceneService luceneService;
-    
     @Autowired
     private PagerDutyService pagerDutyService;
-    
     @Autowired
     private OpsGenieService opsGenieService;
-    
+
     // Default constructor for Spring
     public AlarmService() {
     }
-    
+
     // Constructor for testing
-    public AlarmService(AlarmRepository alarmRepository, LuceneService luceneService, 
+    public AlarmService(AlarmRepository alarmRepository, LuceneService luceneService,
                         PagerDutyService pagerDutyService, OpsGenieService opsGenieService) {
         this.alarmRepository = alarmRepository;
         this.luceneService = luceneService;
         this.pagerDutyService = pagerDutyService;
         this.opsGenieService = opsGenieService;
-    }
-
-    // Throttling: Track notification history for each alarm
-    // Key: alarmId, Value: List of notification timestamps
-    private final Map<String, List<Long>> notificationHistory = new ConcurrentHashMap<>();
-
-    // Grouping: Track pending grouped notifications
-    // Key: groupingKey, Value: List of alarms waiting to be grouped
-    private final Map<String, List<GroupedAlarmNotification>> pendingGroupedNotifications = new ConcurrentHashMap<>();
-
-    /**
-     * Represents a grouped alarm notification.
-     */
-    private static class GroupedAlarmNotification {
-        private final Alarm alarm;
-        private final long triggeredAt;
-
-        public GroupedAlarmNotification(Alarm alarm, long triggeredAt) {
-            this.alarm = alarm;
-            this.triggeredAt = triggeredAt;
-        }
-
-        public Alarm getAlarm() { return alarm; }
-        public long getTriggeredAt() { return triggeredAt; }
     }
 
     /**
@@ -114,8 +91,8 @@ public class AlarmService {
         }
 
         // Check if name conflicts with another alarm
-        if (!existingAlarm.getName().equals(alarm.getName()) && 
-            alarmRepository.existsByName(alarm.getName())) {
+        if (!existingAlarm.getName().equals(alarm.getName()) &&
+                alarmRepository.existsByName(alarm.getName())) {
             throw new IllegalArgumentException("Alarm with name '" + alarm.getName() + "' already exists");
         }
 
@@ -196,10 +173,10 @@ public class AlarmService {
 
             // Search for logs matching the alarm query within the time window
             List<LogEntry> matchingLogs = luceneService.search(
-                alarm.getQuery(), 
-                false, // not regex for now
-                startTime, 
-                currentTime
+                    alarm.getQuery(),
+                    false, // not regex for now
+                    startTime,
+                    currentTime
             );
 
             // Evaluate condition (for now, only support count-based conditions)
@@ -247,14 +224,14 @@ public class AlarmService {
 
             // Find the oldest alarm in the group to determine if grouping window has expired
             long oldestTimestamp = groupedAlarms.stream()
-                .mapToLong(GroupedAlarmNotification::getTriggeredAt)
-                .min()
-                .orElse(currentTime);
+                    .mapToLong(GroupedAlarmNotification::triggeredAt)
+                    .min()
+                    .orElse(currentTime);
 
             // Get grouping window from the first alarm (all alarms in same group should have same window)
-            Alarm firstAlarm = groupedAlarms.get(0).getAlarm();
-            int groupingWindowMinutes = firstAlarm.getGroupingWindowMinutes() != null ? 
-                firstAlarm.getGroupingWindowMinutes() : 5;
+            Alarm firstAlarm = groupedAlarms.get(0).alarm();
+            int groupingWindowMinutes = firstAlarm.getGroupingWindowMinutes() != null ?
+                    firstAlarm.getGroupingWindowMinutes() : 5;
             long groupingWindowMs = groupingWindowMinutes * 60 * 1000L;
 
             // Check if grouping window has expired
@@ -271,22 +248,22 @@ public class AlarmService {
     /**
      * Send a grouped notification for multiple alarms.
      *
-     * @param groupingKey The grouping key
+     * @param groupingKey   The grouping key
      * @param groupedAlarms List of grouped alarm notifications
-     * @param currentTime Current timestamp
+     * @param currentTime   Current timestamp
      */
     private void sendGroupedNotification(String groupingKey, List<GroupedAlarmNotification> groupedAlarms, long currentTime) {
         if (groupedAlarms.isEmpty()) {
             return;
         }
 
-        logger.info("Sending grouped notification for {} alarms with grouping key: {}", 
-            groupedAlarms.size(), groupingKey);
+        logger.info("Sending grouped notification for {} alarms with grouping key: {}",
+                groupedAlarms.size(), groupingKey);
 
         // Get all unique notification channels from all alarms in the group
         Map<String, NotificationChannel> uniqueChannels = new HashMap<>();
         for (GroupedAlarmNotification groupedAlarm : groupedAlarms) {
-            Alarm alarm = groupedAlarm.getAlarm();
+            Alarm alarm = groupedAlarm.alarm();
             if (alarm.getNotificationChannels() != null) {
                 for (NotificationChannel channel : alarm.getNotificationChannels()) {
                     String channelKey = channel.getType() + ":" + channel.getDestination();
@@ -303,14 +280,14 @@ public class AlarmService {
 
         for (int i = 0; i < groupedAlarms.size(); i++) {
             GroupedAlarmNotification groupedAlarm = groupedAlarms.get(i);
-            Alarm alarm = groupedAlarm.getAlarm();
+            Alarm alarm = groupedAlarm.alarm();
             message.append("Alarm ").append(i + 1).append(":\n");
             message.append("  Name: ").append(alarm.getName()).append("\n");
             message.append("  Description: ").append(alarm.getDescription()).append("\n");
             message.append("  Query: ").append(alarm.getQuery()).append("\n");
             message.append("  Condition: ").append(alarm.getCondition()).append("\n");
             message.append("  Threshold: ").append(alarm.getThreshold()).append("\n");
-            message.append("  Triggered At: ").append(new java.util.Date(groupedAlarm.getTriggeredAt())).append("\n");
+            message.append("  Triggered At: ").append(new java.util.Date(groupedAlarm.triggeredAt())).append("\n");
             if (i < groupedAlarms.size() - 1) {
                 message.append("\n");
             }
@@ -323,11 +300,11 @@ public class AlarmService {
 
                 // Record notifications for throttling (for each alarm in the group)
                 for (GroupedAlarmNotification groupedAlarm : groupedAlarms) {
-                    recordNotification(groupedAlarm.getAlarm(), currentTime);
+                    recordNotification(groupedAlarm.alarm(), currentTime);
                 }
             } catch (Exception e) {
-                logger.error("Failed to send grouped notification via {}: {}", 
-                    channel.getType(), e.getMessage());
+                logger.error("Failed to send grouped notification via {}: {}",
+                        channel.getType(), e.getMessage());
             }
         }
     }
@@ -335,10 +312,10 @@ public class AlarmService {
     /**
      * Send a grouped notification to a specific channel.
      *
-     * @param message The grouped message
-     * @param channel The notification channel
+     * @param message     The grouped message
+     * @param channel     The notification channel
      * @param groupingKey The grouping key
-     * @param alarmCount The number of alarms in the group
+     * @param alarmCount  The number of alarms in the group
      */
     private void sendGroupedNotificationToChannel(String message, NotificationChannel channel, String groupingKey, int alarmCount) {
         switch (channel.getType().toUpperCase()) {
@@ -430,7 +407,7 @@ public class AlarmService {
     /**
      * Check if an alarm is throttled based on its notification history.
      *
-     * @param alarm The alarm to check
+     * @param alarm       The alarm to check
      * @param currentTime Current timestamp
      * @return true if the alarm is throttled, false otherwise
      */
@@ -448,8 +425,8 @@ public class AlarmService {
         history.removeIf(timestamp -> timestamp < windowStart);
 
         // Check if we've exceeded the max notifications per window
-        int maxNotifications = alarm.getMaxNotificationsPerWindow() != null ? 
-            alarm.getMaxNotificationsPerWindow() : 1;
+        int maxNotifications = alarm.getMaxNotificationsPerWindow() != null ?
+                alarm.getMaxNotificationsPerWindow() : 1;
 
         return history.size() >= maxNotifications;
     }
@@ -457,13 +434,13 @@ public class AlarmService {
     /**
      * Add an alarm to grouped notifications.
      *
-     * @param alarm The alarm to add
+     * @param alarm       The alarm to add
      * @param currentTime Current timestamp
      */
     private void addToGroupedNotifications(Alarm alarm, long currentTime) {
         String groupingKey = alarm.getGroupingKey();
         List<GroupedAlarmNotification> groupedAlarms = pendingGroupedNotifications
-            .computeIfAbsent(groupingKey, k -> new ArrayList<>());
+                .computeIfAbsent(groupingKey, k -> new ArrayList<>());
 
         groupedAlarms.add(new GroupedAlarmNotification(alarm, currentTime));
         logger.debug("Added alarm {} to grouping key {}", alarm.getName(), groupingKey);
@@ -472,7 +449,7 @@ public class AlarmService {
     /**
      * Send notification immediately (no grouping).
      *
-     * @param alarm The alarm to send notification for
+     * @param alarm       The alarm to send notification for
      * @param currentTime Current timestamp
      */
     private void sendNotificationImmediately(Alarm alarm, long currentTime) {
@@ -484,8 +461,8 @@ public class AlarmService {
             try {
                 sendNotification(alarm, channel);
             } catch (Exception e) {
-                logger.error("Failed to send notification for alarm {} via {}: {}", 
-                    alarm.getName(), channel.getType(), e.getMessage());
+                logger.error("Failed to send notification for alarm {} via {}: {}",
+                        alarm.getName(), channel.getType(), e.getMessage());
             }
         }
     }
@@ -493,7 +470,7 @@ public class AlarmService {
     /**
      * Record a notification in the throttling history.
      *
-     * @param alarm The alarm
+     * @param alarm     The alarm
      * @param timestamp The notification timestamp
      */
     private void recordNotification(Alarm alarm, long timestamp) {
@@ -505,25 +482,25 @@ public class AlarmService {
     /**
      * Send a notification via the specified channel.
      *
-     * @param alarm The alarm that was triggered
+     * @param alarm   The alarm that was triggered
      * @param channel The notification channel
      */
     private void sendNotification(Alarm alarm, NotificationChannel channel) {
         String message = String.format(
-            "ALARM TRIGGERED: %s\n" +
-            "Description: %s\n" +
-            "Query: %s\n" +
-            "Condition: %s\n" +
-            "Threshold: %d\n" +
-            "Time Window: %d minutes\n" +
-            "Time: %s",
-            alarm.getName(),
-            alarm.getDescription(),
-            alarm.getQuery(),
-            alarm.getCondition(),
-            alarm.getThreshold(),
-            alarm.getTimeWindowMinutes(),
-            new java.util.Date()
+                "ALARM TRIGGERED: %s\n" +
+                        "Description: %s\n" +
+                        "Query: %s\n" +
+                        "Condition: %s\n" +
+                        "Threshold: %d\n" +
+                        "Time Window: %d minutes\n" +
+                        "Time: %s",
+                alarm.getName(),
+                alarm.getDescription(),
+                alarm.getQuery(),
+                alarm.getCondition(),
+                alarm.getThreshold(),
+                alarm.getTimeWindowMinutes(),
+                new java.util.Date()
         );
 
         switch (channel.getType().toUpperCase()) {
@@ -601,5 +578,11 @@ public class AlarmService {
         stats.put("enabledAlarms", alarmRepository.countEnabled());
         stats.put("disabledAlarms", alarmRepository.count() - alarmRepository.countEnabled());
         return stats;
+    }
+
+    /**
+         * Represents a grouped alarm notification.
+         */
+        private record GroupedAlarmNotification(Alarm alarm, long triggeredAt) {
     }
 }

@@ -42,27 +42,27 @@ public class DashboardController {
      * @return List of accessible dashboards
      */
     @Operation(
-        summary = "Get all dashboards",
-        description = "Retrieves all dashboards accessible by the specified user"
+            summary = "Get all dashboards",
+            description = "Retrieves all dashboards accessible by the specified user"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully retrieved dashboards",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = Dashboard.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved dashboards",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Dashboard.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content
             )
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content
-        )
     })
     @GetMapping
     public ResponseEntity<List<Dashboard>> getDashboards(
-            @Parameter(description = "User ID for access control", required = true) 
+            @Parameter(description = "User ID for access control", required = true)
             @RequestParam String userId) {
         try {
             List<Dashboard> dashboards = dashboardService.getDashboardsForUser(userId);
@@ -76,40 +76,40 @@ public class DashboardController {
     /**
      * Get a dashboard by ID.
      *
-     * @param id The dashboard ID
+     * @param id     The dashboard ID
      * @param userId The user ID (for access control)
      * @return The dashboard with widgets
      */
     @Operation(
-        summary = "Get dashboard by ID",
-        description = "Retrieves a specific dashboard by its ID, including all its widgets"
+            summary = "Get dashboard by ID",
+            description = "Retrieves a specific dashboard by its ID, including all its widgets"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully retrieved dashboard",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = Dashboard.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved dashboard",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Dashboard.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied or dashboard not found",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content
             )
-        ),
-        @ApiResponse(
-            responseCode = "403", 
-            description = "Access denied or dashboard not found",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content
-        )
     })
     @GetMapping("/{id}")
     public ResponseEntity<?> getDashboardById(
-            @Parameter(description = "Dashboard ID", required = true) 
-            @PathVariable String id, 
-            
-            @Parameter(description = "User ID for access control", required = true) 
+            @Parameter(description = "Dashboard ID", required = true)
+            @PathVariable String id,
+
+            @Parameter(description = "User ID for access control", required = true)
             @RequestParam String userId) {
         try {
             Dashboard dashboard = dashboardService.getDashboardById(id, userId);
@@ -130,35 +130,35 @@ public class DashboardController {
      * @return The created dashboard
      */
     @Operation(
-        summary = "Create a new dashboard",
-        description = "Creates a new dashboard with the specified name, description, and ownership"
+            summary = "Create a new dashboard",
+            description = "Creates a new dashboard with the specified name, description, and ownership"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201", 
-            description = "Dashboard created successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = Dashboard.class)
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Dashboard created successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Dashboard.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid dashboard creation request",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content(mediaType = "application/json")
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid dashboard creation request",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content(mediaType = "application/json")
-        )
     })
     @PostMapping
     public ResponseEntity<?> createDashboard(
             @Parameter(
-                description = "Dashboard creation request containing name, description, and owner information",
-                required = true,
-                schema = @Schema(implementation = DashboardRequest.class)
+                    description = "Dashboard creation request containing name, description, and owner information",
+                    required = true,
+                    schema = @Schema(implementation = DashboardRequest.class)
             )
             @RequestBody DashboardRequest dashboardRequest) {
         try {
@@ -178,43 +178,43 @@ public class DashboardController {
     /**
      * Update an existing dashboard.
      *
-     * @param id The dashboard ID
+     * @param id               The dashboard ID
      * @param dashboardRequest The dashboard update request
      * @return The updated dashboard
      */
     @Operation(
-        summary = "Update an existing dashboard",
-        description = "Updates an existing dashboard with the specified name, description, and sharing settings"
+            summary = "Update an existing dashboard",
+            description = "Updates an existing dashboard with the specified name, description, and sharing settings"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Dashboard updated successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = Dashboard.class)
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Dashboard updated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Dashboard.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid dashboard update request",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content(mediaType = "application/json")
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid dashboard update request",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content(mediaType = "application/json")
-        )
     })
     @PutMapping("/{id}")
     public ResponseEntity<?> updateDashboard(
-            @Parameter(description = "Dashboard ID to update", required = true) 
-            @PathVariable String id, 
-            
+            @Parameter(description = "Dashboard ID to update", required = true)
+            @PathVariable String id,
+
             @Parameter(
-                description = "Dashboard update request containing name, description, and sharing settings",
-                required = true,
-                schema = @Schema(implementation = DashboardRequest.class)
+                    description = "Dashboard update request containing name, description, and sharing settings",
+                    required = true,
+                    schema = @Schema(implementation = DashboardRequest.class)
             )
             @RequestBody DashboardRequest dashboardRequest) {
         try {
@@ -235,42 +235,42 @@ public class DashboardController {
     /**
      * Delete a dashboard.
      *
-     * @param id The dashboard ID
+     * @param id     The dashboard ID
      * @param userId The user ID (for access control)
      * @return Success response
      */
     @Operation(
-        summary = "Delete a dashboard",
-        description = "Deletes a dashboard by its ID. Only the owner or an administrator can delete a dashboard."
+            summary = "Delete a dashboard",
+            description = "Deletes a dashboard by its ID. Only the owner or an administrator can delete a dashboard."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Dashboard deleted successfully",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "403", 
-            description = "Access denied - user does not have permission to delete this dashboard",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "Dashboard not found",
-            content = @Content
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content(mediaType = "application/json")
-        )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Dashboard deleted successfully",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - user does not have permission to delete this dashboard",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Dashboard not found",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content(mediaType = "application/json")
+            )
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDashboard(
-            @Parameter(description = "Dashboard ID to delete", required = true) 
-            @PathVariable String id, 
-            
-            @Parameter(description = "User ID for access control", required = true) 
+            @Parameter(description = "Dashboard ID to delete", required = true)
+            @PathVariable String id,
+
+            @Parameter(description = "User ID for access control", required = true)
             @RequestParam String userId) {
         try {
             boolean deleted = dashboardService.deleteDashboard(id, userId);
@@ -292,7 +292,7 @@ public class DashboardController {
     /**
      * Share or unshare a dashboard.
      *
-     * @param id The dashboard ID
+     * @param id           The dashboard ID
      * @param shareRequest The share request
      * @return The updated dashboard
      */
@@ -316,49 +316,49 @@ public class DashboardController {
     /**
      * Add a widget to a dashboard.
      *
-     * @param dashboardId The dashboard ID
+     * @param dashboardId   The dashboard ID
      * @param widgetRequest The widget creation request
      * @return The created widget
      */
     @Operation(
-        summary = "Add a widget to a dashboard",
-        description = "Creates a new widget and adds it to the specified dashboard. " +
-                "Widgets can be of various types such as charts, tables, or gauges."
+            summary = "Add a widget to a dashboard",
+            description = "Creates a new widget and adds it to the specified dashboard. " +
+                    "Widgets can be of various types such as charts, tables, or gauges."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201", 
-            description = "Widget created successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = DashboardWidget.class)
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Widget created successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DashboardWidget.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid widget creation request",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - user does not have permission to modify this dashboard",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content(mediaType = "application/json")
             )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid widget creation request",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "403", 
-            description = "Access denied - user does not have permission to modify this dashboard",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "500", 
-            description = "Internal server error",
-            content = @Content(mediaType = "application/json")
-        )
     })
     @PostMapping("/{dashboardId}/widgets")
     public ResponseEntity<?> addWidget(
-            @Parameter(description = "Dashboard ID to add the widget to", required = true) 
-            @PathVariable String dashboardId, 
-            
+            @Parameter(description = "Dashboard ID to add the widget to", required = true)
+            @PathVariable String dashboardId,
+
             @Parameter(
-                description = "Widget creation request containing title, type, query, and layout information",
-                required = true,
-                schema = @Schema(implementation = WidgetRequest.class)
+                    description = "Widget creation request containing title, type, query, and layout information",
+                    required = true,
+                    schema = @Schema(implementation = WidgetRequest.class)
             )
             @RequestBody WidgetRequest widgetRequest) {
         try {
@@ -379,14 +379,14 @@ public class DashboardController {
     /**
      * Update a widget.
      *
-     * @param dashboardId The dashboard ID
-     * @param widgetId The widget ID
+     * @param dashboardId   The dashboard ID
+     * @param widgetId      The widget ID
      * @param widgetRequest The widget update request
      * @return The updated widget
      */
     @PutMapping("/{dashboardId}/widgets/{widgetId}")
-    public ResponseEntity<?> updateWidget(@PathVariable String dashboardId, @PathVariable String widgetId, 
-                                        @RequestBody WidgetRequest widgetRequest) {
+    public ResponseEntity<?> updateWidget(@PathVariable String dashboardId, @PathVariable String widgetId,
+                                          @RequestBody WidgetRequest widgetRequest) {
         try {
             DashboardWidget widget = convertRequestToWidget(widgetRequest);
             widget.setId(widgetId);
@@ -407,13 +407,13 @@ public class DashboardController {
      * Delete a widget.
      *
      * @param dashboardId The dashboard ID
-     * @param widgetId The widget ID
-     * @param userId The user ID (for access control)
+     * @param widgetId    The widget ID
+     * @param userId      The user ID (for access control)
      * @return Success response
      */
     @DeleteMapping("/{dashboardId}/widgets/{widgetId}")
-    public ResponseEntity<?> deleteWidget(@PathVariable String dashboardId, @PathVariable String widgetId, 
-                                        @RequestParam String userId) {
+    public ResponseEntity<?> deleteWidget(@PathVariable String dashboardId, @PathVariable String widgetId,
+                                          @RequestParam String userId) {
         try {
             boolean deleted = dashboardService.deleteWidget(widgetId, userId);
             if (deleted) {
@@ -434,16 +434,16 @@ public class DashboardController {
     /**
      * Update widget positions (for drag-and-drop operations).
      *
-     * @param dashboardId The dashboard ID
+     * @param dashboardId     The dashboard ID
      * @param positionRequest The position update request
      * @return Success response
      */
     @PutMapping("/{dashboardId}/widgets/positions")
-    public ResponseEntity<?> updateWidgetPositions(@PathVariable String dashboardId, 
-                                                 @RequestBody PositionUpdateRequest positionRequest) {
+    public ResponseEntity<?> updateWidgetPositions(@PathVariable String dashboardId,
+                                                   @RequestBody PositionUpdateRequest positionRequest) {
         try {
             int updatedCount = dashboardService.updateWidgetPositions(
-                positionRequest.getWidgetPositions(), positionRequest.getUserId());
+                    positionRequest.getWidgetPositions(), positionRequest.getUserId());
             return ResponseEntity.ok(Map.of("message", "Updated " + updatedCount + " widgets"));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid position update request: {}", e.getMessage());
@@ -459,13 +459,13 @@ public class DashboardController {
      * Execute a widget query and return the results.
      *
      * @param dashboardId The dashboard ID
-     * @param widgetId The widget ID
-     * @param userId The user ID (for access control)
+     * @param widgetId    The widget ID
+     * @param userId      The user ID (for access control)
      * @return The query results
      */
     @GetMapping("/{dashboardId}/widgets/{widgetId}/data")
-    public ResponseEntity<?> getWidgetData(@PathVariable String dashboardId, @PathVariable String widgetId, 
-                                         @RequestParam String userId) {
+    public ResponseEntity<?> getWidgetData(@PathVariable String dashboardId, @PathVariable String widgetId,
+                                           @RequestParam String userId) {
         try {
             Map<String, Object> data = dashboardService.executeWidgetQuery(widgetId, userId);
             return ResponseEntity.ok(data);
@@ -528,14 +528,37 @@ public class DashboardController {
         private boolean isShared = false;
 
         // Getters and setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getCreatedBy() { return createdBy; }
-        public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
-        public boolean isShared() { return isShared; }
-        public void setShared(boolean shared) { isShared = shared; }
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getCreatedBy() {
+            return createdBy;
+        }
+
+        public void setCreatedBy(String createdBy) {
+            this.createdBy = createdBy;
+        }
+
+        public boolean isShared() {
+            return isShared;
+        }
+
+        public void setShared(boolean shared) {
+            isShared = shared;
+        }
     }
 
     public static class WidgetRequest {
@@ -550,24 +573,77 @@ public class DashboardController {
         private String userId; // For access control
 
         // Getters and setters
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-        public String getQuery() { return query; }
-        public void setQuery(String query) { this.query = query; }
-        public Map<String, Object> getConfiguration() { return configuration; }
-        public void setConfiguration(Map<String, Object> configuration) { this.configuration = configuration; }
-        public int getPositionX() { return positionX; }
-        public void setPositionX(int positionX) { this.positionX = positionX; }
-        public int getPositionY() { return positionY; }
-        public void setPositionY(int positionY) { this.positionY = positionY; }
-        public int getWidth() { return width; }
-        public void setWidth(int width) { this.width = width; }
-        public int getHeight() { return height; }
-        public void setHeight(int height) { this.height = height; }
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getQuery() {
+            return query;
+        }
+
+        public void setQuery(String query) {
+            this.query = query;
+        }
+
+        public Map<String, Object> getConfiguration() {
+            return configuration;
+        }
+
+        public void setConfiguration(Map<String, Object> configuration) {
+            this.configuration = configuration;
+        }
+
+        public int getPositionX() {
+            return positionX;
+        }
+
+        public void setPositionX(int positionX) {
+            this.positionX = positionX;
+        }
+
+        public int getPositionY() {
+            return positionY;
+        }
+
+        public void setPositionY(int positionY) {
+            this.positionY = positionY;
+        }
+
+        public int getWidth() {
+            return width;
+        }
+
+        public void setWidth(int width) {
+            this.width = width;
+        }
+
+        public int getHeight() {
+            return height;
+        }
+
+        public void setHeight(int height) {
+            this.height = height;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
     }
 
     public static class ShareRequest {
@@ -575,10 +651,21 @@ public class DashboardController {
         private String userId;
 
         // Getters and setters
-        public boolean isShared() { return isShared; }
-        public void setShared(boolean shared) { isShared = shared; }
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
+        public boolean isShared() {
+            return isShared;
+        }
+
+        public void setShared(boolean shared) {
+            isShared = shared;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
     }
 
     public static class PositionUpdateRequest {
@@ -586,9 +673,20 @@ public class DashboardController {
         private String userId;
 
         // Getters and setters
-        public Map<String, Map<String, Integer>> getWidgetPositions() { return widgetPositions; }
-        public void setWidgetPositions(Map<String, Map<String, Integer>> widgetPositions) { this.widgetPositions = widgetPositions; }
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
+        public Map<String, Map<String, Integer>> getWidgetPositions() {
+            return widgetPositions;
+        }
+
+        public void setWidgetPositions(Map<String, Map<String, Integer>> widgetPositions) {
+            this.widgetPositions = widgetPositions;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
     }
 }

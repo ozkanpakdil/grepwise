@@ -2,20 +2,14 @@ package io.github.ozkanpakdil.grepwise.service;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.model.LogSourceConfig;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -36,39 +30,36 @@ import java.util.regex.Pattern;
 @Service
 public class SyslogServer {
     private static final Logger logger = LoggerFactory.getLogger(SyslogServer.class);
-    
+    // RFC3164 pattern: <PRI>Mmm dd hh:mm:ss HOSTNAME TAG: MSG
+    private static final Pattern RFC3164_PATTERN =
+            Pattern.compile("<(\\d+)>([A-Z][a-z]{2}\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})\\s+([^\\s]+)\\s+([^:]+):\\s+(.*)");
+    // RFC5424 pattern: <PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG
+    private static final Pattern RFC5424_PATTERN =
+            Pattern.compile("<(\\d+)>(\\d+)\\s+(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+(?:\\[([^\\]]+)\\])?\\s*(.*)");
     private final LogBufferService logBufferService;
     private final Map<String, SyslogListener> activeListeners = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
-    
-    // RFC3164 pattern: <PRI>Mmm dd hh:mm:ss HOSTNAME TAG: MSG
-    private static final Pattern RFC3164_PATTERN = 
-        Pattern.compile("<(\\d+)>([A-Z][a-z]{2}\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})\\s+([^\\s]+)\\s+([^:]+):\\s+(.*)");
-    
-    // RFC5424 pattern: <PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG
-    private static final Pattern RFC5424_PATTERN = 
-        Pattern.compile("<(\\d+)>(\\d+)\\s+(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+(?:\\[([^\\]]+)\\])?\\s*(.*)");
 
     public SyslogServer(LogBufferService logBufferService) {
         this.logBufferService = logBufferService;
         logger.info("SyslogServer initialized");
     }
-    
+
     @PostConstruct
     public void init() {
         logger.info("SyslogServer started");
     }
-    
+
     @PreDestroy
     public void destroy() {
         logger.info("Shutting down SyslogServer");
         stopAllListeners();
         executorService.shutdown();
     }
-    
+
     /**
      * Start a syslog listener for the given configuration.
-     * 
+     *
      * @param config The syslog source configuration
      * @return true if the listener was started successfully, false otherwise
      */
@@ -77,13 +68,13 @@ public class SyslogServer {
             logger.error("Cannot start syslog listener for non-syslog source type: {}", config.getSourceType());
             return false;
         }
-        
+
         String listenerId = config.getId();
         if (activeListeners.containsKey(listenerId)) {
             logger.warn("Syslog listener already running for config: {}", listenerId);
             return true;
         }
-        
+
         try {
             SyslogListener listener;
             if ("UDP".equalsIgnoreCase(config.getSyslogProtocol())) {
@@ -94,10 +85,10 @@ public class SyslogServer {
                 logger.error("Unsupported syslog protocol: {}", config.getSyslogProtocol());
                 return false;
             }
-            
+
             activeListeners.put(listenerId, listener);
             executorService.submit(listener);
-            logger.info("Started {} syslog listener on port {} for config: {}", 
+            logger.info("Started {} syslog listener on port {} for config: {}",
                     config.getSyslogProtocol(), config.getSyslogPort(), listenerId);
             return true;
         } catch (Exception e) {
@@ -105,10 +96,10 @@ public class SyslogServer {
             return false;
         }
     }
-    
+
     /**
      * Stop a syslog listener for the given configuration.
-     * 
+     *
      * @param configId The ID of the syslog source configuration
      * @return true if the listener was stopped successfully, false otherwise
      */
@@ -123,7 +114,7 @@ public class SyslogServer {
             return false;
         }
     }
-    
+
     /**
      * Stop all active syslog listeners.
      */
@@ -135,22 +126,22 @@ public class SyslogServer {
         }
         activeListeners.clear();
     }
-    
+
     /**
      * Get the number of active syslog listeners.
-     * 
+     *
      * @return The number of active listeners
      */
     public int getActiveListenerCount() {
         return activeListeners.size();
     }
-    
+
     /**
      * Parse a syslog message and create a LogEntry.
-     * 
+     *
      * @param message The syslog message to parse
-     * @param format The format of the message (RFC3164 or RFC5424)
-     * @param source The source of the message (e.g., "syslog-udp:514")
+     * @param format  The format of the message (RFC3164 or RFC5424)
+     * @param source  The source of the message (e.g., "syslog-udp:514")
      * @return A LogEntry representing the syslog message
      */
     private LogEntry parseSyslogMessage(String message, String format, String source) {
@@ -168,12 +159,12 @@ public class SyslogServer {
             return createRawLogEntry(message, source);
         }
     }
-    
+
     /**
      * Parse an RFC3164 (BSD syslog) message.
-     * 
+     *
      * @param message The message to parse
-     * @param source The source of the message
+     * @param source  The source of the message
      * @return A LogEntry representing the message
      */
     private LogEntry parseRfc3164Message(String message, String source) {
@@ -184,18 +175,18 @@ public class SyslogServer {
             String hostname = matcher.group(3);
             String tag = matcher.group(4);
             String msg = matcher.group(5);
-            
+
             // Extract facility and severity from priority
             int facility = priority / 8;
             int severity = priority % 8;
-            
+
             // Parse timestamp
             LocalDateTime dateTime = parseRfc3164Timestamp(timestamp);
             long recordTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-            
+
             // Determine log level from severity
             String level = getSeverityLevel(severity);
-            
+
             // Create metadata
             Map<String, String> metadata = new HashMap<>();
             metadata.put("facility", String.valueOf(facility));
@@ -203,7 +194,7 @@ public class SyslogServer {
             metadata.put("hostname", hostname);
             metadata.put("tag", tag);
             metadata.put("protocol", source.startsWith("syslog-udp") ? "UDP" : "TCP");
-            
+
             return new LogEntry(
                     UUID.randomUUID().toString(),
                     System.currentTimeMillis(),
@@ -219,12 +210,12 @@ public class SyslogServer {
             return createRawLogEntry(message, source);
         }
     }
-    
+
     /**
      * Parse an RFC5424 (structured syslog) message.
-     * 
+     *
      * @param message The message to parse
-     * @param source The source of the message
+     * @param source  The source of the message
      * @return A LogEntry representing the message
      */
     private LogEntry parseRfc5424Message(String message, String source) {
@@ -239,17 +230,17 @@ public class SyslogServer {
             String msgId = matcher.group(7);
             String structuredData = matcher.group(8);
             String msg = matcher.group(9);
-            
+
             // Extract facility and severity from priority
             int facility = priority / 8;
             int severity = priority % 8;
-            
+
             // Parse timestamp
             long recordTime = parseRfc5424Timestamp(timestamp);
-            
+
             // Determine log level from severity
             String level = getSeverityLevel(severity);
-            
+
             // Create metadata
             Map<String, String> metadata = new HashMap<>();
             metadata.put("facility", String.valueOf(facility));
@@ -260,7 +251,7 @@ public class SyslogServer {
             metadata.put("msg_id", msgId);
             metadata.put("structured_data", structuredData);
             metadata.put("protocol", source.startsWith("syslog-udp") ? "UDP" : "TCP");
-            
+
             return new LogEntry(
                     UUID.randomUUID().toString(),
                     System.currentTimeMillis(),
@@ -276,18 +267,18 @@ public class SyslogServer {
             return createRawLogEntry(message, source);
         }
     }
-    
+
     /**
      * Create a raw log entry for a message that couldn't be parsed.
-     * 
+     *
      * @param message The raw message
-     * @param source The source of the message
+     * @param source  The source of the message
      * @return A LogEntry representing the raw message
      */
     private LogEntry createRawLogEntry(String message, String source) {
         Map<String, String> metadata = new HashMap<>();
         metadata.put("protocol", source.startsWith("syslog-udp") ? "UDP" : "TCP");
-        
+
         return new LogEntry(
                 UUID.randomUUID().toString(),
                 System.currentTimeMillis(),
@@ -299,10 +290,10 @@ public class SyslogServer {
                 message
         );
     }
-    
+
     /**
      * Parse an RFC3164 timestamp (e.g., "Jan 23 14:59:01").
-     * 
+     *
      * @param timestamp The timestamp string
      * @return A LocalDateTime representing the timestamp
      */
@@ -310,15 +301,15 @@ public class SyslogServer {
         // RFC3164 timestamps don't include the year, so we need to add it
         int currentYear = LocalDateTime.now().getYear();
         String timestampWithYear = timestamp + " " + currentYear;
-        
+
         // Parse the timestamp
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm:ss yyyy");
         return LocalDateTime.parse(timestampWithYear, formatter);
     }
-    
+
     /**
      * Parse an RFC5424 timestamp (e.g., "2023-01-23T14:59:01.123Z").
-     * 
+     *
      * @param timestamp The timestamp string
      * @return The Unix timestamp (milliseconds since epoch)
      */
@@ -326,10 +317,10 @@ public class SyslogServer {
         // RFC5424 timestamps are ISO 8601 format
         return DateTimeRegexPatterns.extractDateTimeToTimestamp(timestamp);
     }
-    
+
     /**
      * Get the log level corresponding to a syslog severity.
-     * 
+     *
      * @param severity The syslog severity (0-7)
      * @return The corresponding log level
      */
@@ -346,55 +337,55 @@ public class SyslogServer {
             default -> "UNKNOWN";
         };
     }
-    
+
     /**
      * Abstract base class for syslog listeners.
      */
     private abstract class SyslogListener implements Runnable {
         protected final LogSourceConfig config;
         protected final AtomicBoolean running = new AtomicBoolean(true);
-        
+
         public SyslogListener(LogSourceConfig config) {
             this.config = config;
         }
-        
+
         public void stop() {
             running.set(false);
         }
-        
+
         protected void processMessage(String message, String source) {
             LogEntry logEntry = parseSyslogMessage(message, config.getSyslogFormat(), source);
             logBufferService.addToBuffer(logEntry);
         }
     }
-    
+
     /**
      * UDP syslog listener.
      */
     private class UdpSyslogListener extends SyslogListener {
-        private DatagramSocket socket;
-        
+        private final DatagramSocket socket;
+
         public UdpSyslogListener(LogSourceConfig config) throws SocketException {
             super(config);
             this.socket = new DatagramSocket(config.getSyslogPort());
         }
-        
+
         @Override
         public void run() {
             byte[] buffer = new byte[4096];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            
+
             logger.info("UDP syslog listener started on port {}", config.getSyslogPort());
-            
+
             while (running.get()) {
                 try {
                     socket.receive(packet);
                     String message = new String(packet.getData(), 0, packet.getLength());
                     String source = "syslog-udp:" + config.getSyslogPort();
-                    
+
                     logger.debug("Received UDP syslog message: {}", message);
                     processMessage(message, source);
-                    
+
                     // Reset the packet for the next receive
                     packet.setLength(buffer.length);
                 } catch (IOException e) {
@@ -403,11 +394,11 @@ public class SyslogServer {
                     }
                 }
             }
-            
+
             socket.close();
             logger.info("UDP syslog listener stopped on port {}", config.getSyslogPort());
         }
-        
+
         @Override
         public void stop() {
             super.stop();
@@ -416,23 +407,23 @@ public class SyslogServer {
             }
         }
     }
-    
+
     /**
      * TCP syslog listener.
      */
     private class TcpSyslogListener extends SyslogListener {
-        private ServerSocket serverSocket;
-        
+        private final ServerSocket serverSocket;
+
         public TcpSyslogListener(LogSourceConfig config) throws IOException {
             super(config);
             this.serverSocket = new ServerSocket();
             this.serverSocket.bind(new InetSocketAddress(config.getSyslogPort()));
         }
-        
+
         @Override
         public void run() {
             logger.info("TCP syslog listener started on port {}", config.getSyslogPort());
-            
+
             while (running.get()) {
                 try {
                     Socket clientSocket = serverSocket.accept();
@@ -443,16 +434,16 @@ public class SyslogServer {
                     }
                 }
             }
-            
+
             try {
                 serverSocket.close();
             } catch (IOException e) {
                 logger.error("Error closing TCP server socket", e);
             }
-            
+
             logger.info("TCP syslog listener stopped on port {}", config.getSyslogPort());
         }
-        
+
         @Override
         public void stop() {
             super.stop();
@@ -465,30 +456,30 @@ public class SyslogServer {
             }
         }
     }
-    
+
     /**
      * Handler for TCP syslog client connections.
      */
     private class TcpClientHandler implements Runnable {
         private final Socket clientSocket;
         private final LogSourceConfig config;
-        
+
         public TcpClientHandler(Socket clientSocket, LogSourceConfig config) {
             this.clientSocket = clientSocket;
             this.config = config;
         }
-        
+
         @Override
         public void run() {
             String clientAddress = clientSocket.getInetAddress().getHostAddress();
             logger.debug("TCP syslog client connected: {}", clientAddress);
-            
+
             try (java.io.BufferedReader reader = new java.io.BufferedReader(
                     new java.io.InputStreamReader(clientSocket.getInputStream()))) {
-                
+
                 String source = "syslog-tcp:" + config.getSyslogPort();
                 String line;
-                
+
                 while ((line = reader.readLine()) != null) {
                     logger.debug("Received TCP syslog message: {}", line);
                     // Create a log entry from the message and add it to the buffer
@@ -503,7 +494,7 @@ public class SyslogServer {
                 } catch (IOException e) {
                     logger.error("Error closing TCP client socket", e);
                 }
-                
+
                 logger.debug("TCP syslog client disconnected: {}", clientAddress);
             }
         }

@@ -21,7 +21,7 @@ export const getAuthState = (): PersistedAuthState => {
   }
 };
 
-export const setAuthState = (partial: PersistedAuthState["state"]) => {
+export const setAuthState = (partial: PersistedAuthState['state']) => {
   try {
     if (typeof window === 'undefined') return;
     const current = getAuthState();

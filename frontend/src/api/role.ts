@@ -1,5 +1,4 @@
 import { Permission } from './permission';
-import { authHeader } from '@/api/http';
 import { apiUrl } from '@/config';
 
 export interface Role {
@@ -23,7 +22,7 @@ const API_BASE_URL = apiUrl('/api/roles');
 export const roleApi = {
   // Get all roles
   getAllRoles: async (): Promise<Role[]> => {
-    const response = await fetch(API_BASE_URL, { headers: { ...authHeader() } });
+    const response = await fetch(API_BASE_URL);
     if (!response.ok) {
       throw new Error('Failed to fetch roles');
     }
@@ -32,7 +31,7 @@ export const roleApi = {
 
   // Get a specific role by ID
   getRoleById: async (id: string): Promise<Role> => {
-    const response = await fetch(`${API_BASE_URL}/${id}`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/${id}`);
     if (!response.ok) {
       throw new Error('Failed to fetch role');
     }
@@ -43,10 +42,7 @@ export const roleApi = {
   createRole: async (role: RoleRequest): Promise<Role> => {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(role),
     });
     if (!response.ok) {
@@ -60,10 +56,7 @@ export const roleApi = {
   updateRole: async (id: string, role: Partial<RoleRequest>): Promise<Role> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(role),
     });
     if (!response.ok) {
@@ -77,7 +70,6 @@ export const roleApi = {
   deleteRole: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
-      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -87,7 +79,7 @@ export const roleApi = {
 
   // Get all permissions
   getAllPermissions: async (): Promise<Permission[]> => {
-    const response = await fetch(`${API_BASE_URL}/permissions`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/permissions`);
     if (!response.ok) {
       throw new Error('Failed to fetch permissions');
     }
@@ -96,7 +88,7 @@ export const roleApi = {
 
   // Get permissions by category
   getPermissionsByCategory: async (category: string): Promise<Permission[]> => {
-    const response = await fetch(`${API_BASE_URL}/permissions/category/${category}`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/permissions/category/${category}`);
     if (!response.ok) {
       throw new Error('Failed to fetch permissions by category');
     }
@@ -105,7 +97,7 @@ export const roleApi = {
 
   // Get all permission categories
   getAllPermissionCategories: async (): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/permissions/categories`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/permissions/categories`);
     if (!response.ok) {
       throw new Error('Failed to fetch permission categories');
     }

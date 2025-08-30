@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { apiUrl, config } from '@/config';
+
 const API_URL = apiUrl(config.apiPaths.logs);
 
 export interface LogEntry {
@@ -150,7 +151,7 @@ export const getTimeAggregation = async (params?: TimeAggregationParams): Promis
   // Convert the response data to an array of TimeSlot objects
   return Object.entries(response.data).map(([time, count]) => ({
     time: parseInt(time),
-    count
+    count,
   }));
 };
 
@@ -242,18 +243,15 @@ export const logSearchApi = {
   search: async (params: { query: string; timeRange?: string; maxResults?: number }) => {
     const searchParams: SearchParams = {
       query: params.query,
-      timeRange: params.timeRange as any || '24h'
+      timeRange: (params.timeRange as any) || '24h',
     };
-    
-    const [results, timeSlots] = await Promise.all([
-      searchLogs(searchParams),
-      getTimeAggregation(searchParams)
-    ]);
-    
+
+    const [results, timeSlots] = await Promise.all([searchLogs(searchParams), getTimeAggregation(searchParams)]);
+
     return {
       results: params.maxResults ? results.slice(0, params.maxResults) : results,
       timeSlots,
-      total: results.length
+      total: results.length,
     };
-  }
+  },
 };

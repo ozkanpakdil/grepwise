@@ -49,15 +49,15 @@ export interface WidgetData {
   statistics: Record<string, any>;
 }
 
-import { authHeader } from '@/api/http';
 import { apiUrl } from '@/config';
+
 const API_BASE_URL = apiUrl('/api/dashboards');
 
 // Dashboard API functions
 export const dashboardApi = {
   // Get all dashboards for a user
   getDashboards: async (userId: string): Promise<Dashboard[]> => {
-    const response = await fetch(`${API_BASE_URL}?userId=${userId}`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}?userId=${userId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch dashboards');
     }
@@ -66,7 +66,7 @@ export const dashboardApi = {
 
   // Get a specific dashboard by ID
   getDashboard: async (id: string, userId: string): Promise<Dashboard> => {
-    const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch dashboard');
     }
@@ -77,10 +77,7 @@ export const dashboardApi = {
   createDashboard: async (dashboard: DashboardRequest): Promise<Dashboard> => {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(dashboard),
     });
     if (!response.ok) {
@@ -94,10 +91,7 @@ export const dashboardApi = {
   updateDashboard: async (id: string, dashboard: DashboardRequest): Promise<Dashboard> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(dashboard),
     });
     if (!response.ok) {
@@ -111,7 +105,6 @@ export const dashboardApi = {
   deleteDashboard: async (id: string, userId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`, {
       method: 'DELETE',
-      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -123,10 +116,7 @@ export const dashboardApi = {
   shareDashboard: async (id: string, isShared: boolean, userId: string): Promise<Dashboard> => {
     const response = await fetch(`${API_BASE_URL}/${id}/share`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify({ isShared, userId }),
     });
     if (!response.ok) {
@@ -140,10 +130,7 @@ export const dashboardApi = {
   addWidget: async (dashboardId: string, widget: WidgetRequest): Promise<DashboardWidget> => {
     const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(widget),
     });
     if (!response.ok) {
@@ -157,10 +144,7 @@ export const dashboardApi = {
   updateWidget: async (dashboardId: string, widgetId: string, widget: WidgetRequest): Promise<DashboardWidget> => {
     const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(widget),
     });
     if (!response.ok) {
@@ -174,7 +158,6 @@ export const dashboardApi = {
   deleteWidget: async (dashboardId: string, widgetId: string, userId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}?userId=${userId}`, {
       method: 'DELETE',
-      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -183,13 +166,14 @@ export const dashboardApi = {
   },
 
   // Update widget positions
-  updateWidgetPositions: async (dashboardId: string, widgetPositions: Record<string, Record<string, number>>, userId: string): Promise<void> => {
+  updateWidgetPositions: async (
+    dashboardId: string,
+    widgetPositions: Record<string, Record<string, number>>,
+    userId: string
+  ): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/positions`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify({ widgetPositions, userId }),
     });
     if (!response.ok) {
@@ -200,7 +184,7 @@ export const dashboardApi = {
 
   // Get widget data
   getWidgetData: async (dashboardId: string, widgetId: string, userId: string): Promise<WidgetData> => {
-    const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}/data?userId=${userId}`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}/data?userId=${userId}`);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch widget data');
@@ -210,7 +194,7 @@ export const dashboardApi = {
 
   // Get dashboard statistics
   getStatistics: async (): Promise<Record<string, any>> => {
-    const response = await fetch(`${API_BASE_URL}/statistics`, { headers: { ...authHeader() } });
+    const response = await fetch(`${API_BASE_URL}/statistics`);
     if (!response.ok) {
       throw new Error('Failed to fetch dashboard statistics');
     }

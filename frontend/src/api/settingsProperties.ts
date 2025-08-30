@@ -1,18 +1,12 @@
 import { apiUrl } from '@/config';
-import { authHeader } from '@/api/http';
 
 export interface SettingsProperties {
   ldapEnabled: boolean;
 }
 
-
 export const getSettingsProperties = async (): Promise<SettingsProperties> => {
   const response = await fetch(apiUrl('/api/settings/properties'), {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader(),
-    },
   });
   if (!response.ok) {
     let message = 'Failed to load settings properties';
@@ -20,7 +14,9 @@ export const getSettingsProperties = async (): Promise<SettingsProperties> => {
       const err = await response.json();
       message = err?.error || message;
     } catch {
-      try { message = await response.text(); } catch {}
+      try {
+        message = await response.text();
+      } catch {}
     }
     throw new Error(message);
   }

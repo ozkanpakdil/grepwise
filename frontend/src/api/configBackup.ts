@@ -19,7 +19,7 @@ export const exportConfigurations = async (): Promise<void> => {
 
 /**
  * Import configurations from a JSON file.
- * 
+ *
  * @param file The JSON file containing configurations
  * @param overwrite Whether to overwrite existing configurations
  * @returns A summary of the import operation

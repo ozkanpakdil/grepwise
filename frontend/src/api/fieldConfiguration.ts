@@ -73,5 +73,5 @@ export const fieldConfigurationApi = {
       fieldConfiguration
     );
     return response.data;
-  }
+  },
 };

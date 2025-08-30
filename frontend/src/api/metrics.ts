@@ -78,54 +78,41 @@ export const getSystemInfo = async (): Promise<SystemInfo> => {
 // Helper function to get all GrepWise custom metrics
 export const getGrepWiseMetrics = async (): Promise<MetricValue[]> => {
   const names = await getMetricNames();
-  const grepwiseMetrics = names.filter(name => name.startsWith('grepwise.'));
-  
-  const metricValues = await Promise.all(
-    grepwiseMetrics.map(name => getMetricValue(name))
-  );
-  
+  const grepwiseMetrics = names.filter((name) => name.startsWith('grepwise.'));
+
+  const metricValues = await Promise.all(grepwiseMetrics.map((name) => getMetricValue(name)));
+
   return metricValues;
 };
 
 // Helper function to get JVM metrics
 export const getJvmMetrics = async (): Promise<MetricValue[]> => {
   const names = await getMetricNames();
-  const jvmMetrics = names.filter(name => name.startsWith('jvm.'));
-  
-  const metricValues = await Promise.all(
-    jvmMetrics.map(name => getMetricValue(name))
-  );
-  
+  const jvmMetrics = names.filter((name) => name.startsWith('jvm.'));
+
+  const metricValues = await Promise.all(jvmMetrics.map((name) => getMetricValue(name)));
+
   return metricValues;
 };
 
 // Helper function to get system metrics
 export const getSystemMetrics = async (): Promise<MetricValue[]> => {
   const names = await getMetricNames();
-  const systemMetrics = names.filter(name => 
-    name.startsWith('system.') || 
-    name.startsWith('process.') || 
-    name.startsWith('disk.')
+  const systemMetrics = names.filter(
+    (name) => name.startsWith('system.') || name.startsWith('process.') || name.startsWith('disk.')
   );
-  
-  const metricValues = await Promise.all(
-    systemMetrics.map(name => getMetricValue(name))
-  );
-  
+
+  const metricValues = await Promise.all(systemMetrics.map((name) => getMetricValue(name)));
+
   return metricValues;
 };
 
 // Helper function to get HTTP metrics
 export const getHttpMetrics = async (): Promise<MetricValue[]> => {
   const names = await getMetricNames();
-  const httpMetrics = names.filter(name => 
-    name.startsWith('http.') || 
-    name.startsWith('tomcat.')
-  );
-  
-  const metricValues = await Promise.all(
-    httpMetrics.map(name => getMetricValue(name))
-  );
-  
+  const httpMetrics = names.filter((name) => name.startsWith('http.') || name.startsWith('tomcat.'));
+
+  const metricValues = await Promise.all(httpMetrics.map((name) => getMetricValue(name)));
+
   return metricValues;
 };

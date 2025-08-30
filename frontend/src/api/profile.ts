@@ -19,26 +19,24 @@ export interface ProfileUpdateRequest {
   newPassword?: string;
 }
 
-import { authHeader } from '@/api/http';
 import { apiUrl } from '@/config';
+
 const API_BASE_URL = apiUrl('/api/profile');
 
 // Profile API functions
 export const profileApi = {
   // Get current user's profile
   getCurrentProfile: async (): Promise<ProfileResponse> => {
-    const response = await fetch(API_BASE_URL, {
-      headers: {
-        ...authHeader(),
-      },
-    });
+    const response = await fetch(API_BASE_URL);
     if (!response.ok) {
       let message = 'Failed to fetch profile';
       try {
         const err = await response.json();
         message = err?.error || message;
       } catch {
-        try { message = await response.text(); } catch {}
+        try {
+          message = await response.text();
+        } catch {}
       }
       throw new Error(message);
     }
@@ -53,10 +51,7 @@ export const profileApi = {
   updateProfile: async (profileData: ProfileUpdateRequest): Promise<ProfileResponse> => {
     const response = await fetch(API_BASE_URL, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(profileData),
     });
     if (!response.ok) {
@@ -65,7 +60,9 @@ export const profileApi = {
         const err = await response.json();
         message = err?.error || message;
       } catch {
-        try { message = await response.text(); } catch {}
+        try {
+          message = await response.text();
+        } catch {}
       }
       throw new Error(message);
     }

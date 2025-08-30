@@ -7,7 +7,6 @@
  * LDAP settings interface.
  */
 import { apiUrl } from '@/config';
-import { authHeader } from '@/api/http';
 
 export interface LdapSettings {
   enabled: boolean;
@@ -23,20 +22,15 @@ export interface LdapSettings {
   groupRoleAttribute: string;
 }
 
-
 /**
  * Get the current LDAP settings.
- * 
+ *
  * @returns The current LDAP settings
  */
 export const getLdapSettings = async (): Promise<LdapSettings> => {
   try {
     const response = await fetch(apiUrl('/api/settings/ldap'), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
     });
 
     if (!response.ok) {
@@ -59,7 +53,7 @@ export const getLdapSettings = async (): Promise<LdapSettings> => {
 
 /**
  * Update LDAP settings.
- * 
+ *
  * @param settings The new LDAP settings
  * @returns A success message
  */
@@ -67,10 +61,7 @@ export const updateLdapSettings = async (settings: LdapSettings): Promise<{ mess
   try {
     const response = await fetch(apiUrl('/api/settings/ldap'), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
+
       body: JSON.stringify(settings),
     });
 
@@ -92,17 +83,13 @@ export const updateLdapSettings = async (settings: LdapSettings): Promise<{ mess
 
 /**
  * Test LDAP connection with the current settings.
- * 
+ *
  * @returns A success message if the connection is successful
  */
 export const testLdapConnection = async (): Promise<{ message: string }> => {
   try {
     const response = await fetch(apiUrl('/api/settings/ldap/test'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeader(),
-      },
     });
 
     if (!response.ok) {

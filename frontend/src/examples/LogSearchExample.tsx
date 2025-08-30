@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logService, LogEntry } from '../services';
+import { formatTimestamp } from '@/lib/utils';
 
 /**
  * Example component demonstrating how to use the gRPC-Web LogService.
@@ -180,7 +181,7 @@ const LogSearchExample: React.FC = () => {
                 {logs.map((log) => (
                   <tr key={log.getId()}>
                     <td className="px-4 py-2 border">
-                      {new Date(log.getTimestamp()).toLocaleString()}
+                      {formatTimestamp(log.getTimestamp())}
                     </td>
                     <td className="px-4 py-2 border">{log.getLevel()}</td>
                     <td className="px-4 py-2 border">{log.getSource()}</td>

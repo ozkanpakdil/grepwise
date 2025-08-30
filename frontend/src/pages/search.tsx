@@ -18,6 +18,7 @@ import { SearchService } from '@/services/SearchService';
 import { apiUrl, config } from '@/config';
 import { StreamingService } from '@/services/StreamingService';
 import { initialSearchState, searchReducer } from '@/state/searchReducer';
+import { formatTimestamp } from '@/lib/utils';
 
 // Type definitions for sorting and filtering
 type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
@@ -555,9 +556,7 @@ export default function SearchPage() {
     }
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
+  const formatTs = (timestamp: number) => formatTimestamp(timestamp);
 
   const getLevelClass = (level: string) => {
     switch (level.toUpperCase()) {

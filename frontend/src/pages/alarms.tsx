@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { alarmApi, Alarm, AlarmRequest, NotificationChannel } from '@/api/alarm';
 import NotificationPreferences from '@/components/NotificationPreferences';
+import { formatDate as gwFormatDate } from '@/lib/utils';
 
 export default function AlarmsPage() {
   const navigate = useNavigate();
@@ -174,7 +175,7 @@ export default function AlarmsPage() {
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
+    return gwFormatDate(timestamp);
   };
 
   if (loading) {

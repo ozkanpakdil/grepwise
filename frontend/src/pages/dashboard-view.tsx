@@ -23,6 +23,7 @@ import jsPDF from 'jspdf';
 // Using MUI Grid instead of react-grid-layout
 import Grid from '@mui/material/Grid';
 import { useSwipeable } from 'react-swipeable';
+import { formatTimestamp } from '@/lib/utils';
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -210,7 +211,7 @@ const DashboardView: React.FC = () => {
 
       // Add timestamp
       pdf.setFontSize(10);
-      pdf.text(`Exported on ${new Date().toLocaleString()}`, 14, 22);
+      pdf.text(`Exported on ${formatTimestamp(Date.now())}`, 14, 22);
 
       // Calculate dimensions to fit the page
       const imgWidth = 280;

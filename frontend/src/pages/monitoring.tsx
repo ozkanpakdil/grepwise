@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useToast} from '@/components/ui/use-toast';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
+import { formatTimestamp } from '@/lib/utils';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
@@ -242,7 +243,7 @@ export default function MonitoringPage() {
             </div>
 
             <div className="text-sm text-muted-foreground">
-                Last refreshed: {lastRefreshed.toLocaleTimeString()}
+                Last refreshed: {formatTimestamp(lastRefreshed.getTime())}
                 {refreshInterval && (
                     <span> · Auto-refresh every {refreshInterval / 1000} seconds</span>
                 )}

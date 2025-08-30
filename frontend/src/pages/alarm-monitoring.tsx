@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { alarmApi, Alarm, AlarmStatistics, AlarmEvent } from '@/api/alarm';
+import { formatTimestamp } from '@/lib/utils';
 
 export default function AlarmMonitoringPage() {
   const navigate = useNavigate();
@@ -121,9 +122,7 @@ export default function AlarmMonitoringPage() {
   };
 
   // Format timestamp to readable date/time
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
+  const formatTs = (timestamp: number) => formatTimestamp(timestamp);
 
   // Calculate time elapsed since timestamp
   const getTimeElapsed = (timestamp: number) => {

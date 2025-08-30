@@ -4,6 +4,7 @@ import { Plus, Share2, Trash2, BarChart3, PieChart, Table, Activity, Eye } from 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { dashboardApi, Dashboard, DashboardRequest, WidgetRequest } from '@/api/dashboard';
+import { formatDate } from '@/lib/utils';
 
 const DashboardsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -262,7 +263,7 @@ const DashboardsPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <div className="text-xs text-muted-foreground">
                   {dashboard.isShared ? 'Shared' : 'Private'} • 
-                  Created {new Date(dashboard.createdAt).toLocaleDateString()}
+                  Created {formatDate(dashboard.createdAt)}
                 </div>
                 <div className="flex space-x-2">
                   <Button

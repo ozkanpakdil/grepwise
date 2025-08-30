@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/auth-store';
+import { setAuthState } from '@/api/http';
+import { apiUrl } from '@/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -9,12 +10,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuthStore();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!username || !password) {
       toast({
         title: 'Error',
@@ -23,43 +23,29 @@ export default function LoginPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      // In a real app, this would be an API call to the backend
-      // For now, we'll just simulate a successful login with the default admin user
-      if (username === 'admin' && password === 'admin') {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        login(
-          {
-            id: '1',
-            username: 'admin',
-            email: 'admin@grepwise.io',
-            firstName: 'Admin',
-            lastName: 'User',
-            roles: ['ADMIN'],
-          },
-          'fake-access-token',
-          'fake-refresh-token'
-        );
-        
-        toast({
-          title: 'Success',
-          description: 'You have successfully logged in',
-        });
-        
-        navigate('/');
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Invalid username or password',
-          variant: 'destructive',
-        });
+      const res = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Login failed');
       }
-    } catch (error) {
+      const data = await res.json();
+      setAuthState({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+        isAuthenticated: true,
+      });
+      toast({ title: 'Success', description: 'You have successfully logged in' });
+      navigate('/');
+    } catch (error: any) {
       toast({
         title: 'Error',
         description: 'An error occurred during login',
@@ -76,11 +62,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold">GrepWise</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            An open-source alternative to Splunk
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">An open-source alternative to Splunk</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="mt-8 space-y-6" data-testid="login-form">
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
@@ -100,7 +84,7 @@ export default function LoginPage() {
                 placeholder="admin"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium">
                 Password
@@ -121,20 +105,13 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-              data-testid="sign-in"
-            >
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="sign-in">
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </div>
-          
+
           <div className="text-center text-sm">
-            <p className="text-muted-foreground">
-              Default credentials: admin / admin
-            </p>
+            <p className="text-muted-foreground">Default credentials: admin / admin</p>
           </div>
         </form>
       </div>

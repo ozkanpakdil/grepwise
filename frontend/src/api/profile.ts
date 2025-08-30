@@ -1,4 +1,4 @@
-import { User } from '@/store/auth-store';
+// Profile API
 
 export interface ProfileResponse {
   id: string;
@@ -19,7 +19,9 @@ export interface ProfileUpdateRequest {
   newPassword?: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/profile';
+import { authHeader } from '@/api/http';
+import { apiUrl } from '@/config';
+const API_BASE_URL = apiUrl('/api/profile');
 
 // Profile API functions
 export const profileApi = {
@@ -27,14 +29,24 @@ export const profileApi = {
   getCurrentProfile: async (): Promise<ProfileResponse> => {
     const response = await fetch(API_BASE_URL, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('grepwise-auth-accessToken')}`,
+        ...authHeader(),
       },
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch profile');
+      let message = 'Failed to fetch profile';
+      try {
+        const err = await response.json();
+        message = err?.error || message;
+      } catch {
+        try { message = await response.text(); } catch {}
+      }
+      throw new Error(message);
     }
-    return response.json();
+    try {
+      return await response.json();
+    } catch {
+      throw new Error('Failed to parse profile response');
+    }
   },
 
   // Update current user's profile
@@ -43,15 +55,25 @@ export const profileApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('grepwise-auth-accessToken')}`,
+        ...authHeader(),
       },
       body: JSON.stringify(profileData),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update profile');
+      let message = 'Failed to update profile';
+      try {
+        const err = await response.json();
+        message = err?.error || message;
+      } catch {
+        try { message = await response.text(); } catch {}
+      }
+      throw new Error(message);
     }
-    return response.json();
+    try {
+      return await response.json();
+    } catch {
+      throw new Error('Failed to parse profile response');
+    }
   },
 
   // Change password

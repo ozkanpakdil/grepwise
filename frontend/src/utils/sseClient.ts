@@ -17,6 +17,9 @@ interface EventListeners {
   [eventName: string]: EventCallback[];
 }
 
+import { apiUrl } from '@/config';
+import { getAccessToken } from '@/api/http';
+
 class SSEClient {
   private eventSource: EventSource | null = null;
   private url: string;
@@ -32,7 +35,18 @@ class SSEClient {
    * @param options Configuration options
    */
   constructor(url: string, options: SSEOptions = {}) {
-    this.url = url;
+    // normalize to apiUrl and append access_token if available
+    const token = getAccessToken();
+    try {
+      const full = apiUrl(url.replace(/^https?:\/\/[^/]+/, ''));
+      const u = new URL(full, window.location.origin);
+      if (token) u.searchParams.set('access_token', token);
+      this.url = u.toString();
+    } catch {
+      const base = apiUrl(url.replace(/^https?:\/\/[^/]+/, ''));
+      const sep = base.includes('?') ? '&' : '?';
+      this.url = token ? `${base}${sep}access_token=${encodeURIComponent(token)}` : base;
+    }
     this.options = {
       withCredentials: false,
       retryInterval: 5000, // 5 seconds
@@ -214,18 +228,24 @@ class SSEClient {
     }
 
     this.retryCount++;
-    
-    if (this.options.maxRetries && this.retryCount > this.options.maxRetries) {
-      console.error(`SSE connection failed after ${this.retryCount - 1} retries`);
+
+    // Exponential backoff policy requested:
+    // 1st error -> wait 1 minute, 2nd -> 5 minutes, 3rd -> 15 minutes, 4th -> stop.
+    const schedule = [60_000, 5 * 60_000, 15 * 60_000];
+
+    if (this.retryCount > schedule.length) {
+      console.error(`SSE connection failed after ${this.retryCount - 1} retries; giving up.`);
+      // Do not schedule any more reconnects; allow the UI to remain idle.
       return;
     }
 
-    console.log(`Scheduling SSE reconnect attempt ${this.retryCount} in ${this.options.retryInterval}ms`);
-    
+    const waitMs = schedule[this.retryCount - 1];
+    console.log(`Scheduling SSE reconnect attempt ${this.retryCount} in ${waitMs}ms`);
+
     this.reconnectTimeout = setTimeout(() => {
       console.log(`Attempting to reconnect SSE (attempt ${this.retryCount})`);
       this.connect();
-    }, this.options.retryInterval);
+    }, waitMs);
   }
 }
 
@@ -248,7 +268,7 @@ export const getLogUpdateClient = (
   }
 
   // Build the URL with query parameters
-  let url = 'http://localhost:8080/api/realtime/logs';
+  let url = apiUrl('/api/realtime/logs');
   const params = new URLSearchParams();
   
   if (query) params.append('query', query);
@@ -288,7 +308,7 @@ export const getWidgetUpdateClient = (
     return widgetUpdateClients[clientKey];
   }
 
-  const url = `http://localhost:8080/api/realtime/widgets/${widgetId}?dashboardId=${dashboardId}`;
+  const url = apiUrl(`/api/realtime/widgets/${widgetId}?dashboardId=${encodeURIComponent(dashboardId)}`);
   
   const client = new SSEClient(url, {
     onOpen: () => console.log(`Widget update SSE connection established for widget ${widgetId}`),

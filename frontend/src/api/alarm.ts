@@ -59,14 +59,16 @@ export interface AlarmEvent {
   details?: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/alarms';
-const API_EVENTS_URL = 'http://localhost:8080/api/alarm-events';
+import { authHeader } from '@/api/http';
+import { apiUrl } from '@/config';
+const API_BASE_URL = apiUrl('/api/alarms');
+const API_EVENTS_URL = apiUrl('/api/alarm-events');
 
 // Alarm API functions
 export const alarmApi = {
   // Get all alarms
   getAllAlarms: async (): Promise<Alarm[]> => {
-    const response = await fetch(API_BASE_URL);
+    const response = await fetch(API_BASE_URL, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarms');
     }
@@ -75,7 +77,7 @@ export const alarmApi = {
 
   // Get a specific alarm by ID
   getAlarmById: async (id: string): Promise<Alarm> => {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
+    const response = await fetch(`${API_BASE_URL}/${id}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarm');
     }
@@ -88,6 +90,7 @@ export const alarmApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(alarm),
     });
@@ -104,6 +107,7 @@ export const alarmApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(alarm),
     });
@@ -118,6 +122,7 @@ export const alarmApi = {
   deleteAlarm: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -129,6 +134,7 @@ export const alarmApi = {
   toggleAlarm: async (id: string): Promise<Alarm> => {
     const response = await fetch(`${API_BASE_URL}/${id}/toggle`, {
       method: 'PUT',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -139,7 +145,7 @@ export const alarmApi = {
 
   // Get alarms by enabled status
   getAlarmsByEnabled: async (enabled: boolean): Promise<Alarm[]> => {
-    const response = await fetch(`${API_BASE_URL}/enabled/${enabled}`);
+    const response = await fetch(`${API_BASE_URL}/enabled/${enabled}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarms by enabled status');
     }
@@ -150,6 +156,7 @@ export const alarmApi = {
   evaluateAlarm: async (id: string): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/${id}/evaluate`, {
       method: 'POST',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -160,7 +167,7 @@ export const alarmApi = {
 
   // Get alarm statistics
   getStatistics: async (): Promise<AlarmStatistics> => {
-    const response = await fetch(`${API_BASE_URL}/statistics`);
+    const response = await fetch(`${API_BASE_URL}/statistics`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarm statistics');
     }
@@ -169,7 +176,7 @@ export const alarmApi = {
 
   // Get all alarm events
   getAlarmEvents: async (): Promise<AlarmEvent[]> => {
-    const response = await fetch(API_EVENTS_URL);
+    const response = await fetch(API_EVENTS_URL, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarm events');
     }
@@ -178,7 +185,7 @@ export const alarmApi = {
 
   // Get alarm events by status
   getAlarmEventsByStatus: async (status: AlarmEvent['status']): Promise<AlarmEvent[]> => {
-    const response = await fetch(`${API_EVENTS_URL}/status/${status}`);
+    const response = await fetch(`${API_EVENTS_URL}/status/${status}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarm events by status');
     }
@@ -187,7 +194,7 @@ export const alarmApi = {
 
   // Get alarm events for a specific alarm
   getAlarmEventsForAlarm: async (alarmId: string): Promise<AlarmEvent[]> => {
-    const response = await fetch(`${API_EVENTS_URL}/alarm/${alarmId}`);
+    const response = await fetch(`${API_EVENTS_URL}/alarm/${alarmId}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch alarm events for alarm');
     }
@@ -198,6 +205,7 @@ export const alarmApi = {
   acknowledgeAlarm: async (eventId: string): Promise<AlarmEvent> => {
     const response = await fetch(`${API_EVENTS_URL}/${eventId}/acknowledge`, {
       method: 'PUT',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -210,6 +218,7 @@ export const alarmApi = {
   resolveAlarm: async (eventId: string): Promise<AlarmEvent> => {
     const response = await fetch(`${API_EVENTS_URL}/${eventId}/resolve`, {
       method: 'PUT',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();

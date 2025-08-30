@@ -2,12 +2,13 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {BrowserRouter} from 'react-router-dom';
 import DashboardView from '@/pages/dashboard-view';
-import {useAuthStore} from '@/store/auth-store';
+// auth state util mocked below
 import {ThemeProvider} from '@/components/theme-provider';
 
-// Mock the auth store
-vi.mock('@/store/auth-store', () => ({
-    useAuthStore: vi.fn(),
+// Mock the auth util
+vi.mock('@/api/http', () => ({
+  getAuthState: () => ({ state: { user: { username: 'testuser', email: 'test@example.com' } } }),
+  clearAuthState: vi.fn(),
 }));
 
 // Mock the dashboard API
@@ -74,11 +75,7 @@ function setViewportSize(width: number, height: number) {
 
 describe('Mobile Responsiveness Tests', () => {
     beforeEach(() => {
-        // Mock the auth store to return a logged-in user
-        (useAuthStore as any).mockReturnValue({
-            user: {username: 'testuser', email: 'test@example.com'},
-            logout: vi.fn(),
-        });
+        // No-op: auth is mocked via getAuthState in '@/api/http'
     });
 
     afterEach(() => {

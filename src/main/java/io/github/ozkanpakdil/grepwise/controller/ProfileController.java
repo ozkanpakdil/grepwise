@@ -37,18 +37,23 @@ public class ProfileController {
     @GetMapping
     public ResponseEntity<?> getCurrentUserProfile() {
         try {
-            // Get the current authenticated user's ID from the security context
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userId = (String) authentication.getPrincipal();
-
-            // Find the user in the repository
-            User user = userRepository.findById(userId);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "User not found"));
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
             }
 
-            // Convert to a profile response (excluding sensitive information)
+            // Principal could be a userId string or another representation; try userId first, then username fallback
+            String principalStr = String.valueOf(authentication.getPrincipal());
+            User user = userRepository.findById(principalStr);
+            if (user == null) {
+                // Fallback: try by username (authentication.getName())
+                String name = authentication.getName();
+                user = userRepository.findByUsername(name);
+            }
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
+            }
+
             ProfileResponse profileResponse = new ProfileResponse(
                     user.getId(),
                     user.getUsername(),
@@ -63,8 +68,7 @@ public class ProfileController {
             return ResponseEntity.ok(profileResponse);
         } catch (Exception e) {
             logger.error("Error getting user profile: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Internal server error"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Internal server error"));
         }
     }
 
@@ -77,12 +81,19 @@ public class ProfileController {
     @PutMapping
     public ResponseEntity<?> updateCurrentUserProfile(@RequestBody ProfileRequest profileRequest) {
         try {
-            // Get the current authenticated user's ID from the security context
+            // Get the current authenticated user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userId = (String) authentication.getPrincipal();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+            }
 
-            // Find the user in the repository
-            User user = userRepository.findById(userId);
+            // Try principal as ID first, then fallback to username
+            String principalStr = String.valueOf(authentication.getPrincipal());
+            User user = userRepository.findById(principalStr);
+            if (user == null) {
+                String name = authentication.getName();
+                user = userRepository.findByUsername(name);
+            }
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "User not found"));

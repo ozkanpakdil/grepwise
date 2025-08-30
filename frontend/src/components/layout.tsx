@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { useTheme } from '@/components/theme-provider';
-import { useAuthStore } from '@/store/auth-store';
+import { getAuthState, clearAuthState } from '@/api/http';
 import { Button } from '@/components/ui/button';
 import { MoonIcon, SunIcon, LogOutIcon, SettingsIcon, SearchIcon, BellIcon, LayoutDashboard, UsersIcon, ShieldIcon, MenuIcon, XIcon, ActivityIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -8,7 +8,12 @@ import { useState } from 'react';
 
 export default function Layout() {
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const auth = getAuthState();
+  const user: any = auth?.state?.user || null;
+  const logout = () => {
+    clearAuthState();
+    window.location.href = '/login';
+  };
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

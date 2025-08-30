@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from '@/components/theme-provider';
 import App from '@/App';
+import '@/lib/fetch-interceptor';
 import '@/styles/globals.css';
 
 // Create a client for React Query

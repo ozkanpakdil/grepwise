@@ -22,7 +22,7 @@ import java.util.Map;
 @Service
 public class TokenService {
 
-    @Value("${jwt.secret:defaultSecretKey}")
+    @Value("${jwt.secret:}")
     private String secret;
 
     @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
@@ -60,12 +60,12 @@ public class TokenService {
      */
     private String generateToken(User user, long expiration) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", user.getId());
         claims.put("username", user.getUsername());
         claims.put("roles", user.getRoleNames());
         
         return Jwts.builder()
                 .setClaims(claims)
+                .setSubject(user.getId())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -165,8 +165,27 @@ public class TokenService {
      *
      * @return The signing key
      */
+    private volatile SecretKey cachedKey;
+
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        if (cachedKey != null) return cachedKey;
+        synchronized (this) {
+            if (cachedKey != null) return cachedKey;
+            // If no secret is provided via configuration, generate a strong random key at startup.
+            // Note: Random key means tokens won't survive restarts. For production, set jwt.secret to a 256-bit (or longer) base64 string.
+            if (secret == null || secret.isBlank()) {
+                cachedKey = Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
+                return cachedKey;
+            }
+            // Support both Base64-encoded and raw string secrets (fallback). Prefer Base64-encoded 256+ bit secrets.
+            byte[] keyBytes;
+            try {
+                keyBytes = java.util.Base64.getDecoder().decode(secret);
+            } catch (IllegalArgumentException ex) {
+                keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+            }
+            cachedKey = Keys.hmacShaKeyFor(keyBytes);
+            return cachedKey;
+        }
     }
 }

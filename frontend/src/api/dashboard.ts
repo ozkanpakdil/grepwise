@@ -49,13 +49,15 @@ export interface WidgetData {
   statistics: Record<string, any>;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/dashboards';
+import { authHeader } from '@/api/http';
+import { apiUrl } from '@/config';
+const API_BASE_URL = apiUrl('/api/dashboards');
 
 // Dashboard API functions
 export const dashboardApi = {
   // Get all dashboards for a user
   getDashboards: async (userId: string): Promise<Dashboard[]> => {
-    const response = await fetch(`${API_BASE_URL}?userId=${userId}`);
+    const response = await fetch(`${API_BASE_URL}?userId=${userId}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch dashboards');
     }
@@ -64,7 +66,7 @@ export const dashboardApi = {
 
   // Get a specific dashboard by ID
   getDashboard: async (id: string, userId: string): Promise<Dashboard> => {
-    const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`);
+    const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch dashboard');
     }
@@ -77,6 +79,7 @@ export const dashboardApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(dashboard),
     });
@@ -93,6 +96,7 @@ export const dashboardApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(dashboard),
     });
@@ -107,6 +111,7 @@ export const dashboardApi = {
   deleteDashboard: async (id: string, userId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${id}?userId=${userId}`, {
       method: 'DELETE',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -120,6 +125,7 @@ export const dashboardApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify({ isShared, userId }),
     });
@@ -136,6 +142,7 @@ export const dashboardApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(widget),
     });
@@ -152,6 +159,7 @@ export const dashboardApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(widget),
     });
@@ -166,6 +174,7 @@ export const dashboardApi = {
   deleteWidget: async (dashboardId: string, widgetId: string, userId: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}?userId=${userId}`, {
       method: 'DELETE',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -179,6 +188,7 @@ export const dashboardApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify({ widgetPositions, userId }),
     });
@@ -190,7 +200,7 @@ export const dashboardApi = {
 
   // Get widget data
   getWidgetData: async (dashboardId: string, widgetId: string, userId: string): Promise<WidgetData> => {
-    const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}/data?userId=${userId}`);
+    const response = await fetch(`${API_BASE_URL}/${dashboardId}/widgets/${widgetId}/data?userId=${userId}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch widget data');
@@ -200,7 +210,7 @@ export const dashboardApi = {
 
   // Get dashboard statistics
   getStatistics: async (): Promise<Record<string, any>> => {
-    const response = await fetch(`${API_BASE_URL}/statistics`);
+    const response = await fetch(`${API_BASE_URL}/statistics`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch dashboard statistics');
     }

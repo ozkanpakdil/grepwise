@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { useAuthStore } from '@/store/auth-store';
+import { getAuthState } from '@/api/http';
 import Layout from '@/components/layout';
 import LoginPage from '@/pages/login';
 import SearchPage from '@/pages/search';
@@ -13,8 +13,21 @@ import UsersPage from '@/pages/users';
 import MonitoringPage from '@/pages/monitoring';
 import NotFoundPage from '@/pages/not-found';
 
+import { useEffect, useState } from 'react';
+
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const [token, setToken] = useState<string | null>(getAuthState()?.state?.accessToken || null);
+  const isAuthenticated = !!token;
+
+  useEffect(() => {
+    const update = () => setToken(getAuthState()?.state?.accessToken || null);
+    window.addEventListener('grepwise-auth-changed', update);
+    window.addEventListener('storage', update);
+    return () => {
+      window.removeEventListener('grepwise-auth-changed', update);
+      window.removeEventListener('storage', update);
+    };
+  }, []);
 
   return (
     <>

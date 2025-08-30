@@ -8,14 +8,36 @@ export type StreamCallbacks = {
   onHistError?: (e: any) => void;
 };
 
+import { getAccessToken } from '@/api/http';
+
 export class StreamingService {
   private logsEs: EventSource | null = null;
   private histEs: EventSource | null = null;
 
+  private appendToken(url: string, token: string | null): string {
+    if (!token) return url;
+    try {
+      const u = new URL(url, window.location.origin);
+      if (!u.searchParams.get('access_token')) {
+        u.searchParams.set('access_token', token);
+      }
+      return u.toString();
+    } catch {
+      // Fallback if URL constructor fails
+      const sep = url.includes('?') ? '&' : '?';
+      if (url.includes('access_token=')) return url;
+      return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+    }
+  }
+
   start(logsUrl: string, histogramUrl: string, cb: StreamCallbacks) {
     this.stopAll();
 
-    const esLogs = new EventSource(logsUrl);
+    const token = getAccessToken();
+    const logsWithToken = this.appendToken(logsUrl, token);
+    const histWithToken = this.appendToken(histogramUrl, token);
+
+    const esLogs = new EventSource(logsWithToken);
     this.logsEs = esLogs;
 
     esLogs.addEventListener('page', (ev: MessageEvent) => {
@@ -30,7 +52,7 @@ export class StreamingService {
       cb.onLogsError?.(e);
     });
 
-    const esHist = new EventSource(histogramUrl);
+    const esHist = new EventSource(histWithToken);
     this.histEs = esHist;
 
     esHist.addEventListener('init', (ev: MessageEvent) => {

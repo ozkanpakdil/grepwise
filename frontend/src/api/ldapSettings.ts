@@ -7,6 +7,7 @@
  * LDAP settings interface.
  */
 import { apiUrl } from '@/config';
+import { authHeader } from '@/api/http';
 
 export interface LdapSettings {
   enabled: boolean;
@@ -22,10 +23,6 @@ export interface LdapSettings {
   groupRoleAttribute: string;
 }
 
-const authHeader = () => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('grepwise-auth-accessToken') : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
 
 /**
  * Get the current LDAP settings.

@@ -104,6 +104,8 @@ public class WebSecurityConfig {
 
                         // User management endpoints - require admin role
                         .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ROLE_ADMIN")
+                        // Profile should be accessible to any authenticated user
+                        .requestMatchers(HttpMethod.GET, "/api/profile").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ROLE_ADMIN")
@@ -127,12 +129,8 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/alarms/**").hasAuthority("alarm:delete")
                         .requestMatchers("/api/alarms/*/acknowledge").hasAuthority("alarm:acknowledge")
 
-                        // Settings endpoints - require admin role
-                        .requestMatchers("/api/settings/**").hasAuthority("ROLE_ADMIN")
-
                         // Allow CORS preflight for all API endpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
 
                         // Configuration endpoints - allow for now (development/setup)
                         .requestMatchers("/api/config/**").permitAll()
@@ -154,7 +152,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Cache-Control", "Pragma"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

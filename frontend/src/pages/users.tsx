@@ -3,8 +3,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { userApi, UserRequest } from '@/api/user';
 import { roleApi, Role } from '@/api/role';
-import { User } from '@/store/auth-store';
-import { useAuthStore } from '@/store/auth-store';
+import type { User } from '@/api/user';
+import { getAuthState } from '@/api/http';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -14,7 +14,7 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
-  const { user: currentUser } = useAuthStore();
+  const currentUser = (getAuthState()?.state?.user as any) || null;
 
   // Load users and roles on component mount
   useEffect(() => {

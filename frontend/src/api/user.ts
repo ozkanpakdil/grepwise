@@ -1,4 +1,16 @@
-import { User } from '@/store/auth-store';
+import { authHeader } from '@/api/http';
+import { apiUrl } from '@/config';
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: string[];
+  roleIds?: string[];
+  enabled?: boolean;
+}
 
 export interface UserRequest {
   username: string;
@@ -10,13 +22,13 @@ export interface UserRequest {
   enabled?: boolean;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/users';
+const API_BASE_URL = apiUrl('/api/users');
 
 // User API functions
 export const userApi = {
   // Get all users
   getAllUsers: async (): Promise<User[]> => {
-    const response = await fetch(API_BASE_URL);
+    const response = await fetch(API_BASE_URL, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch users');
     }
@@ -25,7 +37,7 @@ export const userApi = {
 
   // Get a specific user by ID
   getUserById: async (id: string): Promise<User> => {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
+    const response = await fetch(`${API_BASE_URL}/${id}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch user');
     }
@@ -38,6 +50,7 @@ export const userApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(user),
     });
@@ -54,6 +67,7 @@ export const userApi = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(user),
     });
@@ -68,6 +82,7 @@ export const userApi = {
   deleteUser: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
+      headers: { ...authHeader() },
     });
     if (!response.ok) {
       const error = await response.json();
@@ -77,7 +92,7 @@ export const userApi = {
 
   // Get users by role
   getUsersByRole: async (role: string): Promise<User[]> => {
-    const response = await fetch(`${API_BASE_URL}/role/${role}`);
+    const response = await fetch(`${API_BASE_URL}/role/${role}`, { headers: { ...authHeader() } });
     if (!response.ok) {
       throw new Error('Failed to fetch users by role');
     }

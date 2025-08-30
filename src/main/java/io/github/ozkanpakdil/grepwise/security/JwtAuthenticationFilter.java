@@ -36,6 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && tokenService.validateToken(jwt)) {
                 String userId = tokenService.getUserIdFromToken(jwt);
+                String username = tokenService.getUsernameFromToken(jwt);
                 List<String> roles = tokenService.getRolesFromToken(jwt);
 
                 // Create authorities from roles and permissions
@@ -99,8 +100,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 });
 
+                // Use username as principal to be stable across restarts; keep userId in details for reference
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userId, null, authorities);
+                        username != null ? username : userId, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -116,6 +118,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
+        }
+        // Fallback for transports that cannot set headers (e.g., EventSource/SSE): allow access_token query param
+        String tokenParam = request.getParameter("access_token");
+        if (StringUtils.hasText(tokenParam)) {
+            return tokenParam;
         }
         return null;
     }

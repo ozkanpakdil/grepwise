@@ -12,12 +12,10 @@ vi.mock('@/components/theme-provider', () => ({
   }),
 }));
 
-// Mock the auth store
-vi.mock('@/store/auth-store', () => ({
-  useAuthStore: vi.fn().mockReturnValue({
-    user: { username: 'testuser', email: 'test@example.com' },
-    logout: vi.fn(),
-  }),
+// Mock the auth state util
+vi.mock('@/api/http', () => ({
+  getAuthState: () => ({ state: { user: { username: 'testuser', email: 'test@example.com' } } }),
+  clearAuthState: vi.fn(),
 }));
 
 // Mock the react-router-dom hooks

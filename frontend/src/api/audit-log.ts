@@ -28,7 +28,9 @@ export interface AuditLogFilter {
   searchText?: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/audit-logs';
+import { authHeader } from '@/api/http';
+import { apiUrl } from '@/config';
+const API_BASE_URL = apiUrl('/api/audit-logs');
 
 // Audit Log API functions
 export const auditLogApi = {
@@ -44,7 +46,7 @@ export const auditLogApi = {
     });
     
     const url = `${API_BASE_URL}?${queryParams.toString()}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch audit logs');
@@ -55,7 +57,7 @@ export const auditLogApi = {
 
   // Get a specific audit log by ID
   getAuditLogById: async (id: string): Promise<AuditLog> => {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
+    const response = await fetch(`${API_BASE_URL}/${id}`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch audit log');
@@ -66,7 +68,7 @@ export const auditLogApi = {
 
   // Get distinct categories
   getCategories: async (): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/categories`);
+    const response = await fetch(`${API_BASE_URL}/categories`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
@@ -77,7 +79,7 @@ export const auditLogApi = {
 
   // Get distinct actions
   getActions: async (): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/actions`);
+    const response = await fetch(`${API_BASE_URL}/actions`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch actions');
@@ -88,7 +90,7 @@ export const auditLogApi = {
 
   // Get distinct target types
   getTargetTypes: async (): Promise<string[]> => {
-    const response = await fetch(`${API_BASE_URL}/target-types`);
+    const response = await fetch(`${API_BASE_URL}/target-types`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch target types');
@@ -99,7 +101,7 @@ export const auditLogApi = {
 
   // Get audit log counts by category
   getCountsByCategory: async (): Promise<Record<string, number>> => {
-    const response = await fetch(`${API_BASE_URL}/counts/by-category`);
+    const response = await fetch(`${API_BASE_URL}/counts/by-category`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch counts by category');
@@ -110,7 +112,7 @@ export const auditLogApi = {
 
   // Get audit log counts by action
   getCountsByAction: async (): Promise<Record<string, number>> => {
-    const response = await fetch(`${API_BASE_URL}/counts/by-action`);
+    const response = await fetch(`${API_BASE_URL}/counts/by-action`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch counts by action');
@@ -121,7 +123,7 @@ export const auditLogApi = {
 
   // Get audit log counts by status
   getCountsByStatus: async (): Promise<Record<string, number>> => {
-    const response = await fetch(`${API_BASE_URL}/counts/by-status`);
+    const response = await fetch(`${API_BASE_URL}/counts/by-status`, { headers: { ...authHeader() } });
     
     if (!response.ok) {
       throw new Error('Failed to fetch counts by status');

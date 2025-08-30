@@ -33,6 +33,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -792,55 +795,52 @@ public class LuceneService {
         // Add text query if provided
         if (queryStr != null && !queryStr.isEmpty()) {
             BooleanQuery.Builder textQueryBuilder = new BooleanQuery.Builder();
-            
-            // Fields to search in
-            String[] fieldsToSearch = {"message", "rawContent"};
-            
-            // Add queries for standard fields
-            for (String field : fieldsToSearch) {
-                Query fieldQuery;
-                if (isRegex) {
-                    // Use RegexpQuery for regex searches
-                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
-                } else {
-                    // Use WildcardQuery for more flexible matching
-                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
-                }
-                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
-            }
-            
-            // Search in metadata fields (especially IP address)
-            // These are stored with "metadata_" prefix
-            // First search in the StringFields for exact matches
-            String[] metadataFieldsToSearch = {"metadata_ip_address", "metadata_client_ip", "metadata_path", "metadata_request"};
-            for (String field : metadataFieldsToSearch) {
-                Query fieldQuery;
-                if (isRegex) {
-                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
-                } else {
-                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
-                }
-                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
-            }
-            
-            // Then search in the TextField versions for tokenized searching
-            String[] metadataTextFieldsToSearch = {
-                "metadata_ip_address_text", 
-                "metadata_client_ip_text", 
-                "metadata_path_text",
-                "metadata_request_text"
+
+            // Fields to search in for parser-based queries (support phrases and multi-term)
+            String[] parserFields = {
+                "message", "rawContent",
+                "metadata_ip_address_text", "metadata_client_ip_text", "metadata_path_text", "metadata_request_text"
             };
-            for (String field : metadataTextFieldsToSearch) {
-                Query fieldQuery;
-                if (isRegex) {
-                    fieldQuery = new RegexpQuery(new Term(field, queryStr));
-                } else {
-                    fieldQuery = new WildcardQuery(new Term(field, "*" + queryStr.toLowerCase() + "*"));
+
+            // If regex, keep existing behavior over specific fields
+            if (isRegex) {
+                String[] regexFields = {"message", "rawContent", "metadata_ip_address", "metadata_client_ip", "metadata_path", "metadata_request",
+                        "metadata_ip_address_text", "metadata_client_ip_text", "metadata_path_text", "metadata_request_text"};
+                for (String field : regexFields) {
+                    Query fieldQuery = new RegexpQuery(new Term(field, queryStr));
+                    textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
                 }
-                textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
+                queryBuilder.add(textQueryBuilder.build(), BooleanClause.Occur.MUST);
+            } else {
+                // Non-regex: use MultiFieldQueryParser to support quoted phrases and analyzers
+                String qs = queryStr.trim();
+                // Some frontends append a caret for boosting; if present standalone, strip it to avoid parse errors
+                if (qs.endsWith("^") && (qs.chars().filter(ch -> ch == '^').count() == 1)) {
+                    qs = qs.substring(0, qs.length() - 1).trim();
+                }
+                StandardAnalyzer analyzer = new StandardAnalyzer();
+                MultiFieldQueryParser parser = new MultiFieldQueryParser(parserFields, analyzer);
+                parser.setDefaultOperator(QueryParser.Operator.OR);
+                try {
+                    Query parsed = parser.parse(qs);
+                    queryBuilder.add(parsed, BooleanClause.Occur.MUST);
+                } catch (ParseException e) {
+                    // Fallback to wildcard queries if parsing fails
+                    String lowered = qs.toLowerCase();
+                    String[] fallbackFields1 = {"message", "rawContent"};
+                    for (String field : fallbackFields1) {
+                        Query fieldQuery = new WildcardQuery(new Term(field, "*" + lowered + "*"));
+                        textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
+                    }
+                    String[] fallbackFields2 = {"metadata_ip_address", "metadata_client_ip", "metadata_path", "metadata_request",
+                            "metadata_ip_address_text", "metadata_client_ip_text", "metadata_path_text", "metadata_request_text"};
+                    for (String field : fallbackFields2) {
+                        Query fieldQuery = new WildcardQuery(new Term(field, "*" + lowered + "*"));
+                        textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
+                    }
+                    queryBuilder.add(textQueryBuilder.build(), BooleanClause.Occur.MUST);
+                }
             }
-            
-            queryBuilder.add(textQueryBuilder.build(), BooleanClause.Occur.MUST);
         }
 
         // Add time range query if provided

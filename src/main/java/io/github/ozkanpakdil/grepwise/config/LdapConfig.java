@@ -115,9 +115,6 @@ public class LdapConfig {
         );
         authenticator.setUserSearch(userSearch);
         
-        // Configure user DN pattern
-        authenticator.setUserDnPatterns(new String[] { ldapUserDnPattern });
-        
         return authenticator;
     }
 

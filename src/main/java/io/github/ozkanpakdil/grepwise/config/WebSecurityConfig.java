@@ -95,6 +95,7 @@ public class WebSecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/search**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/count").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/fields").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/sources").permitAll()

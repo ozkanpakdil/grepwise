@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import Layout from '@/components/layout';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -41,14 +40,14 @@ describe('Layout', () => {
 
   it('renders the header with logo', () => {
     render(<LayoutWithRouter />);
-    
+
     // Check for the logo/title
     expect(screen.getByText('GrepWise')).toBeInTheDocument();
   });
 
   it('renders the theme toggle button', () => {
     render(<LayoutWithRouter />);
-    
+
     // Check for the theme toggle button
     const themeToggleButton = screen.getByTitle('Switch to light theme');
     expect(themeToggleButton).toBeInTheDocument();
@@ -56,7 +55,7 @@ describe('Layout', () => {
 
   it('renders the mobile menu button on small screens', () => {
     // Mock window.matchMedia to simulate small screen
-    window.matchMedia = vi.fn().mockImplementation(query => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(max-width: 768px)',
       media: query,
       onchange: null,
@@ -66,9 +65,9 @@ describe('Layout', () => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     }));
-    
+
     render(<LayoutWithRouter />);
-    
+
     // Check for mobile menu button
     const menuButton = screen.getByLabelText('Toggle menu');
     expect(menuButton).toBeInTheDocument();
@@ -76,11 +75,10 @@ describe('Layout', () => {
 
   it('renders the footer with copyright information', () => {
     render(<LayoutWithRouter />);
-    
+
     // Check for footer content
     const currentYear = new Date().getFullYear();
     expect(screen.getByText(`© ${currentYear} GrepWise. All rights reserved.`)).toBeInTheDocument();
     expect(screen.getByText('An open-source alternative to Splunk')).toBeInTheDocument();
   });
-
 });

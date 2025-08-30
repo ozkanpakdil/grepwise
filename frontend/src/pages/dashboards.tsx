@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { dashboardApi, Dashboard, DashboardRequest, WidgetRequest } from '@/api/dashboard';
 import { formatDate } from '@/lib/utils';
+import { notifyError, notifySuccess } from '@/lib/errorHandler';
 
 const DashboardsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,11 +42,7 @@ const DashboardsPage: React.FC = () => {
       const data = await dashboardApi.getDashboards('current-user');
       setDashboards(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load dashboards',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to load dashboards');
     } finally {
       setLoading(false);
     }
@@ -54,19 +51,12 @@ const DashboardsPage: React.FC = () => {
   const handleCreateDashboard = async () => {
     try {
       if (!newDashboard.name.trim()) {
-        toast({
-          title: 'Error',
-          description: 'Dashboard name is required',
-          variant: 'destructive',
-        });
+        notifyError('Dashboard name is required', 'Error');
         return;
       }
 
       await dashboardApi.createDashboard(newDashboard);
-      toast({
-        title: 'Success',
-        description: 'Dashboard created successfully',
-      });
+      notifySuccess('Dashboard created successfully');
       
       setShowCreateModal(false);
       setNewDashboard({
@@ -76,11 +66,7 @@ const DashboardsPage: React.FC = () => {
       });
       loadDashboards();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create dashboard',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to create dashboard');
     }
   };
 
@@ -91,34 +77,20 @@ const DashboardsPage: React.FC = () => {
 
     try {
       await dashboardApi.deleteDashboard(dashboard.id, 'current-user');
-      toast({
-        title: 'Success',
-        description: 'Dashboard deleted successfully',
-      });
+      notifySuccess('Dashboard deleted successfully');
       loadDashboards();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete dashboard',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to delete dashboard');
     }
   };
 
   const handleShareDashboard = async (dashboard: Dashboard) => {
     try {
       await dashboardApi.shareDashboard(dashboard.id, !dashboard.isShared, 'current-user');
-      toast({
-        title: 'Success',
-        description: `Dashboard ${dashboard.isShared ? 'unshared' : 'shared'} successfully`,
-      });
+      notifySuccess(`Dashboard ${dashboard.isShared ? 'unshared' : 'shared'} successfully`);
       loadDashboards();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to share dashboard',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to share dashboard');
     }
   };
 

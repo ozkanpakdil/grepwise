@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {useToast} from '@/components/ui/use-toast';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import { formatTimestamp } from '@/lib/utils';
+import { notifyError } from '@/lib/errorHandler';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
@@ -145,11 +146,7 @@ export default function MonitoringPage() {
             setLastRefreshed(new Date());
         } catch (error) {
             console.error('Error fetching metrics:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to fetch metrics. Please try again.',
-                variant: 'destructive'
-            });
+            notifyError(error, 'Error', 'Failed to fetch metrics. Please try again.');
         } finally {
             setLoading(false);
         }

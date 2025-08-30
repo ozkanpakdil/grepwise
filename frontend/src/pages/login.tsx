@@ -4,6 +4,7 @@ import { setAuthState } from '@/api/http';
 import { apiUrl } from '@/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
+import { notifyError, notifySuccess } from '@/lib/errorHandler';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -16,11 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (!username || !password) {
-      toast({
-        title: 'Error',
-        description: 'Please enter both username and password',
-        variant: 'destructive',
-      });
+      notifyError('Please enter both username and password', 'Error');
       return;
     }
 
@@ -43,14 +40,10 @@ export default function LoginPage() {
         user: data.user,
         isAuthenticated: true,
       });
-      toast({ title: 'Success', description: 'You have successfully logged in' });
+      notifySuccess('You have successfully logged in');
       navigate('/');
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'An error occurred during login',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'An error occurred during login');
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);

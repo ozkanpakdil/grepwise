@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { alarmApi, Alarm, AlarmStatistics, AlarmEvent } from '@/api/alarm';
 import { formatTimestamp } from '@/lib/utils';
+import { notifyError, notifySuccess } from '@/lib/errorHandler';
 
 export default function AlarmMonitoringPage() {
   const navigate = useNavigate();
@@ -33,11 +34,7 @@ export default function AlarmMonitoringPage() {
         setStatistics(statsData);
         setAlarmEvents(eventsData);
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to load alarm data',
-          variant: 'destructive',
-        });
+        notifyError(error, 'Error', 'Failed to load alarm data');
       } finally {
         setLoading(false);
       }
@@ -82,16 +79,9 @@ export default function AlarmMonitoringPage() {
         )
       );
       
-      toast({
-        title: 'Alarm acknowledged',
-        description: 'The alarm has been acknowledged successfully',
-      });
+      notifySuccess('The alarm has been acknowledged successfully', 'Alarm acknowledged');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to acknowledge alarm',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to acknowledge alarm');
     }
   };
 
@@ -108,16 +98,9 @@ export default function AlarmMonitoringPage() {
         )
       );
       
-      toast({
-        title: 'Alarm resolved',
-        description: 'The alarm has been resolved successfully',
-      });
+      notifySuccess('The alarm has been resolved successfully', 'Alarm resolved');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to resolve alarm',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to resolve alarm');
     }
   };
 

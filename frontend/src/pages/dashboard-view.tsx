@@ -24,6 +24,7 @@ import jsPDF from 'jspdf';
 import Grid from '@mui/material/Grid';
 import { useSwipeable } from 'react-swipeable';
 import { formatTimestamp } from '@/lib/utils';
+import { notifyError, notifySuccess } from '@/lib/errorHandler';
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -101,11 +102,7 @@ const DashboardView: React.FC = () => {
       const data = await dashboardApi.getDashboard(id, 'current-user');
       setDashboard(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load dashboard',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to load dashboard');
       navigate('/dashboards');
     } finally {
       setLoading(false);
@@ -226,16 +223,9 @@ const DashboardView: React.FC = () => {
       // Restore edit mode
       setEditMode(currentEditMode);
 
-      toast({
-        title: 'Success',
-        description: 'Dashboard exported as PDF',
-      });
+      notifySuccess('Dashboard exported as PDF');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to export dashboard as PDF',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to export dashboard as PDF');
       console.error('PDF export error:', error);
     } finally {
       setExporting(false);
@@ -273,16 +263,9 @@ const DashboardView: React.FC = () => {
       // Restore edit mode
       setEditMode(currentEditMode);
 
-      toast({
-        title: 'Success',
-        description: 'Dashboard exported as image',
-      });
+      notifySuccess('Dashboard exported as image');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to export dashboard as image',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to export dashboard as image');
       console.error('Image export error:', error);
     } finally {
       setExporting(false);

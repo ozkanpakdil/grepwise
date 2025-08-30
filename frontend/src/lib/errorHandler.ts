@@ -19,3 +19,12 @@ export function notifyError(e: unknown, title = 'Error', fallback?: string) {
     console.error(`[toast-missing] ${title}: ${description}`);
   }
 }
+
+export function notifySuccess(description: string, title = 'Success') {
+  try {
+    toast({ title, description });
+  } catch (_) {
+    // In tests or without toast context, avoid crashing
+    console.log(`[toast-missing] ${title}: ${description}`);
+  }
+}

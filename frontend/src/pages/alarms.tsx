@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { alarmApi, Alarm, AlarmRequest, NotificationChannel } from '@/api/alarm';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import { formatDate as gwFormatDate } from '@/lib/utils';
+import { notifyError, notifySuccess } from '@/lib/errorHandler';
 
 export default function AlarmsPage() {
   const navigate = useNavigate();
@@ -26,11 +27,7 @@ export default function AlarmsPage() {
       const data = await alarmApi.getAllAlarms();
       setAlarms(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load alarms',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to load alarms');
     } finally {
       setLoading(false);
     }
@@ -89,16 +86,9 @@ export default function AlarmsPage() {
     try {
       await alarmApi.deleteAlarm(id);
       await loadAlarms(); // Reload alarms after deletion
-      toast({
-        title: 'Alarm deleted',
-        description: 'The alarm has been deleted successfully',
-      });
+      notifySuccess('The alarm has been deleted successfully', 'Alarm deleted');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete alarm',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to delete alarm');
     }
   };
 
@@ -106,16 +96,9 @@ export default function AlarmsPage() {
     try {
       await alarmApi.toggleAlarm(id);
       await loadAlarms(); // Reload alarms after toggle
-      toast({
-        title: enabled ? 'Alarm enabled' : 'Alarm disabled',
-        description: `The alarm has been ${enabled ? 'enabled' : 'disabled'} successfully`,
-      });
+      notifySuccess(`The alarm has been ${enabled ? 'enabled' : 'disabled'} successfully`, enabled ? 'Alarm enabled' : 'Alarm disabled');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to toggle alarm',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to toggle alarm');
     }
   };
 
@@ -123,11 +106,7 @@ export default function AlarmsPage() {
     e.preventDefault();
 
     if (!formData.name || !formData.query) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
+      notifyError('Please fill in all required fields', 'Error');
       return;
     }
 
@@ -146,17 +125,11 @@ export default function AlarmsPage() {
       if (isEditing && selectedAlarm) {
         // Update existing alarm
         await alarmApi.updateAlarm(selectedAlarm.id, alarmRequest);
-        toast({
-          title: 'Alarm updated',
-          description: 'The alarm has been updated successfully',
-        });
+        notifySuccess('The alarm has been updated successfully', 'Alarm updated');
       } else {
         // Create new alarm
         await alarmApi.createAlarm(alarmRequest);
-        toast({
-          title: 'Alarm created',
-          description: 'The alarm has been created successfully',
-        });
+        notifySuccess('The alarm has been created successfully', 'Alarm created');
       }
 
       // Reload alarms and reset form
@@ -166,11 +139,7 @@ export default function AlarmsPage() {
       setIsEditing(false);
       setSelectedAlarm(null);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save alarm',
-        variant: 'destructive',
-      });
+      notifyError(error, 'Error', 'Failed to save alarm');
     }
   };
 

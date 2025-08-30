@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { alarmApi, Alarm, AlarmRequest, NotificationChannel } from '@/api/alarm';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import { formatDate as gwFormatDate } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/lib/errorHandler';
+import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 export default function AlarmsPage() {
   const navigate = useNavigate();

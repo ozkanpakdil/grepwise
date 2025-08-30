@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { alarmApi, Alarm, AlarmStatistics, AlarmEvent } from '@/api/alarm';
 import { formatTimestamp } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/lib/errorHandler';
+import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 export default function AlarmMonitoringPage() {
   const navigate = useNavigate();

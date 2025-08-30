@@ -24,7 +24,7 @@ import jsPDF from 'jspdf';
 import Grid from '@mui/material/Grid';
 import { useSwipeable } from 'react-swipeable';
 import { formatTimestamp } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/lib/errorHandler';
+import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>();

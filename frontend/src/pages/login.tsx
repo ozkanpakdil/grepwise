@@ -4,7 +4,7 @@ import { setAuthState } from '@/api/http';
 import { apiUrl } from '@/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { notifyError, notifySuccess } from '@/lib/errorHandler';
+import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');

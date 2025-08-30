@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { dashboardApi, Dashboard, DashboardRequest, WidgetRequest } from '@/api/dashboard';
 import { formatDate } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/lib/errorHandler';
+import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 const DashboardsPage: React.FC = () => {
   const navigate = useNavigate();

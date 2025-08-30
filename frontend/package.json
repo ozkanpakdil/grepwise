@@ -12,11 +12,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "generate-proto": "node protoc.js",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "test:e2e": "cypress run",
-    "test:e2e:open": "cypress open"
+    "generate-proto": "node protoc.js"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

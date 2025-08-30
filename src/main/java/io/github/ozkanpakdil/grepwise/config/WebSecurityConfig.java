@@ -94,7 +94,7 @@ public class WebSecurityConfig {
                                 "/api/auth/ldap/login" : "/api/auth/non-existent-path").permitAll()
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/logs/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/search**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/count").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/fields").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/logs/sources").permitAll()
@@ -115,8 +115,8 @@ public class WebSecurityConfig {
                         // Role management endpoints - require admin role
                         .requestMatchers("/api/roles/**").hasAuthority("ROLE_ADMIN")
 
-                        // Dashboard endpoints - require appropriate permissions
-                        .requestMatchers(HttpMethod.GET, "/api/dashboards").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        // Dashboard endpoints - GET public, mutations protected
+                        .requestMatchers(HttpMethod.GET, "/api/dashboards**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/dashboards").hasAuthority("dashboard:create")
                         .requestMatchers(HttpMethod.PUT, "/api/dashboards/**").hasAuthority("dashboard:edit")
                         .requestMatchers(HttpMethod.DELETE, "/api/dashboards/**").hasAuthority("dashboard:delete")

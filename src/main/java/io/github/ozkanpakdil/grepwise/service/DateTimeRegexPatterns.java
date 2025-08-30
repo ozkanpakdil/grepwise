@@ -1,8 +1,5 @@
 package io.github.ozkanpakdil.grepwise.service;
 
-import org.apache.commons.lang3.time.DateUtils;
-
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -11,81 +8,11 @@ import java.util.regex.Pattern;
 
 public class DateTimeRegexPatterns {
 
-    // List of common date-time regex patterns
+    // Simplified: only match ISO-8601 timestamps (with or without timezone) to reduce complexity
+    // Examples matched: 2025-08-30T09:44:41.814Z, 2025-08-30T09:44:41Z, 2025-08-30T09:44:41.814+05:30, 2025-08-30T09:44:41.814, 2025-08-30T09:44:41
     private static final List<String> DATE_TIME_PATTERNS = Arrays.asList(
-            // ISO 8601 formats
-            "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z?",                    // 2023-12-25T14:30:45.123Z
-            "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:[+-]\\d{2}:\\d{2})?",             // 2023-12-25T14:30:45+05:30
-            "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?",                     // 2023-12-25 14:30:45.123
-
-            // Standard date formats with time
-            "\\d{4}/\\d{1,2}/\\d{1,2} \\d{1,2}:\\d{2}:\\d{2}",                             // 2023/12/25 14:30:45
-            "\\d{1,2}/\\d{1,2}/\\d{4} \\d{1,2}:\\d{2}:\\d{2}",                             // 25/12/2023 14:30:45
-            "\\d{1,2}-\\d{1,2}-\\d{4} \\d{1,2}:\\d{2}:\\d{2}",                             // 25-12-2023 14:30:45
-            "\\d{4}-\\d{1,2}-\\d{1,2} \\d{1,2}:\\d{2}:\\d{2}",                             // 2023-12-25 14:30:45
-
-            // Date formats with AM/PM
-            "\\d{1,2}/\\d{1,2}/\\d{4} \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)",                   // 12/25/2023 2:30:45 PM
-            "\\d{4}/\\d{1,2}/\\d{1,2} \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)",                   // 2023/12/25 2:30:45 PM
-            "\\d{1,2}-\\d{1,2}-\\d{4} \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)",                   // 25-12-2023 2:30:45 PM
-
-            // Date formats with hours and minutes only
-            "\\d{4}/\\d{1,2}/\\d{1,2} \\d{1,2}:\\d{2}",                                    // 2023/12/25 14:30
-            "\\d{1,2}/\\d{1,2}/\\d{4} \\d{1,2}:\\d{2}",                                    // 25/12/2023 14:30
-            "\\d{1,2}-\\d{1,2}-\\d{4} \\d{1,2}:\\d{2}",                                    // 25-12-2023 14:30
-            "\\d{4}-\\d{1,2}-\\d{1,2} \\d{1,2}:\\d{2}",                                    // 2023-12-25 14:30
-
-            // Date formats with AM/PM (hours:minutes only)
-            "\\d{1,2}/\\d{1,2}/\\d{4} \\d{1,2}:\\d{2} (?:AM|PM)",                          // 12/25/2023 2:30 PM
-            "\\d{4}/\\d{1,2}/\\d{1,2} \\d{1,2}:\\d{2} (?:AM|PM)",                          // 2023/12/25 2:30 PM
-            "\\d{1,2}-\\d{1,2}-\\d{4} \\d{1,2}:\\d{2} (?:AM|PM)",                          // 25-12-2023 2:30 PM
-
-            // Date only formats
-            "\\d{4}/\\d{1,2}/\\d{1,2}",                                                     // 2023/12/25
-            "\\d{1,2}/\\d{1,2}/\\d{4}",                                                     // 12/25/2023
-            "\\d{4}-\\d{1,2}-\\d{1,2}",                                                     // 2023-12-25
-            "\\d{1,2}-\\d{1,2}-\\d{4}",                                                     // 25-12-2023
-            "\\d{1,2}\\.\\d{1,2}\\.\\d{4}",                                                 // 25.12.2023
-            "\\d{4}\\.\\d{1,2}\\.\\d{1,2}",                                                 // 2023.12.25
-
-            // Month name formats
-            "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{1,2}, \\d{4}",         // Dec 25, 2023
-            "\\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4}",          // 25 Dec 2023
-            "(?:January|February|March|April|May|June|July|August|September|October|November|December) \\d{1,2}, \\d{4}", // December 25, 2023
-            "\\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) \\d{4}",  // 25 December 2023
-
-            // Month name with time
-            "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{1,2}, \\d{4} \\d{1,2}:\\d{2}:\\d{2}", // Dec 25, 2023 14:30:45
-            "\\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{1,2}:\\d{2}:\\d{2}",  // 25 Dec 2023 14:30:45
-            "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{1,2}, \\d{4} \\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)", // Dec 25, 2023 2:30:45 PM
-
-            // European formats
-            "\\d{1,2}/\\d{1,2}/\\d{2}",                                                     // 25/12/23
-            "\\d{1,2}-\\d{1,2}-\\d{2}",                                                     // 25-12-23
-            "\\d{2}/\\d{1,2}/\\d{1,2}",                                                     // 23/12/25
-
-            // Compact formats
-            "\\d{8}",                                                                        // 20231225
-            "\\d{6}",                                                                        // 231225
-            "\\d{14}",                                                                       // 20231225143045
-            "\\d{12}",                                                                       // 231225143045
-
-            // Time only formats
-            "\\d{1,2}:\\d{2}:\\d{2}",                                                       // 14:30:45
-            "\\d{1,2}:\\d{2}",                                                              // 14:30
-            "\\d{1,2}:\\d{2}:\\d{2} (?:AM|PM)",                                             // 2:30:45 PM
-            "\\d{1,2}:\\d{2} (?:AM|PM)",                                                    // 2:30 PM
-
-            // RFC 2822 format
-            "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4}", // Mon, 25 Dec 2023 14:30:45 +0000
-
-            // Log formats
-            "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}",                           // 2023-12-25 14:30:45,123
-            "\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2}",                                   // 12/25/2023 14:30:45
-
-            // Unix timestamp
-            "\\d{10}",                                                                       // 1703520645 (Unix timestamp)
-            "\\d{13}"                                                                        // 1703520645123 (Unix timestamp with milliseconds)
+            // ISO 8601 with optional fractional seconds and optional timezone (Z or +HH:mm or +HHmm)
+            "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:?\\d{2})?"
     );
 
     public static void main(String[] args) {
@@ -179,45 +106,8 @@ public class DateTimeRegexPatterns {
         return matches;
     }
 
-    // Common date format patterns for parsing with DateUtils
-    private static final String[] PARSE_PATTERNS = {
-            // ISO 8601 formats
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd'T'HH:mm:ssXXX", "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss",
-
-            // Standard formats
-            "yyyy/MM/dd HH:mm:ss", "dd/MM/yyyy HH:mm:ss", "MM/dd/yyyy HH:mm:ss",
-            "yyyy-MM-dd HH:mm:ss", "dd-MM-yyyy HH:mm:ss",
-
-            // AM/PM formats
-            "MM/dd/yyyy hh:mm:ss a", "yyyy/MM/dd hh:mm:ss a", "dd-MM-yyyy hh:mm:ss a",
-
-            // Date with time (no seconds)
-            "yyyy/MM/dd HH:mm", "dd/MM/yyyy HH:mm", "MM/dd/yyyy HH:mm",
-            "yyyy-MM-dd HH:mm", "dd-MM-yyyy HH:mm",
-
-            // AM/PM (no seconds)
-            "MM/dd/yyyy hh:mm a", "yyyy/MM/dd hh:mm a", "dd-MM-yyyy hh:mm a",
-
-            // Date only formats
-            "yyyy/MM/dd", "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy",
-            "dd.MM.yyyy", "yyyy.MM.dd",
-
-            // Month name formats
-            "MMM dd, yyyy", "dd MMM yyyy", "MMMM dd, yyyy", "dd MMMM yyyy",
-            "MMM dd, yyyy HH:mm:ss", "dd MMM yyyy HH:mm:ss",
-            "MMM dd, yyyy hh:mm:ss a",
-
-            // Compact formats
-            "yyyyMMdd", "yyMMdd", "yyyyMMddHHmmss", "yyMMddHHmmss",
-
-            // Time only
-            "HH:mm:ss", "HH:mm", "hh:mm:ss a", "hh:mm a",
-
-            // Log formats
-            "yyyy-MM-dd HH:mm:ss,SSS", "dd/MM/yyyy HH:mm:ss"
-    };
+    // Development logging flag: show parse errors when -Dgrepwise.dev=true, otherwise keep quiet to avoid spam
+    private static final boolean DEV_LOG = Boolean.parseBoolean(System.getProperty("grepwise.dev", "false"));
 
     /**
      * Extract date string and convert to timestamp (milliseconds since epoch)
@@ -238,19 +128,44 @@ public class DateTimeRegexPatterns {
      * @return timestamp in milliseconds, or -1 if parsing fails
      */
     public static long convertToTimestamp(String dateStr) {
+        if (dateStr == null) return -1;
+        String s = dateStr.trim();
+
         // Handle Unix timestamps (already numbers)
-        if (dateStr.matches("\\d{10}")) {
-            return Long.parseLong(dateStr) * 1000; // Convert seconds to milliseconds
+        if (s.matches("\\d{10}")) {
+            return Long.parseLong(s) * 1000; // seconds to ms
         }
-        if (dateStr.matches("\\d{13}")) {
-            return Long.parseLong(dateStr); // Already in milliseconds
+        if (s.matches("\\d{13}")) {
+            return Long.parseLong(s); // already ms
         }
 
         try {
-            Date date = DateUtils.parseDate(dateStr, PARSE_PATTERNS);
-            return date.getTime();
-        } catch (ParseException e) {
-            System.err.println("Failed to parse date: " + dateStr + " - " + e.getMessage());
+            // If timezone present (Z or +HH:mm or +HHmm), parse as OffsetDateTime/Instant
+            if (s.endsWith("Z") || s.matches(".*[+-]\\d{2}:?\\d{2}$")) {
+                String normalized = s;
+                // Normalize +HHmm to +HH:mm so that standard formatters accept it
+                if (normalized.matches(".*[+-]\\d{4}$")) {
+                    normalized = normalized.substring(0, normalized.length() - 5)
+                            + normalized.substring(normalized.length() - 5, normalized.length() - 2)
+                            + ":"
+                            + normalized.substring(normalized.length() - 2);
+                }
+                try {
+                    return java.time.Instant.parse(normalized).toEpochMilli();
+                } catch (Exception ex) {
+                    return java.time.OffsetDateTime.parse(normalized, java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                            .toInstant().toEpochMilli();
+                }
+            }
+
+            // Otherwise, treat as ISO local datetime with optional fraction, interpret as UTC per requirement
+            java.time.format.DateTimeFormatter isoLocal = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(s, isoLocal);
+            return ldt.toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+        } catch (Exception ex) {
+            if (DEV_LOG) {
+                System.err.println("Failed to parse date: " + s + " - " + ex.getMessage());
+            }
             return -1;
         }
     }

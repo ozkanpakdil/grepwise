@@ -254,8 +254,9 @@ public class LogScannerService {
 
         // Try to extract timestamp if possible
         long entryTime = System.currentTimeMillis();
-        Long extracted = DateTimeRegexPatterns.extractDateTimeToTimestamp(DateTimeRegexPatterns.extractFirstDateTime(line));
-        Long recordTime = (extracted != null && extracted > 0) ? extracted : entryTime; // fallback to entry time
+        String extractedDateStr = DateTimeRegexPatterns.extractFirstDateTime(line);
+        long extractedTs = (extractedDateStr != null) ? DateTimeRegexPatterns.convertToTimestamp(extractedDateStr) : -1;
+        Long recordTime = (extractedTs > 0) ? extractedTs : entryTime; // fallback to entry time
 
         // Create a log entry with the entire line as the message and raw content
         return new LogEntry(

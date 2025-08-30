@@ -1,11 +1,17 @@
-import React from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SearchParams } from '@/api/logSearch';
 import { Clock, RefreshCw, Regex, Search } from 'lucide-react';
+import { FormEvent } from 'react';
 
 interface Props {
   query: string;
@@ -17,8 +23,8 @@ interface Props {
   pageSize: number;
   setPageSize: (n: number) => void;
   isSearching: boolean;
-  onSearch: (e?: React.FormEvent | React.MouseEvent) => void;
-  onRefresh: (e?: React.FormEvent | React.MouseEvent) => void;
+  onSearch: (e?: FormEvent | MouseEvent) => void;
+  onRefresh: (e?: FormEvent | MouseEvent) => void;
   autoRefreshEnabled: boolean;
   autoRefreshInterval: string;
   setAutoRefreshEnabled: (b: boolean) => void;
@@ -49,11 +55,11 @@ export default function SearchBar({
   isEditorLoading,
 }: Props) {
   return (
-    <form onSubmit={(e) => onSearch(e)} className="min-h-[140px]" data-testid="search-form">
-      <div className="flex gap-2 items-stretch">
-        <div className="flex-1 min-h-[140px]" data-testid="query-editor">
+    <form onSubmit={(e) => onSearch(e)} data-testid="search-form">
+      <div className="flex gap-2 items-center">
+        <div className="flex-1" data-testid="query-editor">
           <Editor
-            height="140px"
+            height="20px"
             defaultLanguage="spl"
             defaultValue={query}
             onChange={(value) => setQuery(value || '')}
@@ -92,8 +98,15 @@ export default function SearchBar({
             <Label htmlFor="timeRange" className="text-sm flex items-center">
               <Clock className="h-4 w-4" />
             </Label>
-            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
-              <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange" data-testid="time-range">
+            <Select
+              value={timeRange}
+              onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}
+            >
+              <SelectTrigger
+                className="h-8 text-xs w-[120px]"
+                id="timeRange"
+                data-testid="time-range"
+              >
                 <SelectValue placeholder="Time range" />
               </SelectTrigger>
               <SelectContent>
@@ -108,7 +121,9 @@ export default function SearchBar({
         </div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="pageSize" className="text-sm">Page size</Label>
+            <Label htmlFor="pageSize" className="text-sm">
+              Page size
+            </Label>
             <input
               id="pageSize"
               type="number"
@@ -121,7 +136,13 @@ export default function SearchBar({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Button type="submit" size="sm" disabled={isSearching} className="px-3" data-testid="run-search">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isSearching}
+            className="px-3"
+            data-testid="run-search"
+          >
             {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
           </Button>
         </div>
@@ -155,7 +176,11 @@ export default function SearchBar({
                 }
               }}
             >
-              <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh" data-testid="auto-refresh">
+              <SelectTrigger
+                className="h-8 text-xs w-[80px]"
+                id="autoRefresh"
+                data-testid="auto-refresh"
+              >
                 <SelectValue placeholder="Off" />
               </SelectTrigger>
               <SelectContent>

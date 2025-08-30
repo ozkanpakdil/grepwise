@@ -21,23 +21,23 @@ export const fieldConfigurationApi = {
    * Get all field configurations
    */
   getFieldConfigurations: async (): Promise<FieldConfiguration[]> => {
-    const response = await axios.get(`${apiUrl}/config/field-configurations`);
-    return response.data;
+    const response = await axios.get(apiUrl('/api/config/field-configurations'));
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   /**
    * Get all enabled field configurations
    */
   getEnabledFieldConfigurations: async (): Promise<FieldConfiguration[]> => {
-    const response = await axios.get(`${apiUrl}/config/field-configurations/enabled`);
-    return response.data;
+    const response = await axios.get(apiUrl('/api/config/field-configurations/enabled'));
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   /**
    * Get a field configuration by ID
    */
   getFieldConfiguration: async (id: string): Promise<FieldConfiguration> => {
-    const response = await axios.get(`${apiUrl}/config/field-configurations/${id}`);
+    const response = await axios.get(apiUrl(`/api/config/field-configurations/${id}`));
     return response.data;
   },
 
@@ -45,7 +45,7 @@ export const fieldConfigurationApi = {
    * Create a new field configuration
    */
   createFieldConfiguration: async (fieldConfiguration: FieldConfiguration): Promise<FieldConfiguration> => {
-    const response = await axios.post(`${apiUrl}/config/field-configurations`, fieldConfiguration);
+    const response = await axios.post(apiUrl('/api/config/field-configurations'), fieldConfiguration);
     return response.data;
   },
 
@@ -53,7 +53,7 @@ export const fieldConfigurationApi = {
    * Update an existing field configuration
    */
   updateFieldConfiguration: async (id: string, fieldConfiguration: FieldConfiguration): Promise<FieldConfiguration> => {
-    const response = await axios.put(`${apiUrl}/config/field-configurations/${id}`, fieldConfiguration);
+    const response = await axios.put(apiUrl(`/api/config/field-configurations/${id}`), fieldConfiguration);
     return response.data;
   },
 
@@ -61,7 +61,7 @@ export const fieldConfigurationApi = {
    * Delete a field configuration
    */
   deleteFieldConfiguration: async (id: string): Promise<void> => {
-    await axios.delete(`${apiUrl}/config/field-configurations/${id}`);
+    await axios.delete(apiUrl(`/api/config/field-configurations/${id}`));
   },
 
   /**
@@ -69,7 +69,7 @@ export const fieldConfigurationApi = {
    */
   testFieldConfiguration: async (fieldConfiguration: FieldConfiguration, sampleString: string): Promise<string> => {
     const response = await axios.post(
-      `${apiUrl}/config/field-configurations/test?sampleString=${encodeURIComponent(sampleString)}`,
+      apiUrl(`/api/config/field-configurations/test?sampleString=${encodeURIComponent(sampleString)}`),
       fieldConfiguration
     );
     return response.data;

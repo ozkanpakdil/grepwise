@@ -6,6 +6,8 @@
 /**
  * LDAP settings interface.
  */
+import { apiUrl } from '@/config';
+
 export interface LdapSettings {
   enabled: boolean;
   url: string;
@@ -20,6 +22,11 @@ export interface LdapSettings {
   groupRoleAttribute: string;
 }
 
+const authHeader = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('grepwise-auth-accessToken') : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 /**
  * Get the current LDAP settings.
  * 
@@ -27,15 +34,23 @@ export interface LdapSettings {
  */
 export const getLdapSettings = async (): Promise<LdapSettings> => {
   try {
-    const response = await fetch('/api/settings/ldap', {
+    const response = await fetch(apiUrl('/api/settings/ldap'), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to get LDAP settings: ${response.statusText}`);
+      let message = response.statusText;
+      try {
+        const err = await response.json();
+        message = err.error || message;
+      } catch (_) {
+        // ignore JSON parse errors
+      }
+      throw new Error(`Failed to get LDAP settings: ${message}`);
     }
 
     return await response.json();
@@ -53,17 +68,22 @@ export const getLdapSettings = async (): Promise<LdapSettings> => {
  */
 export const updateLdapSettings = async (settings: LdapSettings): Promise<{ message: string }> => {
   try {
-    const response = await fetch('/api/settings/ldap', {
+    const response = await fetch(apiUrl('/api/settings/ldap'), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
       body: JSON.stringify(settings),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to update LDAP settings: ${response.statusText}`);
+      let message = response.statusText;
+      try {
+        const err = await response.json();
+        message = err.error || message;
+      } catch (_) {}
+      throw new Error(message.startsWith('Failed') ? message : `Failed to update LDAP settings: ${message}`);
     }
 
     return await response.json();
@@ -80,16 +100,21 @@ export const updateLdapSettings = async (settings: LdapSettings): Promise<{ mess
  */
 export const testLdapConnection = async (): Promise<{ message: string }> => {
   try {
-    const response = await fetch('/api/settings/ldap/test', {
+    const response = await fetch(apiUrl('/api/settings/ldap/test'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to test LDAP connection: ${response.statusText}`);
+      let message = response.statusText;
+      try {
+        const err = await response.json();
+        message = err.error || message;
+      } catch (_) {}
+      throw new Error(message.startsWith('Failed') ? message : `Failed to test LDAP connection: ${message}`);
     }
 
     return await response.json();

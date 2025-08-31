@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { userApi, UserRequest } from '@/api/user';
-import { roleApi, Role } from '@/api/role';
 import type { User } from '@/api/user';
+import { userApi, UserRequest } from '@/api/user';
+import { Role, roleApi } from '@/api/role';
 import { getAuthState } from '@/api/http';
 
 export default function UsersPage() {
@@ -20,14 +20,11 @@ export default function UsersPage() {
   useEffect(() => {
     loadUsersAndRoles();
   }, []);
-  
+
   const loadUsersAndRoles = async () => {
     try {
       setLoading(true);
-      const [usersData, rolesData] = await Promise.all([
-        userApi.getAllUsers(),
-        roleApi.getAllRoles()
-      ]);
+      const [usersData, rolesData] = await Promise.all([userApi.getAllUsers(), roleApi.getAllRoles()]);
       setUsers(usersData);
       setRoles(rolesData);
     } catch (error) {
@@ -54,7 +51,7 @@ export default function UsersPage() {
     firstName: '',
     lastName: '',
     roleIds: [],
-    enabled: true
+    enabled: true,
   });
 
   const resetForm = () => {
@@ -65,7 +62,7 @@ export default function UsersPage() {
       firstName: '',
       lastName: '',
       roleIds: [],
-      enabled: true
+      enabled: true,
     });
   };
 
@@ -88,7 +85,7 @@ export default function UsersPage() {
       firstName: user.firstName,
       lastName: user.lastName,
       roleIds: user.roleIds || [], // Use roleIds from user or empty array if not available
-      enabled: true // Assuming all users in the list are enabled
+      enabled: true, // Assuming all users in the list are enabled
     });
   };
 
@@ -121,22 +118,22 @@ export default function UsersPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-    setFormData(prev => ({ ...prev, roleIds: selectedOptions }));
+    const selectedOptions = Array.from(e.target.selectedOptions).map((option) => option.value);
+    setFormData((prev) => ({ ...prev, roleIds: selectedOptions }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (isEditing && selectedUser) {
         // If password is empty, remove it from the request
@@ -144,7 +141,7 @@ export default function UsersPage() {
         if (!updateData.password) {
           delete updateData.password;
         }
-        
+
         await userApi.updateUser(selectedUser.id, updateData);
         toast({
           title: 'User updated',
@@ -157,7 +154,7 @@ export default function UsersPage() {
           description: 'The user has been created successfully',
         });
       }
-      
+
       setIsCreatingUser(false);
       resetForm();
       await reloadData(); // Reload data after creation/update
@@ -275,7 +272,7 @@ export default function UsersPage() {
                   onChange={handleRoleChange}
                   className="w-full rounded-md border border-input bg-background px-3 py-2"
                 >
-                  {roles.map(role => (
+                  {roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
                     </option>
@@ -303,9 +300,7 @@ export default function UsersPage() {
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEditing ? 'Update User' : 'Create User'}
-              </Button>
+              <Button type="submit">{isEditing ? 'Update User' : 'Create User'}</Button>
             </div>
           </form>
         </div>
@@ -326,14 +321,18 @@ export default function UsersPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-3 text-center">Loading users...</td>
+                  <td colSpan={5} className="px-4 py-3 text-center">
+                    Loading users...
+                  </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-3 text-center">No users found</td>
+                  <td colSpan={5} className="px-4 py-3 text-center">
+                    No users found
+                  </td>
                 </tr>
               ) : (
-                users.map(user => (
+                users.map((user) => (
                   <tr key={user.id} className="hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">{user.username}</td>
                     <td className="px-4 py-3 text-sm">{`${user.firstName} ${user.lastName}`}</td>
@@ -341,11 +340,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3 text-sm">{user.roles.join(', ')}</td>
                     <td className="px-4 py-3 text-sm text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditUser(user)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
                           Edit
                         </Button>
                         <Button

@@ -1,7 +1,7 @@
 // Global fetch interceptor to automatically attach Authorization header for API requests
 // Works with Option B: token in localStorage under 'grepwise-auth'
 
-import { config, apiUrl } from '@/config';
+import { config } from '@/config';
 import { getAccessToken } from '@/api/http';
 
 // Idempotent install: don't patch twice
@@ -18,7 +18,11 @@ export function installFetchAuthInterceptor() {
       const urlString = (() => {
         if (typeof input === 'string') return input;
         if (input instanceof URL) return input.toString();
-        try { return input.url; } catch { return String(input as any); }
+        try {
+          return input.url;
+        } catch {
+          return String(input as any);
+        }
       })();
 
       const isRelativeApi = urlString.startsWith('/api');
@@ -32,7 +36,10 @@ export function installFetchAuthInterceptor() {
 
       if (shouldAttach && !isAuthEndpoint) {
         // Build headers preserving caller-provided headers
-        const headers = new Headers((init && init.headers) || (typeof input !== 'string' && !(input instanceof URL) ? (input as Request).headers : undefined));
+        const headers = new Headers(
+          (init && init.headers) ||
+            (typeof input !== 'string' && !(input instanceof URL) ? (input as Request).headers : undefined)
+        );
 
         // Only set Authorization if not already set
         if (!headers.has('Authorization')) {
@@ -58,5 +65,7 @@ export function installFetchAuthInterceptor() {
 
 // Auto-install when module is imported in the browser
 if (typeof window !== 'undefined') {
-  try { installFetchAuthInterceptor(); } catch {}
+  try {
+    installFetchAuthInterceptor();
+  } catch {}
 }

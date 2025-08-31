@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { AuditLog, AuditLogFilter, auditLogApi } from '@/api/audit-log';
+import { AuditLog, auditLogApi, AuditLogFilter } from '@/api/audit-log';
 import { format } from 'date-fns';
 
 export default function AuditLogsPage() {
@@ -38,20 +37,20 @@ export default function AuditLogsPage() {
   const loadAuditLogsAndMetadata = async () => {
     try {
       setLoading(true);
-      
+
       // Load metadata for filters
       const [categoriesData, actionsData, targetTypesData, count] = await Promise.all([
         auditLogApi.getCategories(),
         auditLogApi.getActions(),
         auditLogApi.getTargetTypes(),
-        auditLogApi.getCount()
+        auditLogApi.getCount(),
       ]);
-      
+
       setCategories(categoriesData);
       setActions(actionsData);
       setTargetTypes(targetTypesData);
       setTotalCount(count);
-      
+
       // Load initial audit logs
       await loadAuditLogs();
     } catch (error) {
@@ -68,14 +67,14 @@ export default function AuditLogsPage() {
   const loadAuditLogs = async () => {
     try {
       setLoading(true);
-      
+
       // Update filters with current pagination
       const currentFilters = {
         ...filters,
         page,
         size: pageSize,
       };
-      
+
       const logs = await auditLogApi.getAuditLogs(currentFilters);
       setAuditLogs(logs);
     } catch (error) {
@@ -93,12 +92,12 @@ export default function AuditLogsPage() {
   const handleFilterChange = (name: keyof AuditLogFilter, value: string | number | undefined) => {
     // If value is empty string, set it to undefined to remove the filter
     const processedValue = value === '' ? undefined : value;
-    
-    setFilters(prev => ({
+
+    setFilters((prev) => ({
       ...prev,
       [name]: processedValue,
     }));
-    
+
     // Reset to first page when filters change
     setPage(0);
   };
@@ -295,11 +294,15 @@ export default function AuditLogsPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-3 text-center">Loading audit logs...</td>
+                  <td colSpan={7} className="px-4 py-3 text-center">
+                    Loading audit logs...
+                  </td>
                 </tr>
               ) : auditLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-3 text-center">No audit logs found</td>
+                  <td colSpan={7} className="px-4 py-3 text-center">
+                    No audit logs found
+                  </td>
                 </tr>
               ) : (
                 auditLogs.map((log) => (
@@ -311,9 +314,7 @@ export default function AuditLogsPage() {
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`px-2 py-1 rounded-full text-xs ${
-                          log.status === 'SUCCESS'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                          log.status === 'SUCCESS' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {log.status}
@@ -321,9 +322,7 @@ export default function AuditLogsPage() {
                     </td>
                     <td className="px-4 py-3 text-sm">{log.description}</td>
                     <td className="px-4 py-3 text-sm">
-                      {log.targetType && log.targetId
-                        ? `${log.targetType}: ${log.targetId}`
-                        : '-'}
+                      {log.targetType && log.targetId ? `${log.targetType}: ${log.targetId}` : '-'}
                     </td>
                   </tr>
                 ))
@@ -336,8 +335,8 @@ export default function AuditLogsPage() {
         <div className="flex items-center justify-between px-4 py-3 bg-muted/50">
           <div className="flex items-center">
             <span className="text-sm text-muted-foreground">
-              Showing {auditLogs.length > 0 ? page * pageSize + 1 : 0} to{' '}
-              {Math.min((page + 1) * pageSize, totalCount)} of {totalCount} entries
+              Showing {auditLogs.length > 0 ? page * pageSize + 1 : 0} to {Math.min((page + 1) * pageSize, totalCount)}{' '}
+              of {totalCount} entries
             </span>
             <div className="ml-4">
               <select
@@ -353,12 +352,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 0}
-            >
+            <Button variant="outline" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 0}>
               Previous
             </Button>
             <div className="flex items-center space-x-1">
@@ -372,12 +366,12 @@ export default function AuditLogsPage() {
                 } else {
                   pageNum = page - 2 + i;
                 }
-                
+
                 if (pageNum >= 0 && pageNum < totalPages) {
                   return (
                     <Button
                       key={pageNum}
-                      variant={pageNum === page ? "default" : "outline"}
+                      variant={pageNum === page ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
                     >

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Share2, Trash2, BarChart3, PieChart, Table, Activity, Eye } from 'lucide-react';
+import { Activity, BarChart3, Eye, PieChart, Plus, Share2, Table, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { dashboardApi, Dashboard, DashboardRequest, WidgetRequest } from '@/api/dashboard';
+import { notifyError, notifySuccess, useToast } from '@/components/ui/use-toast';
+import { Dashboard, dashboardApi, DashboardRequest, WidgetRequest } from '@/api/dashboard';
 import { formatDate } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/components/ui/use-toast';
 
 const DashboardsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,7 +56,7 @@ const DashboardsPage: React.FC = () => {
 
       await dashboardApi.createDashboard(newDashboard);
       notifySuccess('Dashboard created successfully');
-      
+
       setShowCreateModal(false);
       setNewDashboard({
         name: '',
@@ -112,7 +111,7 @@ const DashboardsPage: React.FC = () => {
         title: 'Success',
         description: 'Widget added successfully',
       });
-      
+
       setShowWidgetModal(false);
       setNewWidget({
         title: '',
@@ -185,9 +184,7 @@ const DashboardsPage: React.FC = () => {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-semibold text-lg">{dashboard.name}</h3>
-                  {dashboard.description && (
-                    <p className="text-sm text-muted-foreground">{dashboard.description}</p>
-                  )}
+                  {dashboard.description && <p className="text-sm text-muted-foreground">{dashboard.description}</p>}
                 </div>
                 <div className="flex space-x-1">
                   <Button
@@ -198,35 +195,24 @@ const DashboardsPage: React.FC = () => {
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteDashboard(dashboard)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteDashboard(dashboard)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
               <div className="mb-4">
-                <div className="text-sm text-muted-foreground mb-2">
-                  {dashboard.widgets?.length || 0} widgets
-                </div>
+                <div className="text-sm text-muted-foreground mb-2">{dashboard.widgets?.length || 0} widgets</div>
                 {dashboard.widgets && dashboard.widgets.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {dashboard.widgets.slice(0, 3).map((widget) => (
-                      <div
-                        key={widget.id}
-                        className="flex items-center space-x-1 bg-muted px-2 py-1 rounded text-xs"
-                      >
+                      <div key={widget.id} className="flex items-center space-x-1 bg-muted px-2 py-1 rounded text-xs">
                         {getWidgetIcon(widget.type)}
                         <span>{widget.title}</span>
                       </div>
                     ))}
                     {dashboard.widgets.length > 3 && (
-                      <div className="bg-muted px-2 py-1 rounded text-xs">
-                        +{dashboard.widgets.length - 3} more
-                      </div>
+                      <div className="bg-muted px-2 py-1 rounded text-xs">+{dashboard.widgets.length - 3} more</div>
                     )}
                   </div>
                 )}
@@ -234,15 +220,10 @@ const DashboardsPage: React.FC = () => {
 
               <div className="flex justify-between items-center">
                 <div className="text-xs text-muted-foreground">
-                  {dashboard.isShared ? 'Shared' : 'Private'} • 
-                  Created {formatDate(dashboard.createdAt)}
+                  {dashboard.isShared ? 'Shared' : 'Private'} • Created {formatDate(dashboard.createdAt)}
                 </div>
                 <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/dashboards/${dashboard.id}`)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/dashboards/${dashboard.id}`)}>
                     <Eye className="h-4 w-4 mr-1" />
                     View
                   </Button>
@@ -269,7 +250,7 @@ const DashboardsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">Create New Dashboard</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Name *</label>
@@ -281,7 +262,7 @@ const DashboardsPage: React.FC = () => {
                   placeholder="Enter dashboard name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
@@ -298,9 +279,7 @@ const DashboardsPage: React.FC = () => {
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateDashboard}>
-                Create Dashboard
-              </Button>
+              <Button onClick={handleCreateDashboard}>Create Dashboard</Button>
             </div>
           </div>
         </div>
@@ -311,7 +290,7 @@ const DashboardsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">Add Widget to {selectedDashboard.name}</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Title *</label>
@@ -323,7 +302,7 @@ const DashboardsPage: React.FC = () => {
                   placeholder="Enter widget title"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
@@ -340,7 +319,7 @@ const DashboardsPage: React.FC = () => {
                   <option value="metric">Metric</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Query *</label>
                 <textarea
@@ -382,9 +361,7 @@ const DashboardsPage: React.FC = () => {
               <Button variant="outline" onClick={() => setShowWidgetModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddWidget}>
-                Add Widget
-              </Button>
+              <Button onClick={handleAddWidget}>Add Widget</Button>
             </div>
           </div>
         </div>

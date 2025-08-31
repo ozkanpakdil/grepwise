@@ -1,4 +1,3 @@
-import React from 'react';
 import { Label } from '@/components/ui/label';
 
 export type FilterValues = {
@@ -16,9 +15,14 @@ interface Props {
 export default function SearchFilters({ visible, values, onChange }: Props) {
   if (!visible) return null;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border" data-testid="filters-panel">
+    <div
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 rounded-md border"
+      data-testid="filters-panel"
+    >
       <div>
-        <Label htmlFor="levelFilter" className="text-sm">Filter by Level</Label>
+        <Label htmlFor="levelFilter" className="text-sm">
+          Filter by Level
+        </Label>
         <input
           id="levelFilter"
           type="text"
@@ -30,7 +34,9 @@ export default function SearchFilters({ visible, values, onChange }: Props) {
         />
       </div>
       <div>
-        <Label htmlFor="messageFilter" className="text-sm">Filter by Message</Label>
+        <Label htmlFor="messageFilter" className="text-sm">
+          Filter by Message
+        </Label>
         <input
           id="messageFilter"
           type="text"
@@ -42,7 +48,9 @@ export default function SearchFilters({ visible, values, onChange }: Props) {
         />
       </div>
       <div>
-        <Label htmlFor="sourceFilter" className="text-sm">Filter by Source</Label>
+        <Label htmlFor="sourceFilter" className="text-sm">
+          Filter by Source
+        </Label>
         <input
           id="sourceFilter"
           type="text"

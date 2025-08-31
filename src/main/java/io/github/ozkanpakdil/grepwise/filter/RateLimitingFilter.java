@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -22,7 +21,6 @@ import java.util.concurrent.TimeUnit;
  * Filter for rate limiting API requests.
  * This filter intercepts all HTTP requests and applies rate limiting based on the client's identity.
  */
-@Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     /**
@@ -51,37 +49,50 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Determine client identifier (IP address or user ID)
-        String clientId = getClientIdentifier(request);
-
-        // Determine bucket type based on the request path
-        String bucketType = getBucketType(path);
-
-        // Get the appropriate bucket for this client
-        Bucket bucket = rateLimitingConfig.resolveBucket(clientId, bucketType);
-
-        // Try to consume a token from the bucket
-        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-
-        if (probe.isConsumed()) {
-            // Request is allowed, add rate limit headers
-            response.addHeader(HEADER_LIMIT_REMAINING, String.valueOf(probe.getRemainingTokens()));
-
-            // Continue with the request
+        // Prevent infinite loop - check if this filter has already been applied
+        if (request.getAttribute("rateLimitingFilter.applied") != null) {
             filterChain.doFilter(request, response);
-        } else {
-            // Request is rate limited
-            long waitTimeSeconds = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
+            return;
+        }
+        request.setAttribute("rateLimitingFilter.applied", true);
 
-            // Add rate limit headers
-            response.addHeader(HEADER_RETRY_AFTER, String.valueOf(waitTimeSeconds));
+        try {
+            // Determine client identifier (IP address or user ID)
+            String clientId = getClientIdentifier(request);
 
-            // Set response status and body
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.getWriter().write("Rate limit exceeded. Please try again in " + waitTimeSeconds + " seconds.");
+            // Determine bucket type based on the request path
+            String bucketType = getBucketType(path);
 
-            logger.warn("Rate limit exceeded for client: {}, path: {}, retry after: {} seconds",
-                    clientId, path, waitTimeSeconds);
+            // Get the appropriate bucket for this client
+            Bucket bucket = rateLimitingConfig.resolveBucket(clientId, bucketType);
+
+            // Try to consume a token from the bucket
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+            if (probe.isConsumed()) {
+                // Request is allowed, add rate limit headers
+                response.addHeader(HEADER_LIMIT_REMAINING, String.valueOf(probe.getRemainingTokens()));
+
+                // Continue with the request
+                filterChain.doFilter(request, response);
+            } else {
+                // Request is rate limited
+                long waitTimeSeconds = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
+
+                // Add rate limit headers
+                response.addHeader(HEADER_RETRY_AFTER, String.valueOf(waitTimeSeconds));
+
+                // Set response status and body
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.getWriter().write("Rate limit exceeded. Please try again in " + waitTimeSeconds + " seconds.");
+
+                logger.warn("Rate limit exceeded for client: {}, path: {}, retry after: {} seconds",
+                        clientId, path, waitTimeSeconds);
+            }
+        } catch (Exception e) {
+            logger.error("Error in rate limiting filter", e);
+            // Continue with the request on error to avoid breaking the application
+            filterChain.doFilter(request, response);
         }
     }
 
@@ -127,5 +138,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
         // Default rate limit for all other endpoints
         return "default";
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        // Skip this filter during ERROR dispatch to avoid recursive forwarding/session calls
+        return true;
+    }
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        // Skip this filter during ASYNC dispatch; this filter is only for main request thread
+        return true;
     }
 }

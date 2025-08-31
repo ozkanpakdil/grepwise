@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import DashboardView from '@/pages/dashboard-view';
 import { dashboardApi } from '@/api/dashboard';
 
@@ -53,9 +53,7 @@ vi.mock('@/components/WidgetRenderer', () => ({
 
 // Mock GridLayout component
 vi.mock('react-grid-layout', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="grid-layout">{children}</div>
-  ),
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="grid-layout">{children}</div>,
 }));
 
 describe('Dashboard Sharing', () => {
@@ -84,7 +82,7 @@ describe('Dashboard Sharing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue(mockDashboard);
-    vi.mocked(dashboardApi.shareDashboard).mockImplementation((id, isShared) => 
+    vi.mocked(dashboardApi.shareDashboard).mockImplementation((id, isShared) =>
       Promise.resolve({
         ...mockDashboard,
         isShared,
@@ -123,7 +121,9 @@ describe('Dashboard Sharing', () => {
     await user.click(screen.getByText('Share'));
 
     expect(screen.getByText('Share Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('This dashboard is currently private. Enable sharing to generate a link.')).toBeInTheDocument();
+    expect(
+      screen.getByText('This dashboard is currently private. Enable sharing to generate a link.')
+    ).toBeInTheDocument();
   });
 
   it('enables sharing when enable button is clicked', async () => {
@@ -135,21 +135,23 @@ describe('Dashboard Sharing', () => {
     });
 
     await user.click(screen.getByText('Share'));
-    
+
     await waitFor(() => {
       expect(screen.getByText('Share Dashboard')).toBeInTheDocument();
     });
-    
+
     await user.click(screen.getByText('Enable Sharing'));
 
     expect(dashboardApi.shareDashboard).toHaveBeenCalledWith('1', true, 'current-user');
-    
+
     // Wait for the API call to complete and UI to update
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Success',
-        description: expect.stringContaining('shared'),
-      }));
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success',
+          description: expect.stringContaining('shared'),
+        })
+      );
     });
   });
 
@@ -169,14 +171,15 @@ describe('Dashboard Sharing', () => {
 
     await user.click(screen.getByText('Shared'));
 
-    expect(screen.getByText('This dashboard is currently shared. Anyone with the link can view it.')).toBeInTheDocument();
+    expect(
+      screen.getByText('This dashboard is currently shared. Anyone with the link can view it.')
+    ).toBeInTheDocument();
     expect(screen.getByText('Share Link')).toBeInTheDocument();
-    
+
     // Check that the input contains the correct URL
     const shareInput = screen.getByDisplayValue(new RegExp(`/dashboards/1$`));
     expect(shareInput).toBeInTheDocument();
   });
-
 
   it('disables sharing when disable button is clicked', async () => {
     // Mock dashboard as already shared
@@ -196,13 +199,14 @@ describe('Dashboard Sharing', () => {
     await user.click(screen.getByText('Disable Sharing'));
 
     expect(dashboardApi.shareDashboard).toHaveBeenCalledWith('1', false, 'current-user');
-    
+
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Success',
-        description: expect.stringContaining('no longer shared'),
-      }));
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success',
+          description: expect.stringContaining('no longer shared'),
+        })
+      );
     });
   });
-
 });

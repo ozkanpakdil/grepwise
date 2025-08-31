@@ -92,6 +92,23 @@ Required for the frontend:
 
 ### Frontend (React)
 
+### Single-binary release (Spring Boot serves UI + API)
+
+- From now on, the frontend is built and packaged into the Spring Boot JAR during `mvn package`.
+- To build everything and produce a single runnable JAR that serves the UI on 8080:
+  1. From project root: `mvn -DskipTests package`
+  2. Run the app: `java -jar target/grepwise-0.0.1-SNAPSHOT.jar`
+  3. Open http://localhost:8080
+
+Notes:
+- The build runs Node.js in `frontend/` via the Maven frontend plugin (`npm ci` + `npm run build`).
+- Built assets are bundled into the JAR under `classpath:/static` and Spring Boot serves them.
+- Client-side routes are handled by a fallback to `/index.html` (SPA routing) while `/api/**` and backend endpoints continue to work normally.
+
+For local development with hot reload you can still run both:
+- Backend on 8080 via `mvn spring-boot:run`
+- Frontend dev server on 3000 via `npm run dev` inside `frontend/`
+
 1. Navigate to the frontend directory:
    ```
    cd path/to/GrepWise/frontend

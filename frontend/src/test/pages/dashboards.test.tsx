@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import DashboardsPage from '@/pages/dashboards';
@@ -33,9 +33,7 @@ vi.mock('@/components/ui/use-toast', () => ({
 }));
 
 // Test wrapper component
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <BrowserRouter>{children}</BrowserRouter>
-);
+const TestWrapper = ({ children }: { children: React.ReactNode }) => <BrowserRouter>{children}</BrowserRouter>;
 
 describe('DashboardsPage', () => {
   const mockDashboards = [
@@ -112,10 +110,10 @@ describe('DashboardsPage', () => {
 
   it('shows loading state initially', async () => {
     // Mock API to never resolve during this test
-    vi.mocked(dashboardApi.getDashboards).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(dashboardApi.getDashboards).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -147,7 +145,7 @@ describe('DashboardsPage', () => {
 
   it('opens create dashboard modal when New Dashboard button is clicked', async () => {
     const user = userEvent.setup();
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -165,7 +163,7 @@ describe('DashboardsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Create New Dashboard')).toBeInTheDocument();
     });
-    
+
     // Check modal contents
     expect(screen.getByPlaceholderText('Enter dashboard name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter dashboard description')).toBeInTheDocument();
@@ -174,7 +172,7 @@ describe('DashboardsPage', () => {
   it('creates a new dashboard when form is submitted', async () => {
     const user = userEvent.setup();
     vi.mocked(dashboardApi.createDashboard).mockResolvedValue(undefined);
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -221,7 +219,7 @@ describe('DashboardsPage', () => {
 
   it('shows error when creating dashboard without name', async () => {
     const user = userEvent.setup();
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -254,11 +252,9 @@ describe('DashboardsPage', () => {
     });
   });
 
-
-
   it('navigates to dashboard view when View button is clicked', async () => {
     const user = userEvent.setup();
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -273,11 +269,11 @@ describe('DashboardsPage', () => {
     // Find the dashboard card
     const dashboardCard = screen.getByText('Test Dashboard 1').closest('.border');
     expect(dashboardCard).not.toBeNull();
-    
+
     // Find the View button within the card
     const viewButton = dashboardCard ? within(dashboardCard).getByText('View') : null;
     expect(viewButton).not.toBeNull();
-    
+
     if (viewButton) {
       await user.click(viewButton);
     }
@@ -290,7 +286,7 @@ describe('DashboardsPage', () => {
 
   it('opens add widget modal when Add Widget button is clicked', async () => {
     const user = userEvent.setup();
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -305,11 +301,11 @@ describe('DashboardsPage', () => {
     // Find the dashboard card
     const dashboardCard = screen.getByText('Test Dashboard 1').closest('.border');
     expect(dashboardCard).not.toBeNull();
-    
+
     // Find the Add Widget button within the card
     const addWidgetButton = dashboardCard ? within(dashboardCard).getByText('Add Widget') : null;
     expect(addWidgetButton).not.toBeNull();
-    
+
     if (addWidgetButton) {
       await user.click(addWidgetButton);
     }
@@ -318,17 +314,18 @@ describe('DashboardsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Add Widget to Test Dashboard 1')).toBeInTheDocument();
     });
-    
+
     // Check modal contents
     expect(screen.getByPlaceholderText('Enter widget title')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter SPL query (e.g., search error | stats count by level)')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter SPL query (e.g., search error | stats count by level)')
+    ).toBeInTheDocument();
   });
-
 
   it('shows empty state when no dashboards exist', async () => {
     // Mock API to return empty array
     vi.mocked(dashboardApi.getDashboards).mockResolvedValue([]);
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />
@@ -349,7 +346,7 @@ describe('DashboardsPage', () => {
 
   it('handles API errors gracefully', async () => {
     vi.mocked(dashboardApi.getDashboards).mockRejectedValue(new Error('API Error'));
-    
+
     render(
       <TestWrapper>
         <DashboardsPage />

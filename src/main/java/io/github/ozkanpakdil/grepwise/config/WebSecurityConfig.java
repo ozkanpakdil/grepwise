@@ -3,12 +3,17 @@ package io.github.ozkanpakdil.grepwise.config;
 import io.github.ozkanpakdil.grepwise.filter.RateLimitingFilter;
 import io.github.ozkanpakdil.grepwise.security.JwtAuthenticationFilter;
 import io.github.ozkanpakdil.grepwise.service.TokenService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.core.annotation.Order;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,61 +39,84 @@ import java.util.List;
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
-    private final TokenService tokenService;
+    private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
-    private final RateLimitingFilter rateLimitingFilter;
+    private final TokenService tokenService;
 
     private final LdapConfig ldapConfig;
 
     private final LdapAuthenticationProvider ldapAuthenticationProvider;
 
-    public WebSecurityConfig(TokenService tokenService, RateLimitingFilter rateLimitingFilter, LdapConfig ldapConfig,
-                             LdapAuthenticationProvider ldapAuthenticationProvider) {
+    public WebSecurityConfig(TokenService tokenService,
+                             LdapConfig ldapConfig,
+                             @Autowired(required = false) LdapAuthenticationProvider ldapAuthenticationProvider) {
         this.tokenService = tokenService;
-        this.rateLimitingFilter = rateLimitingFilter;
         this.ldapConfig = ldapConfig;
         this.ldapAuthenticationProvider = ldapAuthenticationProvider;
     }
 
     /**
      * Creates an authentication manager that includes the LDAP authentication provider if LDAP is enabled.
-     * This bean is only created if the security.enabled property is true (default) and
-     * the auth.manager.enabled property is true (default).
+     * This bean is only created if LDAP is enabled and properly configured.
      *
      * @return The authentication manager
      */
     @Bean
-    @ConditionalOnProperty(name = {"security.enabled", "auth.manager.enabled"}, havingValue = "true")
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public AuthenticationManager authenticationManager() {
-        if (ldapConfig != null && ldapConfig.isLdapEnabled() && ldapAuthenticationProvider != null) {
-            return new ProviderManager(Collections.singletonList(ldapAuthenticationProvider));
+        try {
+            if (ldapAuthenticationProvider != null) {
+                logger.info("Creating LDAP authentication manager");
+                return new ProviderManager(Collections.singletonList(ldapAuthenticationProvider));
+            } else {
+                logger.warn("LDAP authentication provider is null, cannot create authentication manager");
+                throw new IllegalStateException("LDAP authentication provider is required when LDAP is enabled");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to create LDAP authentication manager", e);
+            throw e;
         }
-        // Return an empty ProviderManager if LDAP is not enabled
-        // The JWT filter will handle authentication in this case
-        return new ProviderManager(Collections.emptyList());
     }
 
     /**
      * Configure security for the application.
      *
-     * @param http The HttpSecurity to configure
-     * @return The configured SecurityFilterChain
-     * @throws Exception If an error occurs during configuration
+     * Defines beans for RateLimitingFilter and two security chains (API and default).
      */
+    /*@Bean
+    public RateLimitingFilter rateLimitingFilter(RateLimitingConfig rateLimitingConfig) {
+        return new RateLimitingFilter(rateLimitingConfig);
+    }*/
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        // Limit this chain to API paths only
+        http.securityMatcher("/api/**");
+
         // Set the authentication manager if LDAP is enabled
         if (ldapConfig != null && ldapConfig.isLdapEnabled()) {
-            http.authenticationManager(authenticationManager());
+            try {
+                AuthenticationManager authManager = authenticationManager();
+                http.authenticationManager(authManager);
+                logger.info("LDAP authentication manager configured");
+            } catch (Exception e) {
+                logger.warn("Failed to configure LDAP authentication manager, continuing with default authentication", e);
+            }
         }
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .requestCache(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) -> res.sendError(HttpStatus.UNAUTHORIZED.value()))
+                        .accessDeniedHandler((req, res, e) -> res.sendError(HttpStatus.FORBIDDEN.value()))
+                )
                 // Add rate limiting filter before authentication filter
-                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
+//                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
                         // Add LDAP login endpoint if LDAP is enabled
                         .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ?
@@ -136,12 +165,49 @@ public class WebSecurityConfig {
                         // Configuration endpoints - allow for now (development/setup)
                         .requestMatchers("/api/config/**").permitAll()
 
-                        // Require authentication for all other endpoints
+                        // Require authentication for all other API endpoints
                         .anyRequest().authenticated()
                 );
 
         return http.build();
     }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher("/**");
+
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .requestCache(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) -> res.sendError(HttpStatus.UNAUTHORIZED.value()))
+                        .accessDeniedHandler((req, res, e) -> res.sendError(HttpStatus.FORBIDDEN.value()))
+                )
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/", "/error", "/index.html", "/favicon.ico", "/manifest.webmanifest",
+                                "/assets/**", "/static/**", "/vite.svg",
+                                "/*.css", "/*.js", "/*.map", "/*.png", "/*.jpg", "/*.jpeg", "/*.svg", "/*.gif"
+                        ).permitAll()
+                        .anyRequest().permitAll()
+                );
+
+        return http.build();
+    }
+
+    /**
+     * Disable servlet container auto-registration for RateLimitingFilter since it is added to the Spring Security filter chain.
+     * This avoids duplicate registration that can cause recursive filter invocation and StackOverflowError.
+     */
+    /*@Bean
+    public FilterRegistrationBean<RateLimitingFilter> disableRateLimitingFilterAutoRegistration(RateLimitingFilter filter) {
+        FilterRegistrationBean<RateLimitingFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }*/
 
     /**
      * Configure CORS for the application.

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import SSEClient, { getWidgetUpdateClient, getLogUpdateClient } from '@/utils/sseClient';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import SSEClient, { getLogUpdateClient, getWidgetUpdateClient } from '@/utils/sseClient';
 
 // Mock EventSource
 class MockEventSource {
@@ -32,7 +32,7 @@ class MockEventSource {
     }
 
     if (this.eventListeners[event]) {
-      this.eventListeners[event].forEach(callback => {
+      this.eventListeners[event].forEach((callback) => {
         callback({ data: JSON.stringify(data) });
       });
     }
@@ -48,7 +48,7 @@ global.EventSource = MockEventSource as any;
 
 describe('SSEClient', () => {
   let sseClient: SSEClient;
-  
+
   beforeEach(() => {
     sseClient = new SSEClient('http://test-url.com/sse');
   });
@@ -70,16 +70,16 @@ describe('SSEClient', () => {
   it('should register event listeners', () => {
     const callback = vi.fn();
     sseClient.on('testEvent', callback);
-    
+
     // Connect to create the EventSource
     sseClient.connect();
-    
+
     // Get the EventSource instance
     const eventSource = (sseClient as any).eventSource;
-    
+
     // Simulate an event
     eventSource.dispatchEvent('testEvent', { test: 'data' });
-    
+
     // Check if callback was called with the correct data
     expect(callback).toHaveBeenCalledWith({ test: 'data' });
   });
@@ -87,18 +87,18 @@ describe('SSEClient', () => {
   it('should handle connection errors', () => {
     const errorCallback = vi.fn();
     sseClient = new SSEClient('http://test-url.com/sse', {
-      onError: errorCallback
+      onError: errorCallback,
     });
-    
+
     // Connect to create the EventSource
     sseClient.connect();
-    
+
     // Get the EventSource instance
     const eventSource = (sseClient as any).eventSource;
-    
+
     // Simulate an error
     eventSource.dispatchEvent('error', null);
-    
+
     // Check if error callback was called
     expect(errorCallback).toHaveBeenCalled();
   });
@@ -106,17 +106,17 @@ describe('SSEClient', () => {
   it('should close the connection', () => {
     // Connect to create the EventSource
     sseClient.connect();
-    
+
     // Get the EventSource instance
     const eventSource = (sseClient as any).eventSource;
     const closeSpy = vi.spyOn(eventSource, 'close');
-    
+
     // Close the connection
     sseClient.close();
-    
+
     // Check if close was called
     expect(closeSpy).toHaveBeenCalled();
-    
+
     // Check if eventSource was reset
     expect((sseClient as any).eventSource).toBeNull();
   });
@@ -126,11 +126,13 @@ describe('Widget Update Client', () => {
   it('should create a widget update client with the correct URL', () => {
     const dashboardId = 'dashboard-123';
     const widgetId = 'widget-456';
-    
+
     const client = getWidgetUpdateClient(dashboardId, widgetId);
-    
+
     expect(client).toBeDefined();
-    expect((client as any).url).toBe(`http://localhost:8080/api/realtime/widgets/${widgetId}?dashboardId=${dashboardId}`);
+    expect((client as any).url).toBe(
+      `http://localhost:8080/api/realtime/widgets/${widgetId}?dashboardId=${dashboardId}`
+    );
   });
 });
 
@@ -139,16 +141,18 @@ describe('Log Update Client', () => {
     const query = 'error';
     const isRegex = true;
     const timeRange = '24h';
-    
+
     const client = getLogUpdateClient(query, isRegex, timeRange);
-    
+
     expect(client).toBeDefined();
-    expect((client as any).url).toBe(`http://localhost:8080/api/realtime/logs?query=${query}&isRegex=${isRegex}&timeRange=${timeRange}`);
+    expect((client as any).url).toBe(
+      `http://localhost:8080/api/realtime/logs?query=${query}&isRegex=${isRegex}&timeRange=${timeRange}`
+    );
   });
-  
+
   it('should create a log update client with no parameters', () => {
     const client = getLogUpdateClient();
-    
+
     expect(client).toBeDefined();
     expect((client as any).url).toBe('http://localhost:8080/api/realtime/logs');
   });

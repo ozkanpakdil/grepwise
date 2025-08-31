@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LogBarChart from '@/components/LogBarChart';
@@ -59,37 +59,19 @@ describe('LogBarChart', () => {
   });
 
   it('renders the chart title correctly', () => {
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     expect(screen.getByText('Log Distribution')).toBeInTheDocument();
   });
 
   it('displays a message when no data is available', () => {
-    render(
-      <LogBarChart
-        timeSlots={[]}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={[]} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     expect(screen.getByText('No data available for the selected time range')).toBeInTheDocument();
   });
 
   it('renders bars for each time slot', () => {
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Check for the container that holds the bars
     const barContainer = screen.getByRole('list');
@@ -107,32 +89,20 @@ describe('LogBarChart', () => {
 
   it('calls onTimeSlotClick when a bar is double-clicked', async () => {
     const user = userEvent.setup();
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Find a bar and double-click it
     const bars = document.querySelectorAll('.bg-blue-500');
     expect(bars.length).toBeGreaterThan(0);
-    
+
     await user.dblClick(bars[0]);
-    
+
     expect(mockOnTimeSlotClick).toHaveBeenCalledWith(mockTimeSlots[0]);
   });
 
   it('shows tooltip on hover', async () => {
     const user = userEvent.setup();
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Find a bar and hover over it
     const bars = document.querySelectorAll('.bg-blue-500');
@@ -148,11 +118,7 @@ describe('LogBarChart', () => {
   it('formats time based on timeRange prop', () => {
     // Test with 1h timeRange
     const { rerender } = render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="1h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
+      <LogBarChart timeSlots={mockTimeSlots} timeRange="1h" onTimeSlotClick={mockOnTimeSlotClick} />
     );
 
     // Check for time formatting (exact format depends on locale)
@@ -160,13 +126,7 @@ describe('LogBarChart', () => {
     expect(timeLabels.length).toBeGreaterThan(0);
 
     // Test with custom timeRange
-    rerender(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="custom"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    rerender(<LogBarChart timeSlots={mockTimeSlots} timeRange="custom" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Check that time labels are still rendered
     const customTimeLabels = document.querySelectorAll('.text-\\[10px\\]');
@@ -176,14 +136,8 @@ describe('LogBarChart', () => {
   it('adapts to small screen sizes (mobile)', () => {
     // Set mobile width
     setMobileWidth();
-    
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Check for the chart to be rendered (mobile vs desktop might show different text)
     // Since we can see "Double-click a bar to zoom" in the DOM, let's check for that
@@ -193,14 +147,8 @@ describe('LogBarChart', () => {
   it('adapts to medium screen sizes (tablet)', () => {
     // Set tablet width
     setTabletWidth();
-    
-    render(
-      <LogBarChart
-        timeSlots={mockTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+
+    render(<LogBarChart timeSlots={mockTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Check for the instruction text that's actually rendered
     expect(screen.getByText('Double-click a bar to zoom')).toBeInTheDocument();
@@ -214,11 +162,7 @@ describe('LogBarChart', () => {
 
     // Test with desktop width first (already set up in beforeEach)
     const { unmount } = render(
-      <LogBarChart
-        timeSlots={largeCountTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
+      <LogBarChart timeSlots={largeCountTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />
     );
 
     // Check that the chart renders with large numbers
@@ -234,13 +178,7 @@ describe('LogBarChart', () => {
     // Test with mobile width
     setMobileWidth();
 
-    render(
-      <LogBarChart
-        timeSlots={largeCountTimeSlots}
-        timeRange="24h"
-        onTimeSlotClick={mockOnTimeSlotClick}
-      />
-    );
+    render(<LogBarChart timeSlots={largeCountTimeSlots} timeRange="24h" onTimeSlotClick={mockOnTimeSlotClick} />);
 
     // Check that mobile version also renders correctly
     const mobileBars = screen.getAllByRole('listitem');

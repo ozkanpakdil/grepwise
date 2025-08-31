@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
@@ -112,12 +112,12 @@ describe('AuditLogsPage', () => {
 
   it('shows loading state initially', () => {
     // Mock APIs to never resolve during this test
-    vi.mocked(auditLogApi.getAuditLogs).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(auditLogApi.getAuditLogs).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    
+
     renderComponent();
-    
+
     // Check for loading state
     expect(screen.getByText('Loading audit logs...')).toBeInTheDocument();
   });
@@ -129,10 +129,10 @@ describe('AuditLogsPage', () => {
       // Check for filter options
       const categorySelect = screen.getByLabelText('Category');
       expect(categorySelect).toBeInTheDocument();
-      
+
       const actionSelect = screen.getByLabelText('Action');
       expect(actionSelect).toBeInTheDocument();
-      
+
       const targetTypeSelect = screen.getByLabelText('Target Type');
       expect(targetTypeSelect).toBeInTheDocument();
     });
@@ -154,9 +154,7 @@ describe('AuditLogsPage', () => {
     await user.click(screen.getByText('Apply Filters'));
 
     await waitFor(() => {
-      expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'AUTH' })
-      );
+      expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(expect.objectContaining({ category: 'AUTH' }));
     });
   });
 
@@ -180,7 +178,7 @@ describe('AuditLogsPage', () => {
 
     await waitFor(() => {
       expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ 
+        expect.objectContaining({
           page: 0,
           size: 20,
         })
@@ -201,15 +199,13 @@ describe('AuditLogsPage', () => {
     await user.selectOptions(pageSizeSelect, '50');
 
     await waitFor(() => {
-      expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ size: 50 })
-      );
+      expect(auditLogApi.getAuditLogs).toHaveBeenCalledWith(expect.objectContaining({ size: 50 }));
     });
   });
 
   it('shows empty state when no audit logs found', async () => {
     vi.mocked(auditLogApi.getAuditLogs).mockResolvedValue([]);
-    
+
     renderComponent();
 
     await waitFor(() => {
@@ -219,7 +215,7 @@ describe('AuditLogsPage', () => {
 
   it('handles API error gracefully', async () => {
     vi.mocked(auditLogApi.getAuditLogs).mockRejectedValue(new Error('Failed to fetch'));
-    
+
     renderComponent();
 
     await waitFor(() => {
@@ -238,7 +234,7 @@ describe('AuditLogsPage', () => {
     await waitFor(() => {
       const successStatus = screen.getAllByText('SUCCESS')[0];
       const failureStatus = screen.getByText('FAILURE');
-      
+
       // Check that they have different styling classes
       expect(successStatus.className).toContain('bg-green-100');
       expect(failureStatus.className).toContain('bg-red-100');

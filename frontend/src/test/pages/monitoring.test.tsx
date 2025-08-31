@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import MonitoringPage from '@/pages/monitoring';
 import * as metricsApi from '@/api/metrics';
@@ -120,7 +119,7 @@ describe('MonitoringPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock API responses
     vi.mocked(metricsApi.getHealthStatus).mockResolvedValue(mockHealthStatus);
     vi.mocked(metricsApi.getSystemInfo).mockResolvedValue(mockSystemInfo);
@@ -128,7 +127,7 @@ describe('MonitoringPage', () => {
     vi.mocked(metricsApi.getJvmMetrics).mockResolvedValue(mockJvmMetrics);
     vi.mocked(metricsApi.getSystemMetrics).mockResolvedValue(mockSystemMetrics);
     vi.mocked(metricsApi.getHttpMetrics).mockResolvedValue(mockHttpMetrics);
-    
+
     // Mock Date.now() to return a consistent value for testing
     vi.spyOn(Date.prototype, 'toLocaleTimeString').mockReturnValue('12:00:00 PM');
   });
@@ -148,7 +147,7 @@ describe('MonitoringPage', () => {
 
   it('fetches metrics on mount', async () => {
     renderComponent();
-    
+
     await waitFor(() => {
       expect(metricsApi.getHealthStatus).toHaveBeenCalled();
       expect(metricsApi.getSystemInfo).toHaveBeenCalled();
@@ -161,7 +160,7 @@ describe('MonitoringPage', () => {
 
   it('displays CPU usage with correct formatting', async () => {
     renderComponent();
-    
+
     await waitFor(() => {
       expect(screen.getByText('65.0%')).toBeInTheDocument();
     });
@@ -169,7 +168,7 @@ describe('MonitoringPage', () => {
 
   it('displays memory usage with correct formatting', async () => {
     renderComponent();
-    
+
     await waitFor(() => {
       expect(screen.getByText('95.37 MB')).toBeInTheDocument();
     });
@@ -177,7 +176,7 @@ describe('MonitoringPage', () => {
 
   it('displays disk space with correct formatting', async () => {
     renderComponent();
-    
+
     await waitFor(() => {
       expect(screen.getByText('46.57 GB')).toBeInTheDocument();
     });
@@ -186,17 +185,16 @@ describe('MonitoringPage', () => {
   it('handles API errors gracefully', async () => {
     // Mock API to throw an error
     vi.mocked(metricsApi.getHealthStatus).mockRejectedValue(new Error('API error'));
-    
+
     renderComponent();
-    
+
     // Wait for error toast to be called
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Error',
         description: 'Failed to fetch metrics. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     });
   });
-
 });

@@ -126,4 +126,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         return null;
     }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        // Do not run this filter for ERROR dispatch to avoid recursive invocation
+        return true;
+    }
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        // Skip async dispatch; authentication is set up in the main request
+        return true;
+    }
 }

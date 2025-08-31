@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import DashboardView from '@/pages/dashboard-view';
 import { dashboardApi } from '@/api/dashboard';
 
@@ -41,9 +41,7 @@ vi.mock('@/components/WidgetRenderer', () => ({
 
 // Mock GridLayout component
 vi.mock('react-grid-layout', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="grid-layout">{children}</div>
-  ),
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="grid-layout">{children}</div>,
 }));
 
 describe('DashboardView', () => {
@@ -118,12 +116,12 @@ describe('DashboardView', () => {
 
   it('shows loading state initially', () => {
     // Mock API to never resolve during this test
-    vi.mocked(dashboardApi.getDashboard).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(dashboardApi.getDashboard).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    
+
     renderWithRouter();
-    
+
     // Check for loading state
     expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
   });
@@ -200,12 +198,11 @@ describe('DashboardView', () => {
 
     // Check for delete buttons
     const deleteButtons = screen.getAllByRole('button');
-    
+
     // Since we can't easily query for the Trash2 icon component,
     // we'll check for buttons with the expected class
-    const trashButtons = deleteButtons.filter(button => 
-      button.className.includes('text-red-600') || 
-      button.className.includes('text-red-700')
+    const trashButtons = deleteButtons.filter(
+      (button) => button.className.includes('text-red-600') || button.className.includes('text-red-700')
     );
 
     expect(trashButtons.length).toBeGreaterThan(0); // At least one delete button
@@ -214,10 +211,10 @@ describe('DashboardView', () => {
   it('deletes widget when delete button is clicked and confirmed', async () => {
     const user = userEvent.setup();
     vi.mocked(dashboardApi.deleteWidget).mockResolvedValue(undefined);
-    
+
     // Mock window.confirm
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    
+
     renderWithRouter();
 
     await waitFor(() => {
@@ -229,16 +226,14 @@ describe('DashboardView', () => {
 
     // Find and click delete button for first widget
     const deleteButtons = screen.getAllByRole('button');
-    const deleteButton = deleteButtons.find(button => 
-      button.querySelector('.lucide-trash2')
-    );
-    
+    const deleteButton = deleteButtons.find((button) => button.querySelector('.lucide-trash2'));
+
     if (deleteButton) {
       await user.click(deleteButton);
     }
 
     expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to delete this widget?');
-    
+
     await waitFor(() => {
       expect(dashboardApi.deleteWidget).toHaveBeenCalledWith('1', 'w1', 'current-user');
     });
@@ -253,10 +248,10 @@ describe('DashboardView', () => {
 
   it('does not delete widget when confirmation is cancelled', async () => {
     const user = userEvent.setup();
-    
+
     // Mock window.confirm to return false
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    
+
     renderWithRouter();
 
     await waitFor(() => {
@@ -268,10 +263,8 @@ describe('DashboardView', () => {
 
     // Find and click delete button
     const deleteButtons = screen.getAllByRole('button');
-    const deleteButton = deleteButtons.find(button => 
-      button.querySelector('.lucide-trash2')
-    );
-    
+    const deleteButton = deleteButtons.find((button) => button.querySelector('.lucide-trash2'));
+
     if (deleteButton) {
       await user.click(deleteButton);
     }
@@ -358,9 +351,9 @@ describe('DashboardView', () => {
   it('handles widget deletion error gracefully', async () => {
     const user = userEvent.setup();
     vi.mocked(dashboardApi.deleteWidget).mockRejectedValue(new Error('Delete failed'));
-    
+
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    
+
     renderWithRouter();
 
     await waitFor(() => {
@@ -371,10 +364,8 @@ describe('DashboardView', () => {
     await user.click(screen.getByText('Edit'));
 
     const deleteButtons = screen.getAllByRole('button');
-    const deleteButton = deleteButtons.find(button => 
-      button.querySelector('.lucide-trash2')
-    );
-    
+    const deleteButton = deleteButtons.find((button) => button.querySelector('.lucide-trash2'));
+
     if (deleteButton) {
       await user.click(deleteButton);
     }
@@ -383,14 +374,16 @@ describe('DashboardView', () => {
     await waitFor(() => {
       expect(dashboardApi.deleteWidget).toHaveBeenCalled();
     });
-    
+
     // Then wait for the error toast to be shown
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Error',
-        description: 'Failed to delete widget',
-        variant: 'destructive',
-      }));
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Error',
+          description: 'Failed to delete widget',
+          variant: 'destructive',
+        })
+      );
     });
 
     confirmSpy.mockRestore();
@@ -411,5 +404,4 @@ describe('DashboardView', () => {
 
     expect(screen.queryByText('Test dashboard description')).not.toBeInTheDocument();
   });
-
 });

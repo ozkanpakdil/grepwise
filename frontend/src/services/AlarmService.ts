@@ -1,15 +1,15 @@
-import { AlarmServiceClient } from '../generated/AlarmServiceServiceClientPb';
+import { AlarmServiceClient } from '../generated/AlarmserviceServiceClientPb';
 import {
   Alarm,
+  AlarmIdRequest,
   CreateAlarmRequest,
+  DeleteAlarmResponse,
   GetAlarmsRequest,
   GetAlarmsResponse,
-  AlarmIdRequest,
-  UpdateAlarmRequest,
-  DeleteAlarmResponse,
+  NotificationChannel,
   TestAlarmRequest,
   TestAlarmResponse,
-  NotificationChannel
+  UpdateAlarmRequest,
 } from '../generated/alarmservice_pb';
 
 /**
@@ -26,7 +26,7 @@ class AlarmService {
 
   /**
    * Create a new alarm.
-   * 
+   *
    * @param name Alarm name
    * @param description Alarm description
    * @param query Search query for the alarm
@@ -56,7 +56,7 @@ class AlarmService {
     request.setTimeWindowMinutes(timeWindowMinutes);
     request.setNotificationChannelsList(notificationChannels);
     request.setEnabled(enabled);
-    
+
     return new Promise((resolve, reject) => {
       this.client.createAlarm(request, null, (err, response) => {
         if (err) {
@@ -70,7 +70,7 @@ class AlarmService {
 
   /**
    * Get all alarms with pagination.
-   * 
+   *
    * @param page Page number (0-based)
    * @param size Page size
    * @param sortField Field to sort by
@@ -88,7 +88,7 @@ class AlarmService {
     request.setSize(size);
     request.setSortField(sortField);
     request.setSortAscending(sortAscending);
-    
+
     return new Promise((resolve, reject) => {
       this.client.getAlarms(request, null, (err, response) => {
         if (err) {
@@ -102,14 +102,14 @@ class AlarmService {
 
   /**
    * Get an alarm by ID.
-   * 
+   *
    * @param id The ID of the alarm
    * @returns Promise with the alarm
    */
   async getAlarmById(id: string): Promise<Alarm> {
     const request = new AlarmIdRequest();
     request.setId(id);
-    
+
     return new Promise((resolve, reject) => {
       this.client.getAlarmById(request, null, (err, response) => {
         if (err) {
@@ -123,7 +123,7 @@ class AlarmService {
 
   /**
    * Update an existing alarm.
-   * 
+   *
    * @param id Alarm ID
    * @param name Alarm name
    * @param description Alarm description
@@ -156,7 +156,7 @@ class AlarmService {
     request.setTimeWindowMinutes(timeWindowMinutes);
     request.setNotificationChannelsList(notificationChannels);
     request.setEnabled(enabled);
-    
+
     return new Promise((resolve, reject) => {
       this.client.updateAlarm(request, null, (err, response) => {
         if (err) {
@@ -170,14 +170,14 @@ class AlarmService {
 
   /**
    * Delete an alarm by ID.
-   * 
+   *
    * @param id The ID of the alarm to delete
    * @returns Promise with delete response
    */
   async deleteAlarm(id: string): Promise<DeleteAlarmResponse> {
     const request = new AlarmIdRequest();
     request.setId(id);
-    
+
     return new Promise((resolve, reject) => {
       this.client.deleteAlarm(request, null, (err, response) => {
         if (err) {
@@ -191,7 +191,7 @@ class AlarmService {
 
   /**
    * Test an alarm against current data.
-   * 
+   *
    * @param id Alarm ID (optional)
    * @param query Search query (if ID not provided)
    * @param condition Condition (if ID not provided)
@@ -207,7 +207,7 @@ class AlarmService {
     timeWindowMinutes?: number
   ): Promise<TestAlarmResponse> {
     const request = new TestAlarmRequest();
-    
+
     if (id) {
       request.setId(id);
     } else {
@@ -216,7 +216,7 @@ class AlarmService {
       if (threshold !== undefined) request.setThreshold(threshold);
       if (timeWindowMinutes !== undefined) request.setTimeWindowMinutes(timeWindowMinutes);
     }
-    
+
     return new Promise((resolve, reject) => {
       this.client.testAlarm(request, null, (err, response) => {
         if (err) {

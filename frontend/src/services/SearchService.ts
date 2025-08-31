@@ -1,4 +1,4 @@
-import { SearchParams, exportLogsAsCsv, exportLogsAsJson } from '@/api/logSearch';
+import { exportLogsAsCsv, exportLogsAsJson, SearchParams } from '@/api/logSearch';
 import { apiUrl, config } from '@/config';
 
 export type PageResponse<T> = {
@@ -7,13 +7,16 @@ export type PageResponse<T> = {
   page: number;
 };
 
-function buildSearchQuery(params: URLSearchParams, opts: {
-  query?: string;
-  isRegex?: boolean;
-  timeRange?: SearchParams['timeRange'];
-  startTime?: number;
-  endTime?: number;
-}) {
+function buildSearchQuery(
+  params: URLSearchParams,
+  opts: {
+    query?: string;
+    isRegex?: boolean;
+    timeRange?: SearchParams['timeRange'];
+    startTime?: number;
+    endTime?: number;
+  }
+) {
   const { query, isRegex, timeRange, startTime, endTime } = opts;
   const trimmed = (query || '').trim();
   if (trimmed && trimmed !== '*') params.set('query', trimmed);

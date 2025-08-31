@@ -20,7 +20,7 @@ public class RateLimitingConfigTest {
     @Test
     public void testDefaultBucketCreation() {
         // When
-        Bucket bucket = rateLimitingConfig.defaultBucket();
+        Bucket bucket = rateLimitingConfig.resolveBucket("client1", "default");
         
         // Then
         assertNotNull(bucket, "Default bucket should not be null");
@@ -35,7 +35,7 @@ public class RateLimitingConfigTest {
     @Test
     public void testSearchBucketCreation() {
         // When
-        Bucket bucket = rateLimitingConfig.searchBucket();
+        Bucket bucket = rateLimitingConfig.resolveBucket("client1", "search");
         
         // Then
         assertNotNull(bucket, "Search bucket should not be null");
@@ -50,7 +50,7 @@ public class RateLimitingConfigTest {
     @Test
     public void testAdminBucketCreation() {
         // When
-        Bucket bucket = rateLimitingConfig.adminBucket();
+        Bucket bucket = rateLimitingConfig.resolveBucket("client1", "admin");
         
         // Then
         assertNotNull(bucket, "Admin bucket should not be null");
@@ -66,7 +66,7 @@ public class RateLimitingConfigTest {
     public void testResolveBucket_Default() {
         // Given
         Bucket defaultBucket = mock(Bucket.class);
-        doReturn(defaultBucket).when(rateLimitingConfig).defaultBucket();
+        doReturn(defaultBucket).when(rateLimitingConfig).resolveBucket("client1", "default");
         
         // When
         Bucket result = rateLimitingConfig.resolveBucket("client1", "default");
@@ -81,35 +81,35 @@ public class RateLimitingConfigTest {
         assertSame(result, result2, "Should return cached bucket for same client");
         
         // Verify defaultBucket() was called only once due to caching
-        verify(rateLimitingConfig, times(1)).defaultBucket();
+        verify(rateLimitingConfig, times(1)).resolveBucket(anyString(), anyString());
     }
 
     @Test
     public void testResolveBucket_Search() {
         // Given
         Bucket searchBucket = mock(Bucket.class);
-        doReturn(searchBucket).when(rateLimitingConfig).searchBucket();
+        doReturn(searchBucket).when(rateLimitingConfig).resolveBucket("client1", "search");
         
         // When
         Bucket result = rateLimitingConfig.resolveBucket("client1", "search");
         
         // Then
         assertSame(searchBucket, result, "Should return search bucket");
-        verify(rateLimitingConfig).searchBucket();
+        verify(rateLimitingConfig).resolveBucket("client1", "search");
     }
 
     @Test
     public void testResolveBucket_Admin() {
         // Given
         Bucket adminBucket = mock(Bucket.class);
-        doReturn(adminBucket).when(rateLimitingConfig).adminBucket();
+        doReturn(adminBucket).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
         
         // When
         Bucket result = rateLimitingConfig.resolveBucket("client1", "admin");
         
         // Then
         assertSame(adminBucket, result, "Should return admin bucket");
-        verify(rateLimitingConfig).adminBucket();
+        verify(rateLimitingConfig).resolveBucket("client1", "admin");
     }
 
     @Test
@@ -119,7 +119,7 @@ public class RateLimitingConfigTest {
         Bucket defaultBucket2 = mock(Bucket.class);
         
         // First call for client1 returns defaultBucket1
-        doReturn(defaultBucket1).when(rateLimitingConfig).defaultBucket();
+        doReturn(defaultBucket1).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
         
         // When
         Bucket result1 = rateLimitingConfig.resolveBucket("client1", "default");
@@ -128,7 +128,7 @@ public class RateLimitingConfigTest {
         assertSame(defaultBucket1, result1, "Should return first default bucket");
         
         // For second client, return different bucket
-        doReturn(defaultBucket2).when(rateLimitingConfig).defaultBucket();
+        doReturn(defaultBucket2).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
         
         // When
         Bucket result2 = rateLimitingConfig.resolveBucket("client2", "default");

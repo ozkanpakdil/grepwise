@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import AlarmMonitoringPage from '@/pages/alarm-monitoring';
 import { alarmApi } from '@/api/alarm';
 
@@ -45,9 +45,7 @@ describe('AlarmMonitoringPage', () => {
       enabled: true,
       createdAt: Date.now() - 86400000,
       updatedAt: Date.now() - 86400000,
-      notificationChannels: [
-        { type: 'EMAIL', destination: 'admin@example.com' }
-      ]
+      notificationChannels: [{ type: 'EMAIL', destination: 'admin@example.com' }],
     },
     {
       id: 'alarm2',
@@ -60,17 +58,15 @@ describe('AlarmMonitoringPage', () => {
       enabled: true,
       createdAt: Date.now() - 172800000,
       updatedAt: Date.now() - 172800000,
-      notificationChannels: [
-        { type: 'EMAIL', destination: 'admin@example.com' }
-      ]
-    }
+      notificationChannels: [{ type: 'EMAIL', destination: 'admin@example.com' }],
+    },
   ];
 
   const mockStatistics = {
     totalAlarms: 5,
     enabledAlarms: 3,
     disabledAlarms: 2,
-    recentlyTriggered: 2
+    recentlyTriggered: 2,
   };
 
   const mockAlarmEvents = [
@@ -81,7 +77,7 @@ describe('AlarmMonitoringPage', () => {
       timestamp: Date.now() - 3600000, // 1 hour ago
       status: 'TRIGGERED',
       matchCount: 12,
-      details: 'Found 12 matching log entries with database errors'
+      details: 'Found 12 matching log entries with database errors',
     },
     {
       id: 'evt2',
@@ -92,7 +88,7 @@ describe('AlarmMonitoringPage', () => {
       acknowledgedBy: 'admin',
       acknowledgedAt: Date.now() - 7000000,
       matchCount: 8,
-      details: 'Found 8 matching log entries with API timeouts'
+      details: 'Found 8 matching log entries with API timeouts',
     },
     {
       id: 'evt3',
@@ -105,8 +101,8 @@ describe('AlarmMonitoringPage', () => {
       resolvedBy: 'admin',
       resolvedAt: Date.now() - 84000000,
       matchCount: 3,
-      details: 'Found 3 matching log entries with security warnings'
-    }
+      details: 'Found 3 matching log entries with security warnings',
+    },
   ];
 
   beforeEach(() => {
@@ -115,25 +111,25 @@ describe('AlarmMonitoringPage', () => {
     vi.mocked(alarmApi.getStatistics).mockResolvedValue(mockStatistics);
     vi.mocked(alarmApi.getAlarmEvents).mockResolvedValue(mockAlarmEvents);
     vi.mocked(alarmApi.acknowledgeAlarm).mockImplementation((id) => {
-      const event = mockAlarmEvents.find(e => e.id === id);
+      const event = mockAlarmEvents.find((e) => e.id === id);
       if (!event) throw new Error('Event not found');
-      
+
       return Promise.resolve({
         ...event,
         status: 'ACKNOWLEDGED',
         acknowledgedBy: 'current-user',
-        acknowledgedAt: Date.now()
+        acknowledgedAt: Date.now(),
       });
     });
     vi.mocked(alarmApi.resolveAlarm).mockImplementation((id) => {
-      const event = mockAlarmEvents.find(e => e.id === id);
+      const event = mockAlarmEvents.find((e) => e.id === id);
       if (!event) throw new Error('Event not found');
-      
+
       return Promise.resolve({
         ...event,
         status: 'RESOLVED',
         resolvedBy: 'current-user',
-        resolvedAt: Date.now()
+        resolvedAt: Date.now(),
       });
     });
   });
@@ -171,18 +167,18 @@ describe('AlarmMonitoringPage', () => {
 
   it('shows loading state initially', () => {
     // Mock APIs to never resolve during this test
-    vi.mocked(alarmApi.getAllAlarms).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(alarmApi.getAllAlarms).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    vi.mocked(alarmApi.getStatistics).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(alarmApi.getStatistics).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    vi.mocked(alarmApi.getAlarmEvents).mockImplementationOnce(() => 
-      new Promise(() => {}) // Never resolving promise
+    vi.mocked(alarmApi.getAlarmEvents).mockImplementationOnce(
+      () => new Promise(() => {}) // Never resolving promise
     );
-    
+
     renderWithRouter();
-    
+
     // Check for loading state
     expect(screen.getByText('Loading alarm data...')).toBeInTheDocument();
   });
@@ -204,11 +200,15 @@ describe('AlarmMonitoringPage', () => {
     expect(elementsWithTwo).toHaveLength(2);
 
     // One should be regular styling (disabled alarms), one should be red (recently triggered)
-    const disabledAlarmsValue = elementsWithTwo.find(el => 
-      el.className.includes('text-2xl') && el.className.includes('font-bold') && !el.className.includes('text-red-600')
+    const disabledAlarmsValue = elementsWithTwo.find(
+      (el) =>
+        el.className.includes('text-2xl') &&
+        el.className.includes('font-bold') &&
+        !el.className.includes('text-red-600')
     );
-    const recentlyTriggeredValue = elementsWithTwo.find(el => 
-      el.className.includes('text-2xl') && el.className.includes('font-bold') && el.className.includes('text-red-600')
+    const recentlyTriggeredValue = elementsWithTwo.find(
+      (el) =>
+        el.className.includes('text-2xl') && el.className.includes('font-bold') && el.className.includes('text-red-600')
     );
 
     expect(disabledAlarmsValue).toBeInTheDocument();
@@ -255,14 +255,14 @@ describe('AlarmMonitoringPage', () => {
 
     // Click on "acknowledged" tab
     await user.click(screen.getByRole('tab', { name: /acknowledged/i }));
-    
+
     // Should show only ACKNOWLEDGED events
     expect(screen.queryByText('Database Error Alert')).not.toBeInTheDocument();
     expect(screen.getByText('API Timeout Alert')).toBeInTheDocument();
 
     // Click on "resolved" tab
     await user.click(screen.getByRole('tab', { name: /resolved/i }));
-    
+
     // Should show only RESOLVED events
     expect(screen.queryByText('Database Error Alert')).not.toBeInTheDocument();
     expect(screen.queryByText('API Timeout Alert')).not.toBeInTheDocument();
@@ -270,7 +270,7 @@ describe('AlarmMonitoringPage', () => {
 
     // Click on "all" tab
     await user.click(screen.getByRole('tab', { name: /all/i }));
-    
+
     // Should show all events
     expect(screen.getByText('Database Error Alert')).toBeInTheDocument();
     expect(screen.getByText('API Timeout Alert')).toBeInTheDocument();
@@ -291,7 +291,7 @@ describe('AlarmMonitoringPage', () => {
 
     // Enter search query
     await user.type(screen.getByPlaceholderText('Search alarms...'), 'database');
-    
+
     // Should show only events matching the search query
     expect(screen.getByText('Database Error Alert')).toBeInTheDocument();
     expect(screen.queryByText('API Timeout Alert')).not.toBeInTheDocument();
@@ -313,7 +313,7 @@ describe('AlarmMonitoringPage', () => {
 
     // Check that the API was called
     expect(alarmApi.acknowledgeAlarm).toHaveBeenCalledWith('evt1');
-    
+
     // Check that a success toast was shown
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Alarm acknowledged',
@@ -336,7 +336,7 @@ describe('AlarmMonitoringPage', () => {
 
     // Check that the API was called
     expect(alarmApi.resolveAlarm).toHaveBeenCalledWith('evt1');
-    
+
     // Check that a success toast was shown
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Alarm resolved',
@@ -363,7 +363,7 @@ describe('AlarmMonitoringPage', () => {
   it('handles API errors gracefully', async () => {
     // Mock API to reject
     vi.mocked(alarmApi.getAllAlarms).mockRejectedValueOnce(new Error('Failed to fetch alarms'));
-    
+
     renderWithRouter();
 
     // Wait for error toast to be shown

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import DashboardView from '@/pages/dashboard-view';
 import { dashboardApi } from '@/api/dashboard';
 
@@ -47,10 +47,10 @@ vi.mock('jspdf', () => {
     addImage: vi.fn(),
     save: mockSave,
   }));
-  
+
   // Expose the mock save function on the constructor for testing
   mockJsPdf.mockSave = mockSave;
-  
+
   return {
     default: mockJsPdf,
   };
@@ -75,9 +75,7 @@ vi.mock('@/components/WidgetRenderer', () => ({
 
 // Mock GridLayout component
 vi.mock('react-grid-layout', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="grid-layout">{children}</div>
-  ),
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="grid-layout">{children}</div>,
 }));
 
 describe('Dashboard Export', () => {
@@ -106,19 +104,19 @@ describe('Dashboard Export', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue(mockDashboard);
-    
+
     // Mock URL.createObjectURL and URL.revokeObjectURL
     global.URL.createObjectURL = vi.fn().mockReturnValue('mock-blob-url');
     global.URL.revokeObjectURL = vi.fn();
-    
+
     // Reset the mock link for each test
     mockLink.click.mockClear();
     mockLink.download = '';
     mockLink.href = '';
-    
+
     // Store the original createElement function
     const originalCreateElement = document.createElement.bind(document);
-    
+
     // Mock document.createElement to return our global mock link for 'a' tags
     global.document.createElement = vi.fn().mockImplementation((tag) => {
       if (tag === 'a') return mockLink;
@@ -175,8 +173,6 @@ describe('Dashboard Export', () => {
     expect(screen.getByText('JSON Data')).toBeInTheDocument();
   });
 
-
-
   it('exports dashboard as JSON when JSON option is clicked', async () => {
     const user = userEvent.setup();
     renderWithRouter();
@@ -186,11 +182,11 @@ describe('Dashboard Export', () => {
     });
 
     await user.click(screen.getByText('Export'));
-    
+
     await waitFor(() => {
       expect(screen.getByText('Export Dashboard')).toBeInTheDocument();
     });
-    
+
     await user.click(screen.getByText('JSON Data'));
 
     // Check that a Blob was created with the dashboard data
@@ -207,10 +203,12 @@ describe('Dashboard Export', () => {
     // Wait for the export process to complete
     await waitFor(() => {
       // Check that success toast was shown
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Success',
-        description: 'Dashboard data exported as JSON',
-      }));
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success',
+          description: 'Dashboard data exported as JSON',
+        })
+      );
     });
   });
 
@@ -223,11 +221,11 @@ describe('Dashboard Export', () => {
     });
 
     await user.click(screen.getByText('Export'));
-    
+
     await waitFor(() => {
       expect(screen.getByText('Export Dashboard')).toBeInTheDocument();
     });
-    
+
     await user.click(screen.getByText('Cancel'));
 
     await waitFor(() => {

@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import BarChartWidget from '@/components/widgets/BarChartWidget';
 import PieChartWidget from '@/components/widgets/PieChartWidget';
 import LineChartWidget from '@/components/widgets/LineChartWidget';
 import AreaChartWidget from '@/components/widgets/AreaChartWidget';
-import LogBarChart from '@/components/LogBarChart';
 
 // Mock data for testing
 const mockWidget = {
@@ -90,7 +89,7 @@ describe('Responsive Visualization Components', () => {
       writable: true,
       value: width,
     });
-    
+
     // Trigger resize event
     window.dispatchEvent(new Event('resize'));
   };
@@ -99,9 +98,9 @@ describe('Responsive Visualization Components', () => {
     it('uses smaller gap between bars on small screens', () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       const { container } = render(<BarChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for gap-0.5 class on small screens
       const chartContainer = container.querySelector('.flex.items-end.h-full');
       expect(chartContainer).toHaveClass('gap-0.5');
@@ -111,9 +110,9 @@ describe('Responsive Visualization Components', () => {
     it('uses normal gap between bars on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
-      
+
       const { container } = render(<BarChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for gap-1 class on larger screens
       const chartContainer = container.querySelector('.flex.items-end.h-full');
       expect(chartContainer).toHaveClass('gap-1');
@@ -123,26 +122,25 @@ describe('Responsive Visualization Components', () => {
     it('uses smaller font size for labels on small screens', () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       const { container } = render(<BarChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for text-[10px] class on small screens
       const labels = container.querySelectorAll('.text-muted-foreground.mt-1');
-      labels.forEach(label => {
+      labels.forEach((label) => {
         expect(label).toHaveClass('text-[10px]');
         expect(label).not.toHaveClass('text-xs');
       });
     });
-
   });
 
   describe('PieChartWidget Responsive Behavior', () => {
     it('uses normal SVG size on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
-      
+
       const { container } = render(<PieChartWidget data={mockPieData} widget={mockWidget} />);
-      
+
       // Check for normal SVG size on larger screens
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '200');
@@ -152,9 +150,9 @@ describe('Responsive Visualization Components', () => {
     it('uses vertical layout on small screens', () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       const { container } = render(<PieChartWidget data={mockPieData} widget={mockWidget} />);
-      
+
       // Check for flex-col class on small screens
       const layout = container.querySelector('.flex-1.flex.items-center.justify-center > div');
       expect(layout).toHaveClass('flex-col');
@@ -165,9 +163,9 @@ describe('Responsive Visualization Components', () => {
     it('uses horizontal layout on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
-      
+
       const { container } = render(<PieChartWidget data={mockPieData} widget={mockWidget} />);
-      
+
       // Check for horizontal layout on larger screens
       const layout = container.querySelector('.flex-1.flex.items-center.justify-center > div');
       expect(layout).not.toHaveClass('flex-col');
@@ -178,9 +176,9 @@ describe('Responsive Visualization Components', () => {
     it('uses grid layout for legend on small screens', () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       const { container } = render(<PieChartWidget data={mockPieData} widget={mockWidget} />);
-      
+
       // Check for grid layout on small screens
       const legend = container.querySelector('.flex-1.flex.items-center.justify-center > div > div:nth-child(2)');
       expect(legend).toHaveClass('grid');
@@ -192,9 +190,9 @@ describe('Responsive Visualization Components', () => {
     it('uses smaller margins on small screens', async () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       render(<LineChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for smaller font size in summary
       const summary = screen.getByText(/data points/);
       expect(summary).toHaveClass('text-[10px]');
@@ -204,9 +202,9 @@ describe('Responsive Visualization Components', () => {
     it('uses normal font size on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
-      
+
       render(<LineChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for normal font size in summary
       const summary = screen.getByText(/data points/);
       expect(summary).toHaveClass('text-xs');
@@ -218,9 +216,9 @@ describe('Responsive Visualization Components', () => {
     it('uses smaller font size on small screens', () => {
       // Mock small screen width
       mockScreenWidth(480);
-      
+
       render(<AreaChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for smaller font size in summary
       const summary = screen.getByText(/data points/);
       expect(summary).toHaveClass('text-[10px]');
@@ -230,14 +228,13 @@ describe('Responsive Visualization Components', () => {
     it('uses normal font size on larger screens', () => {
       // Mock larger screen width
       mockScreenWidth(800);
-      
+
       render(<AreaChartWidget data={mockTimeSlotData} widget={mockWidget} />);
-      
+
       // Check for normal font size in summary
       const summary = screen.getByText(/data points/);
       expect(summary).toHaveClass('text-xs');
       expect(summary).not.toHaveClass('text-[10px]');
     });
   });
-
 });

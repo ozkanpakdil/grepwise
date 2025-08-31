@@ -1,6 +1,7 @@
 # GrepWise Frontend
 
-This is the frontend for the GrepWise project, an open-source alternative to Splunk. It's built with React, TypeScript, and Vite.
+This is the frontend for the GrepWise project, an open-source alternative to Splunk. It's built with React, TypeScript,
+and Vite.
 
 ## Tech Stack
 

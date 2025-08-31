@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TimeSlot } from '@/api/logSearch';
 
 interface LogBarChartProps {
@@ -8,26 +8,22 @@ interface LogBarChartProps {
 }
 
 // Helper function to format numbers in a compact way (e.g., 1000 -> 1K)
-const formatCompactNumber = (num: number): string => {
-  if (num < 1000) return num.toString();
-  if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-  return (num / 1000000).toFixed(1) + 'M';
-};
+// (unused helper removed to satisfy noUnusedLocals)
 
-const LogBarChart: React.FC<LogBarChartProps> = ({ 
-  timeSlots, 
-  timeRange,
-  onTimeSlotClick 
-}) => {
+const LogBarChart: React.FC<LogBarChartProps> = ({ timeSlots, onTimeSlotClick }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [screenWidth, setScreenWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
-  
+  // screenWidth used to trigger responsive layout recalculation
+    const [screenWidth, setScreenWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  // use it to satisfy TS noUnusedLocals for responsive recalculation
+  void screenWidth;
+
   // Handle screen resize
   useEffect(() => {
     const handleResize = () => {
       setScreenWidth(window.innerWidth);
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -35,7 +31,7 @@ const LogBarChart: React.FC<LogBarChartProps> = ({
   }, []);
 
   // Find the maximum count to normalize bar heights
-  const maxCount = Math.max(...timeSlots.map(slot => slot.count), 1);
+  const maxCount = Math.max(...timeSlots.map((slot) => slot.count), 1);
 
   // Format the timestamp label (UTC hours/mins for consistency)
   const formatUtcTime = (timestamp: number) => {
@@ -51,9 +47,7 @@ const LogBarChart: React.FC<LogBarChartProps> = ({
         <span className="text-xs text-muted-foreground">Double-click a bar to zoom</span>
       </div>
       {timeSlots.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">
-          No data available for the selected time range
-        </div>
+        <div className="text-center py-4 text-muted-foreground">No data available for the selected time range</div>
       ) : (
         <div className="w-full h-64">
           <div className="relative w-full h-full flex items-end gap-[2px]" role="list">
@@ -71,15 +65,10 @@ const LogBarChart: React.FC<LogBarChartProps> = ({
                   className="flex-1 h-full flex flex-col justify-end cursor-pointer"
                   style={{ minWidth: `${Math.max(2, 100 / Math.max(1, timeSlots.length))}%` }}
                 >
-                  <div
-                    className="bg-blue-500 transition-all duration-150"
-                    style={{ height: `${heightPct}%` }}
-                  />
+                  <div className="bg-blue-500 transition-all duration-150" style={{ height: `${heightPct}%` }} />
                   {/* X-axis label in UTC below each bar for sparse data; hide if too many */}
                   {timeSlots.length <= 24 && (
-                    <div className="text-[10px] text-center mt-1 select-none">
-                      {formatUtcTime(slot.time)}
-                    </div>
+                    <div className="text-[10px] text-center mt-1 select-none">{formatUtcTime(slot.time)}</div>
                   )}
                 </div>
               );
@@ -99,7 +88,7 @@ const LogBarChart: React.FC<LogBarChartProps> = ({
                       className="pointer-events-none absolute text-[10px] bg-background/90 px-1 rounded border"
                       style={{
                         left: `calc(${((hoveredIndex + 0.5) * 100) / Math.max(1, timeSlots.length)}% - 16px)`,
-                        bottom: `calc(${heightPct}% + 2px)`
+                        bottom: `calc(${heightPct}% + 2px)`,
                       }}
                     >
                       {hovered.count}

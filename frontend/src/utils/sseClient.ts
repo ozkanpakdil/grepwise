@@ -118,13 +118,13 @@ class SSEClient {
   on(eventName: string, callback: EventCallback): void {
     if (!this.eventListeners[eventName]) {
       this.eventListeners[eventName] = [];
-      
+
       // If already connected, add the event listener to the EventSource
       if (this.eventSource && eventName !== 'message') {
         this.addEventSourceListener(eventName);
       }
     }
-    
+
     this.eventListeners[eventName].push(callback);
   }
 
@@ -139,9 +139,7 @@ class SSEClient {
     }
 
     if (callback) {
-      this.eventListeners[eventName] = this.eventListeners[eventName].filter(
-        (cb) => cb !== callback
-      );
+      this.eventListeners[eventName] = this.eventListeners[eventName].filter((cb) => cb !== callback);
     } else {
       delete this.eventListeners[eventName];
     }
@@ -258,11 +256,7 @@ let logUpdateClient: SSEClient | null = null;
  * @param isRegex Whether the query is a regex
  * @param timeRange The time range for the query
  */
-export const getLogUpdateClient = (
-  query?: string,
-  isRegex?: boolean,
-  timeRange?: string
-): SSEClient => {
+export const getLogUpdateClient = (query?: string, isRegex?: boolean, timeRange?: string): SSEClient => {
   if (logUpdateClient) {
     logUpdateClient.close();
   }
@@ -270,11 +264,11 @@ export const getLogUpdateClient = (
   // Build the URL with query parameters
   let url = apiUrl('/api/realtime/logs');
   const params = new URLSearchParams();
-  
+
   if (query) params.append('query', query);
   if (isRegex !== undefined) params.append('isRegex', String(isRegex));
   if (timeRange) params.append('timeRange', timeRange);
-  
+
   const queryString = params.toString();
   if (queryString) {
     url += `?${queryString}`;
@@ -298,18 +292,15 @@ let widgetUpdateClients: Record<string, SSEClient> = {};
  * @param dashboardId The dashboard ID
  * @param widgetId The widget ID
  */
-export const getWidgetUpdateClient = (
-  dashboardId: string,
-  widgetId: string
-): SSEClient => {
+export const getWidgetUpdateClient = (dashboardId: string, widgetId: string): SSEClient => {
   const clientKey = `${dashboardId}:${widgetId}`;
-  
+
   if (widgetUpdateClients[clientKey]) {
     return widgetUpdateClients[clientKey];
   }
 
   const url = apiUrl(`/api/realtime/widgets/${widgetId}?dashboardId=${encodeURIComponent(dashboardId)}`);
-  
+
   const client = new SSEClient(url, {
     onOpen: () => console.log(`Widget update SSE connection established for widget ${widgetId}`),
     onError: (error) => console.error(`Widget update SSE error for widget ${widgetId}:`, error),

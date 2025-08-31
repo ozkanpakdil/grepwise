@@ -43,7 +43,7 @@ export interface SearchState {
   autoRefreshInterval: string; // '5s' | '10s' | '30s'
 
   // zoom
-  zoomStack: { timeRange: SearchParams['timeRange']; startTime?: number; endTime?: number; }[];
+  zoomStack: { timeRange: SearchParams['timeRange']; startTime?: number; endTime?: number }[];
 }
 
 export const initialSearchState: SearchState = {
@@ -104,29 +104,57 @@ export type SearchAction =
 
 export function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
-    case 'SET_QUERY': return { ...state, query: action.query };
-    case 'SET_REGEX': return { ...state, isRegex: action.isRegex };
-    case 'SET_TIME_RANGE': return { ...state, timeRange: action.timeRange };
-    case 'SET_CUSTOM_RANGE': return { ...state, customStartTime: action.start, customEndTime: action.end };
-    case 'SET_SEARCHING': return { ...state, isSearching: action.value };
-    case 'SET_EDITOR_LOADING': return { ...state, isEditorLoading: action.value };
-    case 'SET_STREAMING': return { ...state, isStreaming: action.value };
-    case 'SET_LOADING_TIMESLOTS': return { ...state, isLoadingTimeSlots: action.value };
-    case 'SET_RESULTS': return { ...state, searchResults: action.results };
-    case 'SET_TOTAL': return { ...state, totalCount: action.total };
-    case 'SET_PAGE': return { ...state, currentPage: action.page };
-    case 'SET_PAGE_SIZE': return { ...state, pageSize: action.pageSize };
-    case 'SET_HISTOGRAM': return { ...state, histogramData: action.data };
-    case 'SET_TIMESLOTS': return { ...state, timeSlots: action.slots };
-    case 'SET_EXPANDED': return { ...state, expandedLogId: action.id };
-    case 'SET_SORT': return { ...state, sortColumn: action.column, sortDirection: action.direction };
-    case 'SET_FILTERS': return { ...state, filterValues: { ...state.filterValues, ...action.filters } };
-    case 'TOGGLE_FILTERS': return { ...state, showFilters: !state.showFilters };
-    case 'SET_AUTO_REFRESH': return { ...state, autoRefreshEnabled: action.enabled, autoRefreshInterval: action.interval ?? state.autoRefreshInterval };
-    case 'PUSH_ZOOM': return { ...state, zoomStack: [...state.zoomStack, action.state] };
-    case 'POP_ZOOM': return { ...state, zoomStack: state.zoomStack.slice(0, Math.max(0, state.zoomStack.length - 1)) };
-    case 'RESET_ALL': return { ...initialSearchState, pageSize: state.pageSize };
-    case 'BULK_UPDATE': return { ...state, ...action.payload };
-    default: return state;
+    case 'SET_QUERY':
+      return { ...state, query: action.query };
+    case 'SET_REGEX':
+      return { ...state, isRegex: action.isRegex };
+    case 'SET_TIME_RANGE':
+      return { ...state, timeRange: action.timeRange };
+    case 'SET_CUSTOM_RANGE':
+      return { ...state, customStartTime: action.start, customEndTime: action.end };
+    case 'SET_SEARCHING':
+      return { ...state, isSearching: action.value };
+    case 'SET_EDITOR_LOADING':
+      return { ...state, isEditorLoading: action.value };
+    case 'SET_STREAMING':
+      return { ...state, isStreaming: action.value };
+    case 'SET_LOADING_TIMESLOTS':
+      return { ...state, isLoadingTimeSlots: action.value };
+    case 'SET_RESULTS':
+      return { ...state, searchResults: action.results };
+    case 'SET_TOTAL':
+      return { ...state, totalCount: action.total };
+    case 'SET_PAGE':
+      return { ...state, currentPage: action.page };
+    case 'SET_PAGE_SIZE':
+      return { ...state, pageSize: action.pageSize };
+    case 'SET_HISTOGRAM':
+      return { ...state, histogramData: action.data };
+    case 'SET_TIMESLOTS':
+      return { ...state, timeSlots: action.slots };
+    case 'SET_EXPANDED':
+      return { ...state, expandedLogId: action.id };
+    case 'SET_SORT':
+      return { ...state, sortColumn: action.column, sortDirection: action.direction };
+    case 'SET_FILTERS':
+      return { ...state, filterValues: { ...state.filterValues, ...action.filters } };
+    case 'TOGGLE_FILTERS':
+      return { ...state, showFilters: !state.showFilters };
+    case 'SET_AUTO_REFRESH':
+      return {
+        ...state,
+        autoRefreshEnabled: action.enabled,
+        autoRefreshInterval: action.interval ?? state.autoRefreshInterval,
+      };
+    case 'PUSH_ZOOM':
+      return { ...state, zoomStack: [...state.zoomStack, action.state] };
+    case 'POP_ZOOM':
+      return { ...state, zoomStack: state.zoomStack.slice(0, Math.max(0, state.zoomStack.length - 1)) };
+    case 'RESET_ALL':
+      return { ...initialSearchState, pageSize: state.pageSize };
+    case 'BULK_UPDATE':
+      return { ...state, ...action.payload };
+    default:
+      return state;
   }
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { roleApi, Role, RoleRequest } from '@/api/role';
+import { Role, roleApi, RoleRequest } from '@/api/role';
 import { Permission } from '@/api/permission';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -27,7 +27,7 @@ export default function RolesPage() {
       const [rolesData, permissionsData, categoriesData] = await Promise.all([
         roleApi.getAllRoles(),
         roleApi.getAllPermissions(),
-        roleApi.getAllPermissionCategories()
+        roleApi.getAllPermissionCategories(),
       ]);
       setRoles(rolesData);
       setPermissions(permissionsData);
@@ -73,7 +73,7 @@ export default function RolesPage() {
     setFormData({
       name: role.name,
       description: role.description,
-      permissionIds: role.permissions.map(p => p.id),
+      permissionIds: role.permissions.map((p) => p.id),
     });
   };
 
@@ -96,20 +96,20 @@ export default function RolesPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       if (checked) {
         return {
           ...prev,
-          permissionIds: [...prev.permissionIds, permissionId]
+          permissionIds: [...prev.permissionIds, permissionId],
         };
       } else {
         return {
           ...prev,
-          permissionIds: prev.permissionIds.filter(id => id !== permissionId)
+          permissionIds: prev.permissionIds.filter((id) => id !== permissionId),
         };
       }
     });
@@ -117,7 +117,7 @@ export default function RolesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (isEditing && selectedRole) {
         await roleApi.updateRole(selectedRole.id, formData);
@@ -132,7 +132,7 @@ export default function RolesPage() {
           description: 'The role has been created successfully',
         });
       }
-      
+
       setIsCreatingRole(false);
       resetForm();
       await loadRolesAndPermissions(); // Reload roles after creation/update
@@ -152,7 +152,7 @@ export default function RolesPage() {
 
   // Group permissions by category for better display
   const getPermissionsByCategory = (category: string) => {
-    return permissions.filter(p => p.category === category);
+    return permissions.filter((p) => p.category === category);
   };
 
   return (
@@ -197,22 +197,18 @@ export default function RolesPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium mb-2">
-                  Permissions
-                </label>
+                <label className="block text-sm font-medium mb-2">Permissions</label>
                 <div className="border border-input rounded-md p-4 max-h-96 overflow-y-auto">
-                  {permissionCategories.map(category => (
+                  {permissionCategories.map((category) => (
                     <div key={category} className="mb-4">
                       <h3 className="font-medium text-sm mb-2">{category}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {getPermissionsByCategory(category).map(permission => (
+                        {getPermissionsByCategory(category).map((permission) => (
                           <div key={permission.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={`permission-${permission.id}`}
                               checked={formData.permissionIds.includes(permission.id)}
-                              onCheckedChange={(checked) => 
-                                handlePermissionChange(permission.id, checked as boolean)
-                              }
+                              onCheckedChange={(checked) => handlePermissionChange(permission.id, checked as boolean)}
                             />
                             <Label
                               htmlFor={`permission-${permission.id}`}
@@ -234,9 +230,7 @@ export default function RolesPage() {
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEditing ? 'Update Role' : 'Create Role'}
-              </Button>
+              <Button type="submit">{isEditing ? 'Update Role' : 'Create Role'}</Button>
             </div>
           </form>
         </div>
@@ -256,22 +250,26 @@ export default function RolesPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-center">Loading roles...</td>
+                  <td colSpan={4} className="px-4 py-3 text-center">
+                    Loading roles...
+                  </td>
                 </tr>
               ) : roles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-center">No roles found</td>
+                  <td colSpan={4} className="px-4 py-3 text-center">
+                    No roles found
+                  </td>
                 </tr>
               ) : (
-                roles.map(role => (
+                roles.map((role) => (
                   <tr key={role.id} className="hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">{role.name}</td>
                     <td className="px-4 py-3 text-sm">{role.description}</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex flex-wrap gap-1">
-                        {role.permissions.slice(0, 3).map(permission => (
-                          <span 
-                            key={permission.id} 
+                        {role.permissions.slice(0, 3).map((permission) => (
+                          <span
+                            key={permission.id}
                             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
                             title={permission.description}
                           >
@@ -287,18 +285,10 @@ export default function RolesPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditRole(role)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleEditRole(role)}>
                           Edit
                         </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteRole(role.id)}
-                        >
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteRole(role.id)}>
                           Delete
                         </Button>
                       </div>

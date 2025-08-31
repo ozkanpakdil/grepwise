@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -13,7 +12,9 @@ export default function SearchPagination({ totalCount, pageSize, currentPage, on
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   return (
     <div className="flex items-center justify-between mt-3" data-testid="pagination">
-      <div className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</div>
+      <div className="text-sm text-muted-foreground">
+        Page {currentPage} of {totalPages}
+      </div>
       <div className="flex gap-2">
         <Button
           variant="outline"

@@ -3,7 +3,6 @@ package io.github.ozkanpakdil.grepwise.config;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
@@ -24,33 +23,30 @@ public class RateLimitingConfig {
     private final Map<String, Bucket> bucketCache = new ConcurrentHashMap<>();
 
     /**
-     * Default rate limit configuration: 100 requests per minute.
+     * Create a default rate limit bucket: 100 requests per minute.
      * This is used for general API endpoints.
      */
-    @Bean
-    public Bucket defaultBucket() {
+    private Bucket createDefaultBucket() {
         return Bucket.builder()
                 .addLimit(Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(1))))
                 .build();
     }
 
     /**
-     * High-throughput rate limit configuration: 300 requests per minute.
+     * Create a high-throughput rate limit bucket: 300 requests per minute.
      * This is used for search endpoints that need higher throughput.
      */
-    @Bean
-    public Bucket searchBucket() {
+    private Bucket createSearchBucket() {
         return Bucket.builder()
                 .addLimit(Bandwidth.classic(300, Refill.intervally(300, Duration.ofMinutes(1))))
                 .build();
     }
 
     /**
-     * Low-throughput rate limit configuration: 20 requests per minute.
+     * Create a low-throughput rate limit bucket: 20 requests per minute.
      * This is used for sensitive operations like user management.
      */
-    @Bean
-    public Bucket adminBucket() {
+    private Bucket createAdminBucket() {
         return Bucket.builder()
                 .addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofMinutes(1))))
                 .build();
@@ -64,14 +60,15 @@ public class RateLimitingConfig {
      * @return The bucket for the client
      */
     public Bucket resolveBucket(String clientId, String bucketType) {
-        return bucketCache.computeIfAbsent(clientId, key -> {
+        String key = clientId + ":" + bucketType;
+        return bucketCache.computeIfAbsent(key, k -> {
             switch (bucketType) {
                 case "search":
-                    return searchBucket();
+                    return createSearchBucket();
                 case "admin":
-                    return adminBucket();
+                    return createAdminBucket();
                 default:
-                    return defaultBucket();
+                    return createDefaultBucket();
             }
         });
     }

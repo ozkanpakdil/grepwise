@@ -14,22 +14,6 @@ export class StreamingService {
   private logsEs: EventSource | null = null;
   private histEs: EventSource | null = null;
 
-  private appendToken(url: string, token: string | null): string {
-    if (!token) return url;
-    try {
-      const u = new URL(url, window.location.origin);
-      if (!u.searchParams.get('access_token')) {
-        u.searchParams.set('access_token', token);
-      }
-      return u.toString();
-    } catch {
-      // Fallback if URL constructor fails
-      const sep = url.includes('?') ? '&' : '?';
-      if (url.includes('access_token=')) return url;
-      return `${url}${sep}access_token=${encodeURIComponent(token)}`;
-    }
-  }
-
   start(logsUrl: string, histogramUrl: string, cb: StreamCallbacks) {
     this.stopAll();
 
@@ -45,7 +29,9 @@ export class StreamingService {
     });
     esLogs.addEventListener('done', (ev: MessageEvent) => {
       cb.onLogsDone?.((ev as any).data);
-      try { esLogs.close(); } catch {}
+      try {
+        esLogs.close();
+      } catch {}
       this.logsEs = null;
     });
     esLogs.addEventListener('error', (e) => {
@@ -63,24 +49,48 @@ export class StreamingService {
     });
     esHist.addEventListener('done', () => {
       cb.onHistDone?.();
-      try { esHist.close(); } catch {}
+      try {
+        esHist.close();
+      } catch {}
       this.histEs = null;
     });
     esHist.addEventListener('error', (e) => {
       cb.onHistError?.(e);
-      try { esHist.close(); } catch {}
+      try {
+        esHist.close();
+      } catch {}
       this.histEs = null;
     });
   }
 
   stopAll() {
     if (this.logsEs) {
-      try { this.logsEs.close(); } catch {}
+      try {
+        this.logsEs.close();
+      } catch {}
       this.logsEs = null;
     }
     if (this.histEs) {
-      try { this.histEs.close(); } catch {}
+      try {
+        this.histEs.close();
+      } catch {}
       this.histEs = null;
+    }
+  }
+
+  private appendToken(url: string, token: string | null): string {
+    if (!token) return url;
+    try {
+      const u = new URL(url, window.location.origin);
+      if (!u.searchParams.get('access_token')) {
+        u.searchParams.set('access_token', token);
+      }
+      return u.toString();
+    } catch {
+      // Fallback if URL constructor fails
+      const sep = url.includes('?') ? '&' : '?';
+      if (url.includes('access_token=')) return url;
+      return `${url}${sep}access_token=${encodeURIComponent(token)}`;
     }
   }
 }

@@ -61,6 +61,7 @@ public class LdapConfig {
      * @return The LDAP context source
      */
     @Bean
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public DefaultSpringSecurityContextSource contextSource() {
         DefaultSpringSecurityContextSource contextSource = new DefaultSpringSecurityContextSource(ldapUrl);
         contextSource.setBase(ldapBaseDn);
@@ -104,6 +105,7 @@ public class LdapConfig {
      * @return The LDAP authenticator
      */
     @Bean
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public LdapAuthenticator ldapAuthenticator() {
         BindAuthenticator authenticator = new BindAuthenticator(contextSource());
 
@@ -124,6 +126,7 @@ public class LdapConfig {
      * @return The LDAP authorities populator
      */
     @Bean
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public LdapAuthoritiesPopulator ldapAuthoritiesPopulator() {
         DefaultLdapAuthoritiesPopulator authoritiesPopulator = new DefaultLdapAuthoritiesPopulator(
                 contextSource(),
@@ -143,6 +146,7 @@ public class LdapConfig {
      * @return The LDAP authentication provider
      */
     @Bean
+    @ConditionalOnProperty(name = "grepwise.ldap.enabled", havingValue = "true")
     public LdapAuthenticationProvider ldapAuthenticationProvider() {
         LdapAuthenticationProvider provider = new LdapAuthenticationProvider(
                 ldapAuthenticator(),

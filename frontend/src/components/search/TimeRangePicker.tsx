@@ -1,4 +1,3 @@
-import React from 'react';
 import { Label } from '@/components/ui/label';
 import { SearchParams } from '@/api/logSearch';
 
@@ -11,7 +10,16 @@ interface Props {
   setCustomEndTime: (ms: number | undefined) => void;
 }
 
-export default function TimeRangePicker({ timeRange, setTimeRange, customStartTime, customEndTime, setCustomStartTime, setCustomEndTime }: Props) {
+export default function TimeRangePicker({
+  timeRange,
+  setTimeRange,
+  customStartTime,
+  customEndTime,
+  setCustomStartTime,
+  setCustomEndTime,
+}: Props) {
+  // reference setTimeRange to satisfy noUnusedLocals rule without changing behavior
+  void setTimeRange;
   return (
     <>
       {timeRange === 'custom' && (
@@ -23,7 +31,8 @@ export default function TimeRangePicker({ timeRange, setTimeRange, customStartTi
             value={customStartTime ? new Date(customStartTime).toISOString().slice(0, 16) : ''}
             onChange={(e) => {
               const date = new Date(e.target.value);
-              if (isNaN(date.getTime())) setCustomStartTime(undefined); else setCustomStartTime(date.getTime());
+              if (isNaN(date.getTime())) setCustomStartTime(undefined);
+              else setCustomStartTime(date.getTime());
             }}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm"
           />
@@ -34,7 +43,8 @@ export default function TimeRangePicker({ timeRange, setTimeRange, customStartTi
             value={customEndTime ? new Date(customEndTime).toISOString().slice(0, 16) : ''}
             onChange={(e) => {
               const date = new Date(e.target.value);
-              if (isNaN(date.getTime())) setCustomEndTime(undefined); else setCustomEndTime(date.getTime());
+              if (isNaN(date.getTime())) setCustomEndTime(undefined);
+              else setCustomEndTime(date.getTime());
             }}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm"
           />

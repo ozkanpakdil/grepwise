@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setAuthState } from '@/api/http';
 import { apiUrl } from '@/config';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
 import { notifyError, notifySuccess } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

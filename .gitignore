@@ -63,3 +63,4 @@ out/
 /logs/*.gz
 logs/app.log
 /frontend/coverage/
+/frontend/src/generated/

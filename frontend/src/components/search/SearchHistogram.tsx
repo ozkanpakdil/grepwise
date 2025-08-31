@@ -8,7 +8,7 @@ interface Props {
   isStreaming: boolean;
   isLoading: boolean;
   onZoom: (start: number, end: number) => void;
-  onTimeSlotClick: (slotTime: number) => void;
+  onTimeSlotClick: (slot: TimeSlot) => void;
 }
 
 export default function SearchHistogram({ histogramData, isLoading, onZoom }: Props) {

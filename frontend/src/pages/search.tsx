@@ -556,7 +556,6 @@ export default function SearchPage() {
     }
   };
 
-  const formatTs = (timestamp: number) => formatTimestamp(timestamp);
 
   const getLevelClass = (level: string) => {
     switch (level.toUpperCase()) {
@@ -589,7 +588,7 @@ export default function SearchPage() {
 
   // Handle filter value changes
   const handleFilterChange = (field: keyof FilterValues, value: string) => {
-    setFilterValues((prev) => ({
+    setFilterValues((prev: FilterValues) => ({
       ...prev,
       [field]: value,
     }));
@@ -597,7 +596,7 @@ export default function SearchPage() {
 
   // Toggle filter visibility
   const toggleFilters = () => {
-    setShowFilters((prev) => !prev);
+    setShowFilters((prev: boolean) => !prev);
   };
 
   // Build current search params for export and other utilities
@@ -733,9 +732,6 @@ export default function SearchPage() {
     return results;
   }, [searchResults, sortColumn, sortDirection, filterValues]);
 
-  const handleLogClick = (log: LogEntry) => {
-    setExpandedLogId((prev) => (prev === log.id ? null : log.id));
-  };
 
   const zoomStack = s.zoomStack;
   const setZoomStack = (updater: any) => {
@@ -776,9 +772,11 @@ export default function SearchPage() {
     }
 
     // Push current range to zoom stack for "Zoom out"
-    setZoomStack((prev) => [
+    setZoomStack((prev: any) => [
       ...prev,
-      timeRange === 'custom' && customStartTime && customEndTime ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime } : { timeRange },
+      timeRange === 'custom' && customStartTime && customEndTime
+        ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime }
+        : { timeRange },
     ]);
 
     // Update to custom range for selected slot
@@ -899,7 +897,9 @@ export default function SearchPage() {
             onZoom={(start, end) => {
               setZoomStack((prev: any) => [
                 ...prev,
-                timeRange === 'custom' && customStartTime && customEndTime ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime } : { timeRange },
+                timeRange === 'custom' && customStartTime && customEndTime
+                  ? { timeRange: 'custom', startTime: customStartTime, endTime: customEndTime }
+                  : { timeRange },
               ]);
               if (end - start <= 1000) return;
               setTimeRange('custom');
@@ -958,7 +958,9 @@ export default function SearchPage() {
 
       {!query && searchResults.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">Enter a search query and click Search, or click Refresh to see the latest logs</p>
+          <p className="text-muted-foreground">
+            Enter a search query and click Search, or click Refresh to see the latest logs
+          </p>
         </div>
       )}
     </div>

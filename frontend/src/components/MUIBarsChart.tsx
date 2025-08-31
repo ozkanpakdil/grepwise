@@ -13,7 +13,7 @@ const formatLabel = (iso: string) => {
 };
 
 export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
-  const values = data.map(d => d.count);
+  const values = data.map((d) => d.count);
   const max = Math.max(1, ...values);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
@@ -42,28 +42,29 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
             >
               <div className="bg-blue-500 transition-all duration-150" style={{ height: `${heightPct}%` }} />
               {data.length <= 24 && (
-                <div className="text-[10px] text-center mt-1 select-none">
-                  {formatLabel(d.timestamp)}
-                </div>
+                <div className="text-[10px] text-center mt-1 select-none">{formatLabel(d.timestamp)}</div>
               )}
             </div>
           );
         })}
-        {hoveredIndex !== null && hoveredIndex >= 0 && hoveredIndex < data.length && (() => {
-          const hovered = data[hoveredIndex];
-          const heightPct = (hovered.count / max) * 100;
-          return (
-            <div
-              className="pointer-events-none absolute text-[10px] bg-background/90 px-1 rounded border"
-              style={{
-                left: `calc(${((hoveredIndex + 0.5) * 100) / Math.max(1, data.length)}% - 16px)`,
-                bottom: `calc(${heightPct}% + 2px)`
-              }}
-            >
-              {hovered.count}
-            </div>
-          );
-        })() }
+        {hoveredIndex !== null &&
+          hoveredIndex >= 0 &&
+          hoveredIndex < data.length &&
+          (() => {
+            const hovered = data[hoveredIndex];
+            const heightPct = (hovered.count / max) * 100;
+            return (
+              <div
+                className="pointer-events-none absolute text-[10px] bg-background/90 px-1 rounded border"
+                style={{
+                  left: `calc(${((hoveredIndex + 0.5) * 100) / Math.max(1, data.length)}% - 16px)`,
+                  bottom: `calc(${heightPct}% + 2px)`,
+                }}
+              >
+                {hovered.count}
+              </div>
+            );
+          })()}
       </div>
     </div>
   );

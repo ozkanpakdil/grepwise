@@ -229,21 +229,6 @@ public class EnhancedExcludeFilterContextCustomizer implements ContextCustomizer
         }
 
         @Override
-        public Bucket defaultBucket() {
-            return createDummyBucket();
-        }
-
-        @Override
-        public Bucket searchBucket() {
-            return createDummyBucket();
-        }
-
-        @Override
-        public Bucket adminBucket() {
-            return createDummyBucket();
-        }
-
-        @Override
         public Bucket resolveBucket(String clientId, String bucketType) {
             return bucketCache.computeIfAbsent(clientId, key -> createDummyBucket());
         }

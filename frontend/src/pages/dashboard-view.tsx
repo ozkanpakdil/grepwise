@@ -1,30 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  Edit,
-  Plus,
-  Trash2,
-  Share2,
-  Copy,
   Check,
+  Copy,
+  Database,
   Download,
+  Edit,
   FileText,
   Image,
-  Database,
   Menu,
+  Plus,
+  Share2,
+  Trash2,
   X as XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { dashboardApi, Dashboard } from '@/api/dashboard';
+import { notifyError, notifySuccess, useToast } from '@/components/ui/use-toast';
+import { Dashboard, dashboardApi } from '@/api/dashboard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 // Using MUI Grid instead of react-grid-layout
 import Grid from '@mui/material/Grid';
 import { useSwipeable } from 'react-swipeable';
 import { formatTimestamp } from '@/lib/utils';
-import { notifyError, notifySuccess } from '@/components/ui/use-toast';
+import WidgetRenderer from '@/components/WidgetRenderer';
 
 const DashboardView: React.FC = () => {
   const { id } = useParams<{ id: string }>();

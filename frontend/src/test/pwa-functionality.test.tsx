@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '@testing-library/react';
 import App from '@/App';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ Object.defineProperty(window, 'navigator', {
 // Mock window.matchMedia for offline detection tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false, // Default to online
     media: query,
     onchange: null,
@@ -78,7 +78,7 @@ describe('PWA Functionality', () => {
     });
 
     // Mock matchMedia to simulate offline mode
-    window.matchMedia = vi.fn().mockImplementation(query => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(display-mode: standalone)',
       media: query,
       onchange: null,

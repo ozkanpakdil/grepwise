@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import DashboardView from '@/pages/dashboard-view';
 import { dashboardApi } from '@/api/dashboard';
 
@@ -114,10 +114,9 @@ describe('Dashboard Drag and Drop', () => {
 
     // Enter edit mode
     await user.click(screen.getByText('Edit'));
-    
+
     // Check that GridLayout was rendered with isDraggable and isResizable set to true
     // (We can't directly test these props, but we can verify edit mode is active)
     expect(screen.getByText('Exit Edit')).toBeInTheDocument();
   });
-
 });

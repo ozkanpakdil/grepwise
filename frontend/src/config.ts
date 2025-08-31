@@ -25,8 +25,12 @@ export const config: AppConfig = {
   apiBaseUrl: (RUNTIME.apiBaseUrl as string) || ENV.VITE_API_BASE_URL || DEFAULTS.apiBaseUrl,
   apiPaths: { logs: (RUNTIME.apiPaths?.logs as string) || DEFAULTS.apiPaths.logs },
   defaults: {
-    pageSize: toNumber((RUNTIME.defaults?.pageSize as number | string) ?? ENV.VITE_PAGE_SIZE, DEFAULTS.defaults.pageSize),
-    refreshInterval: (RUNTIME.defaults?.refreshInterval as string) || ENV.VITE_REFRESH_INTERVAL || DEFAULTS.defaults.refreshInterval,
+    pageSize: toNumber(
+      (RUNTIME.defaults?.pageSize as number | string) ?? ENV.VITE_PAGE_SIZE,
+      DEFAULTS.defaults.pageSize
+    ),
+    refreshInterval:
+      (RUNTIME.defaults?.refreshInterval as string) || ENV.VITE_REFRESH_INTERVAL || DEFAULTS.defaults.refreshInterval,
   },
 };
 

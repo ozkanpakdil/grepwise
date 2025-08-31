@@ -1,12 +1,12 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 /**
  * Combines multiple class names into a single string, merging Tailwind CSS classes.
  * This is a utility function used by shadcn/ui components.
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -18,14 +18,14 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(
   date: Date | number,
   options: Intl.DateTimeFormatOptions = {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   }
 ) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat('en-US', {
     ...options,
-  }).format(date)
+  }).format(date);
 }
 
 /**
@@ -35,13 +35,13 @@ export function formatDate(
  */
 export function formatTimestamp(timestamp: number) {
   return formatDate(timestamp, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  })
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
 }
 
 /**
@@ -51,8 +51,8 @@ export function formatTimestamp(timestamp: number) {
  * @returns The truncated string
  */
 export function truncate(str: string, length: number) {
-  if (!str) return ""
-  return str.length > length ? `${str.substring(0, length)}...` : str
+  if (!str) return '';
+  return str.length > length ? `${str.substring(0, length)}...` : str;
 }
 
 /**
@@ -61,5 +61,5 @@ export function truncate(str: string, length: number) {
  * @returns A promise that resolves after the specified delay
  */
 export function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

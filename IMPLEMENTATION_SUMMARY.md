@@ -62,6 +62,22 @@ I didn't update the roadmap status because the plugin system was already marked 
 - [x] Create plugins system for custom integrations - ✅ **COMPLETED** - Implemented comprehensive plugin system with lifecycle management (including plugin initialization, starting, stopping), dynamic loading, and type-safe registry with methods for retrieving plugins by ID and type
 ```
 
+## Lucene Partitioning Overview
+
+The LuceneService supports time-based partitioning (DAILY/WEEKLY/MONTHLY) configured via PartitionConfiguration and stored by PartitionConfigurationRepository. Partitioning creates one Lucene index per time slice under ./lucene-index/partitions by default and keeps a bounded number of active partitions in memory.
+
+Benefits:
+- Faster time-range searches by limiting work to active partitions
+- Simpler retention: old partitions can be closed and archived as directories
+- Lower write contention and smaller index segments per partition
+- Operational isolation: issues affect only a partition, not the whole index
+
+Key implementation points in LuceneService:
+- init(): reads PartitionConfiguration and initializes partitions or a single index
+- initializePartitions()/checkAndRotatePartitions(): creates current partition and rotates/archives old ones
+- indexLogEntries(): routes logs to the proper partition by timestamp
+- search(): queries all active partitions and merges results
+
 ## Next Steps
 
 The next unimplemented features in the roadmap are:

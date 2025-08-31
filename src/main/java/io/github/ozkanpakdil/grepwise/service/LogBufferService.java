@@ -106,7 +106,7 @@ public class LogBufferService {
     public int flushBuffer() {
         // Use a lock to prevent concurrent flushes
         if (!flushLock.tryLock()) {
-            logger.debug("Buffer flush already in progress, skipping");
+            logger.trace("Buffer flush already in progress, skipping");
             return 0;
         }
 

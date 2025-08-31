@@ -38,6 +38,17 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Service for indexing and searching logs using Lucene.
  * Supports time-based partitioning of log data for improved performance and manageability.
+ *
+ * What partitioning brings:
+ * - Smaller, faster indices: each time slice (daily/weekly/monthly) is an independent Lucene index, reducing segment counts per search and write amplification.
+ * - Faster searches with time filters: queries restricted by time can touch only the relevant active partitions instead of a monolithic index.
+ * - Cheaper retention/archival: old partitions can be closed and archived as whole directories without costly per-document deletes.
+ * - Lower write contention: parallel writes are distributed across active partitions, improving throughput.
+ * - Operational safety: corruption or maintenance affects only a single partition, not the entire dataset.
+ *
+ * Configuration is provided via PartitionConfigurationRepository -> PartitionConfiguration (type, base dir,
+ * max active partitions, auto-archive, enabled flag). See init(), initializePartitions(), checkAndRotatePartitions(),
+ * indexLogEntries(), and search() for the lifecycle and usage.
  */
 @Service
 public class LuceneService {
@@ -152,9 +163,14 @@ public class LuceneService {
 
             if (partitioningEnabled) {
                 logger.info("Partitioning is enabled, initializing partitioned indices");
+                logger.info("Partition config: type={}, baseDir={}, maxActivePartitions={}, autoArchive={}",
+                        config.getPartitionType(),
+                        config.getPartitionBaseDirectory(),
+                        config.getMaxActivePartitions(),
+                        config.isAutoArchivePartitions());
                 initializePartitions(config);
             } else {
-                logger.info("Partitioning is disabled, initializing single index");
+                logger.info("Partitioning is disabled, initializing single index at {}", indexDirPath);
                 initializeSingleIndex();
             }
         } catch (Exception e) {
@@ -336,6 +352,10 @@ public class LuceneService {
 
     /**
      * Check if a new partition should be created and old ones archived.
+     * This is the rotation mechanism that enforces maxActivePartitions:
+     * - If the wall clock moves into a new time slice, a new partition is created and added to the front.
+     * - If the number of active partitions exceeds the limit, the oldest is closed and optionally archived.
+     * Benefits: fast retention, bounded search/ingest working set, and predictable resource usage.
      */
     private void checkAndRotatePartitions() throws IOException {
         if (!partitioningEnabled) {
@@ -693,7 +713,8 @@ public class LuceneService {
             if (writer != null) {
                 for (LogEntry logEntry : partitionEntries) {
                     Document doc = logEntryToDocument(logEntry);
-                    writer.addDocument(doc);
+                    Term idTerm = createDocumentIdTerm(logEntry);
+                    writer.updateDocument(idTerm, doc);
 
                     // Broadcast log update for real-time notifications
                     try {
@@ -712,7 +733,8 @@ public class LuceneService {
                 // Fall back to legacy index if partition writer not found
                 for (LogEntry logEntry : partitionEntries) {
                     Document doc = logEntryToDocument(logEntry);
-                    indexWriter.addDocument(doc);
+                    Term idTerm = createDocumentIdTerm(logEntry);
+                    indexWriter.updateDocument(idTerm, doc);
 
                     // Broadcast log update for real-time notifications
                     try {
@@ -721,6 +743,7 @@ public class LuceneService {
                         logger.warn("Failed to broadcast log update: {}", e.getMessage());
                     }
                 }
+
                 indexWriter.commit();
                 totalIndexed += partitionEntries.size();
             }
@@ -728,6 +751,18 @@ public class LuceneService {
 
         return totalIndexed;
     }
+
+    /**
+     * Create a unique identifier term for a log entry document.
+     * This term is used by updateDocument to identify existing documents for updates.
+     *
+     * @param logEntry The log entry to create an identifier term for
+     * @return A Term that uniquely identifies the document
+     */
+    private Term createDocumentIdTerm(LogEntry logEntry) {
+        return new Term("rawContent", logEntry.rawContent());
+    }
+
 
     /**
      * Search log entries by query string.

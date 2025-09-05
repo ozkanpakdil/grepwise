@@ -26,6 +26,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +40,17 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        // Completely ignore requests for static resources to keep them out of the Spring Security filter chain
+        return (web) -> web.ignoring()
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
+                .requestMatchers(
+                        "/assets/**", "/icons/**", "/favicon.*", "/favicon/**", "/vite.svg",
+                        "/manifest.webmanifest", "/*.css", "/*.js", "/*.map", "/*.png", "/*.jpg", "/*.jpeg", "/*.svg", "/*.gif", "/*.webp", "/*.avif"
+                );
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
@@ -83,14 +96,19 @@ public class WebSecurityConfig {
      *
      * Defines beans for RateLimitingFilter and two security chains (API and default).
      */
-    /*@Bean
+    @Bean
     public RateLimitingFilter rateLimitingFilter(RateLimitingConfig rateLimitingConfig) {
         return new RateLimitingFilter(rateLimitingConfig);
-    }*/
+    }
+
+    @Bean
+    public io.github.ozkanpakdil.grepwise.filter.LoggingProbeFilter loggingProbeFilter() {
+        return new io.github.ozkanpakdil.grepwise.filter.LoggingProbeFilter();
+    }
 
     @Bean
     @Order(1)
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, RateLimitingFilter rateLimitingFilter) throws Exception {
         // Limit this chain to API paths only
         http.securityMatcher("/api/**");
 
@@ -116,7 +134,7 @@ public class WebSecurityConfig {
                 )
                 // Add rate limiting filter before authentication filter
                 .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
-//                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
                         // Add LDAP login endpoint if LDAP is enabled
                         .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ?
@@ -186,6 +204,7 @@ public class WebSecurityConfig {
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpStatus.UNAUTHORIZED.value()))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpStatus.FORBIDDEN.value()))
                 )
+                .addFilterBefore(loggingProbeFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/", "/error", "/index.html", "/favicon.ico", "/manifest.webmanifest",
@@ -202,12 +221,12 @@ public class WebSecurityConfig {
      * Disable servlet container auto-registration for RateLimitingFilter since it is added to the Spring Security filter chain.
      * This avoids duplicate registration that can cause recursive filter invocation and StackOverflowError.
      */
-    /*@Bean
+    @Bean
     public FilterRegistrationBean<RateLimitingFilter> disableRateLimitingFilterAutoRegistration(RateLimitingFilter filter) {
         FilterRegistrationBean<RateLimitingFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
-    }*/
+    }
 
     /**
      * Configure CORS for the application.

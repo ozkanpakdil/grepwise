@@ -58,3 +58,33 @@ export const authHeader = (): Record<string, string> => {
   const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
+// Atomically update tokens (and optionally user)
+export const updateTokens = (accessToken: string, refreshToken?: string | null, user?: unknown) => {
+  const current = getAuthState();
+  setAuthState({
+    accessToken,
+    refreshToken: typeof refreshToken === 'undefined' ? current.state?.refreshToken ?? null : refreshToken,
+    user: typeof user === 'undefined' ? current.state?.user : user,
+    isAuthenticated: true,
+  });
+};
+
+// Centralized logout helper
+export const logout = (redirect = true) => {
+  clearAuthState();
+  try {
+    // Notify listeners
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('grepwise-auth-changed'));
+      if (redirect) {
+        const loginUrl = '/login';
+        if (window.location.pathname !== loginUrl) {
+          window.location.assign(loginUrl);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+};

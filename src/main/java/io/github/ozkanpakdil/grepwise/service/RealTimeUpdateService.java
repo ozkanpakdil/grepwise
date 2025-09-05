@@ -201,10 +201,11 @@ public class RealTimeUpdateService {
                 // Fetch initial data
                 List<LogEntry> logs = luceneService.search(query, isRegex, null, null);
 
-                // Send data to client
+                // Send data to client (emit immutable snapshot to avoid CME during serialization)
+                List<LogEntry> snapshot = (logs == null) ? List.of() : List.copyOf(logs);
                 emitter.send(SseEmitter.event()
                         .name("initialData")
-                        .data(logs)
+                        .data(snapshot)
                         .id(UUID.randomUUID().toString()));
 
                 logger.debug("Sent initial log data for query: {}", query);
@@ -229,10 +230,11 @@ public class RealTimeUpdateService {
                 widgetData.put("timestamp", System.currentTimeMillis());
                 widgetData.put("message", "Initial widget data");
 
-                // Send data to client
+                // Send data to client (immutable copy)
+                Map<String, Object> snapshot = Map.copyOf(widgetData);
                 emitter.send(SseEmitter.event()
                         .name("initialData")
-                        .data(widgetData)
+                        .data(snapshot)
                         .id(UUID.randomUUID().toString()));
 
                 logger.debug("Sent initial widget data for widget: {}", widgetId);
@@ -285,15 +287,30 @@ public class RealTimeUpdateService {
     private void broadcastToEmitters(List<SseEmitter> emitters, String eventName, Object data) {
         List<SseEmitter> deadEmitters = new ArrayList<>();
 
+        // Create an immutable snapshot of the payload when it is a common mutable type
+        final Object safeData;
+        if (data instanceof Collection<?>) {
+            safeData = List.copyOf((Collection<?>) data);
+        } else if (data instanceof Map<?, ?>) {
+            safeData = Map.copyOf((Map<?, ?>) data);
+        } else {
+            safeData = data;
+        }
+
         emitters.forEach(emitter -> {
             try {
                 emitter.send(SseEmitter.event()
                         .name(eventName)
-                        .data(data)
+                        .data(safeData)
                         .id(UUID.randomUUID().toString()));
             } catch (Exception e) {
                 logger.error("Error broadcasting to emitter", e);
                 deadEmitters.add(emitter);
+                try {
+                    emitter.completeWithError(e);
+                } catch (Exception ex) {
+                    // ignore
+                }
             }
         });
 

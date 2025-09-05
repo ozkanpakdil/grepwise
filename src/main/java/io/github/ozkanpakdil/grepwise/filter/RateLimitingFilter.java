@@ -44,7 +44,25 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
         // Skip rate limiting for non-API requests
         String path = request.getRequestURI();
+        String method = request.getMethod();
+        String accept = request.getHeader("Accept");
+        var dispatcher = request.getDispatcherType();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[RateLimit] Incoming request path={}, method={}, dispatcher={}, accept={}", path, method, dispatcher, accept);
+        }
         if (!path.startsWith("/api/")) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[RateLimit] Skipping (non-API) path={}", path);
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Skip rate limiting for Server-Sent Events or streaming endpoints
+        if (accept != null && accept.contains("text/event-stream")) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[RateLimit] Skipping (event-stream) path={}", path);
+            }
             filterChain.doFilter(request, response);
             return;
         }
@@ -150,5 +168,20 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilterAsyncDispatch() {
         // Skip this filter during ASYNC dispatch; this filter is only for main request thread
         return true;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        // In addition to ERROR/ASYNC dispatch skipping, also skip FORWARD and INCLUDE dispatches
+        var dispatcherType = request.getDispatcherType();
+        switch (dispatcherType) {
+            case ERROR:
+            case ASYNC:
+            case FORWARD:
+            case INCLUDE:
+                return true;
+            default:
+                return false;
+        }
     }
 }

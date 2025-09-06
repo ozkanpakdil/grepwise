@@ -1,11 +1,10 @@
 import Editor, { Monaco } from '@monaco-editor/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type React from 'react';
 import { Button } from '@/components/ui/button';
 import { SearchParams } from '@/api/logSearch';
-import { Clock, RefreshCw, Regex, Search } from 'lucide-react';
-import type React from 'react';
+import { Clock, Pause, Play, RefreshCw, Regex, Search } from 'lucide-react';
 
 interface Props {
   query: string;
@@ -14,8 +13,6 @@ interface Props {
   setIsRegex: (v: boolean) => void;
   timeRange: SearchParams['timeRange'];
   setTimeRange: (tr: SearchParams['timeRange']) => void;
-  pageSize: number;
-  setPageSize: (n: number) => void;
   isSearching: boolean;
   onSearch: (e?: React.FormEvent | React.MouseEvent) => void;
   onRefresh: (e?: React.FormEvent | React.MouseEvent) => void;
@@ -26,6 +23,9 @@ interface Props {
   setupAutoRefresh: () => void;
   handleEditorDidMount: (editor: any, monaco: Monaco) => void;
   isEditorLoading: boolean;
+  // new: external control of the time range panel
+  showTimePanel: boolean;
+  setShowTimePanel: (b: boolean) => void;
 }
 
 export default function SearchBar({
@@ -35,8 +35,6 @@ export default function SearchBar({
   setIsRegex,
   timeRange,
   setTimeRange,
-  pageSize,
-  setPageSize,
   isSearching,
   onSearch,
   onRefresh,
@@ -47,6 +45,8 @@ export default function SearchBar({
   setupAutoRefresh,
   handleEditorDidMount,
   isEditorLoading,
+  showTimePanel,
+  setShowTimePanel,
 }: Props) {
   return (
     <form onSubmit={(e) => onSearch(e)} data-testid="search-form">
@@ -88,40 +88,36 @@ export default function SearchBar({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center space-x-1">
-            <Label htmlFor="timeRange" className="text-sm flex items-center">
+          <div className="relative flex items-center space-x-1">
+            <Label className="text-sm flex items-center">
               <Clock className="h-4 w-4" />
             </Label>
-            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as SearchParams['timeRange'])}>
-              <SelectTrigger className="h-8 text-xs w-[120px]" id="timeRange" data-testid="time-range">
-                <SelectValue placeholder="Time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1h">Last 1 hour</SelectItem>
-                <SelectItem value="3h">Last 3 hours</SelectItem>
-                <SelectItem value="12h">Last 12 hours</SelectItem>
-                <SelectItem value="24h">Last 24 hours</SelectItem>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="custom">Custom range</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="pageSize" className="text-sm">
-              Page size
-            </Label>
-            <input
-              id="pageSize"
-              type="number"
-              min={1}
-              value={pageSize}
-              onChange={(e) => setPageSize(Math.max(1, parseInt(e.target.value || '1', 10)))}
-              className="h-8 w-[90px] rounded-md border border-input bg-background px-2 text-sm"
-              data-testid="page-size"
-            />
+            <button
+              type="button"
+              className="h-8 text-xs w-[160px] text-left rounded-md border border-input bg-background px-2"
+              onClick={(e) => {
+                // store a marker attribute so parent can query position
+                (e.currentTarget as HTMLElement).setAttribute('data-time-range-trigger', 'true');
+                setShowTimePanel(!showTimePanel);
+              }}
+              data-testid="time-range"
+              data-time-range-trigger
+            >
+              Time range:{' '}
+              {timeRange === 'custom'
+                ? 'Custom'
+                : timeRange === '1h'
+                  ? 'Last 1 hour'
+                  : timeRange === '3h'
+                    ? 'Last 3 hours'
+                    : timeRange === '12h'
+                      ? 'Last 12 hours'
+                      : timeRange === '24h'
+                        ? 'Last 24 hours'
+                        : timeRange === '7d'
+                          ? 'Last 7 days'
+                          : 'Last 30 days'}
+            </button>
           </div>
         </div>
         <div className="flex flex-col gap-2">
@@ -144,31 +140,25 @@ export default function SearchBar({
         </div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center space-x-1">
-            <Label htmlFor="autoRefresh" className="text-sm flex items-center">
-              Auto-refresh
-            </Label>
-            <Select
-              value={autoRefreshEnabled ? autoRefreshInterval : 'off'}
-              onValueChange={(value) => {
-                if (value === 'off') {
+            <Label className="text-sm flex items-center">Live</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (autoRefreshEnabled) {
                   setAutoRefreshEnabled(false);
                 } else {
+                  if (!autoRefreshInterval) setAutoRefreshInterval('5s');
                   setAutoRefreshEnabled(true);
-                  setAutoRefreshInterval(value);
                   setupAutoRefresh();
                 }
               }}
+              className="px-3"
+              data-testid="auto-refresh-toggle"
             >
-              <SelectTrigger className="h-8 text-xs w-[80px]" id="autoRefresh" data-testid="auto-refresh">
-                <SelectValue placeholder="Off" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="off">Off</SelectItem>
-                <SelectItem value="5s">5s</SelectItem>
-                <SelectItem value="10s">10s</SelectItem>
-                <SelectItem value="30s">30s</SelectItem>
-              </SelectContent>
-            </Select>
+              {autoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useUrlState } from '@/hooks/useUrlState';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -39,6 +39,17 @@ export default function SearchPage() {
   const { computeRange, pickInterval } = useTimeRange();
   const [pageSize, setPageSize] = useLocalStorage<number>('grepwise.dashboard.pagesize', 100);
   const [s, dispatch] = useReducer(searchReducer, { ...initialSearchState, pageSize });
+  // Listen for page size change requests coming from children (SearchResults)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const newSize = parseInt(e?.detail, 10);
+      if (newSize && !Number.isNaN(newSize)) {
+        setPageSize(newSize);
+      }
+    };
+    window.addEventListener('grepwise:setPageSize', handler as any);
+    return () => window.removeEventListener('grepwise:setPageSize', handler as any);
+  }, [setPageSize]);
   const query = s.query;
   const setQuery = (v: string) => dispatch({ type: 'SET_QUERY', query: v });
   const isRegex = s.isRegex;
@@ -72,6 +83,27 @@ export default function SearchPage() {
   const streamingRef = useRef<StreamingService | null>(null);
   const isStreaming = s.isStreaming;
   const setIsStreaming = (v: boolean) => dispatch({ type: 'SET_STREAMING', value: v });
+  // UI panels
+  const [showTimePanel, setShowTimePanel] = useState(false);
+  // close on Escape
+  useEffect(() => {
+    if (!showTimePanel) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowTimePanel(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const onScrollOrResize = () => {
+      // trigger rerender to reposition using style getters (no state needed)
+      setShowTimePanel((v) => (v ? true : false));
+    };
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [showTimePanel]);
 
   // Auto-refresh settings
   const autoRefreshEnabled = s.autoRefreshEnabled;
@@ -968,8 +1000,6 @@ export default function SearchPage() {
         setIsRegex={setIsRegex}
         timeRange={timeRange}
         setTimeRange={setTimeRange}
-        pageSize={pageSize}
-        setPageSize={setPageSize}
         isSearching={isSearching}
         onSearch={(e) => handleSearch(e, undefined, true)}
         onRefresh={(e) => handleSearch(e as any, undefined, true)}
@@ -980,18 +1010,34 @@ export default function SearchPage() {
         setupAutoRefresh={setupAutoRefresh}
         handleEditorDidMount={handleEditorDidMount}
         isEditorLoading={isEditorLoading}
+        showTimePanel={showTimePanel}
+        setShowTimePanel={setShowTimePanel}
       />
-      {timeRange === 'custom' && (
-        <div className="flex flex-wrap gap-6">
-          <TimeRangePicker
-            timeRange={timeRange}
-            setTimeRange={(tr) => setTimeRange(tr)}
-            customStartTime={customStartTime}
-            customEndTime={customEndTime}
-            setCustomStartTime={setCustomStartTime}
-            setCustomEndTime={setCustomEndTime}
-          />
-        </div>
+      {showTimePanel && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowTimePanel(false)} />
+          <div
+            className="fixed z-50"
+            style={{
+              top: (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
+                ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect().bottom + window.scrollY
+                : 64) + 'px',
+              left: (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
+                ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect().left + window.scrollX
+                : 16) + 'px',
+            }}
+          >
+            <TimeRangePicker
+              timeRange={timeRange}
+              setTimeRange={(tr) => { setTimeRange(tr); if (tr !== 'custom') setShowTimePanel(false); }}
+              customStartTime={customStartTime}
+              customEndTime={customEndTime}
+              setCustomStartTime={setCustomStartTime}
+              setCustomEndTime={setCustomEndTime}
+              onClose={() => setShowTimePanel(false)}
+            />
+          </div>
+        </>
       )}
 
       {/* Bar chart visualization */}
@@ -1055,6 +1101,7 @@ export default function SearchPage() {
           <p className="text-muted-foreground">No time distribution data available</p>
         </div>
       ) : null}
+
 
       {searchResults.length > 0 && (
         <SearchResults

@@ -8,6 +8,7 @@ interface Props {
   customEndTime?: number;
   setCustomStartTime: (ms: number | undefined) => void;
   setCustomEndTime: (ms: number | undefined) => void;
+  onClose?: () => void;
 }
 
 export default function TimeRangePicker({
@@ -18,12 +19,31 @@ export default function TimeRangePicker({
   setCustomStartTime,
   setCustomEndTime,
 }: Props) {
-  // reference setTimeRange to satisfy noUnusedLocals rule without changing behavior
-  void setTimeRange;
+  const presets: { label: string; value: SearchParams['timeRange'] }[] = [
+    { label: 'Last 1 hour', value: '1h' },
+    { label: 'Last 3 hours', value: '3h' },
+    { label: 'Last 12 hours', value: '12h' },
+    { label: 'Last 24 hours', value: '24h' },
+    { label: 'Last 7 days', value: '7d' },
+    { label: 'Last 30 days', value: '30d' },
+  ];
+
   return (
     <>
-      {timeRange === 'custom' && (
-        <div className="flex items-center space-x-2">
+      <div className="border border-input bg-popover text-popover-foreground shadow-md rounded-md p-3 w-full max-w-[640px]">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              className="text-xs px-2 py-1 rounded-md border hover:bg-accent hover:text-accent-foreground"
+              onClick={() => { setTimeRange(p.value); onClose && onClose(); }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
           <Label htmlFor="startTime">From:</Label>
           <input
             type="datetime-local"
@@ -49,7 +69,8 @@ export default function TimeRangePicker({
             className="rounded-md border border-input bg-background px-2 py-1 text-sm"
           />
         </div>
-      )}
+        <div className="text-xs text-muted-foreground mt-2">Choose a preset above or enter a custom From/To range, then run the search.</div>
+      </div>
     </>
   );
 }

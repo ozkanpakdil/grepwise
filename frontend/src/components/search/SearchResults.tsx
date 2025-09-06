@@ -64,6 +64,20 @@ export default function SearchResults(props: Props) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Show:</span>
+            <select
+              className="h-8 w-[110px] rounded-md border border-input bg-background px-2 text-xs"
+              value={String(pageSize)}
+              onChange={(e) => onPageChange(1) || (window.dispatchEvent(new CustomEvent('grepwise:setPageSize', { detail: parseInt(e.target.value, 10) } as any)))}
+              data-testid="page-size"
+            >
+              <option value="10">10 Per Page</option>
+              <option value="20">20 Per Page</option>
+              <option value="50">50 Per Page</option>
+              <option value="100">100 Per Page</option>
+            </select>
+          </div>
           <Button
             variant="outline"
             size="sm"

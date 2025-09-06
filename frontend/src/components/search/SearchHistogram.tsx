@@ -16,7 +16,7 @@ export default function SearchHistogram({ histogramData, isLoading, onZoom }: Pr
     <div data-testid="histogram-section">
       <div className="text-sm font-medium">Time distribution</div>
       {histogramData && histogramData.length > 0 ? (
-        <div className="w-full h-64">
+        <div className="w-full h-64 overflow-hidden">
           <MUIBarsChart data={histogramData} onBarDoubleClick={onZoom} />
         </div>
       ) : isLoading ? (

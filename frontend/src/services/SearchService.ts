@@ -22,7 +22,8 @@ function buildSearchQuery(
   if (trimmed && trimmed !== '*') params.set('query', trimmed);
   if (isRegex) params.set('isRegex', 'true');
   if (timeRange !== 'custom' && (!startTime || !endTime)) {
-    if (timeRange && timeRange !== '24h') params.set('timeRange', timeRange);
+    // Always include the selected predefined timeRange, including '24h'.
+    if (timeRange) params.set('timeRange', timeRange);
   } else {
     if (startTime != null) params.set('startTime', String(startTime));
     if (endTime != null) params.set('endTime', String(endTime));

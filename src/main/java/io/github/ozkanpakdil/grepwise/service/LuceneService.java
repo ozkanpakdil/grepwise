@@ -797,9 +797,9 @@ public class LuceneService {
             BooleanQuery.Builder textQueryBuilder = new BooleanQuery.Builder();
 
             // Fields to search in for parser-based queries (support phrases and multi-term)
+            // Restrict to visible fields by default to avoid matches that don't appear in Message column.
             String[] parserFields = {
-                    "message", "rawContent",
-                    "metadata_ip_address_text", "metadata_client_ip_text", "metadata_path_text", "metadata_request_text"
+                    "message", "rawContent"
             };
 
             // If regex, keep existing behavior over specific fields
@@ -820,21 +820,16 @@ public class LuceneService {
                 }
                 StandardAnalyzer analyzer = new StandardAnalyzer();
                 MultiFieldQueryParser parser = new MultiFieldQueryParser(parserFields, analyzer);
-                parser.setDefaultOperator(QueryParser.Operator.OR);
+                // Require all terms to be present to avoid unrelated matches
+                parser.setDefaultOperator(QueryParser.Operator.AND);
                 try {
                     Query parsed = parser.parse(qs);
                     queryBuilder.add(parsed, BooleanClause.Occur.MUST);
                 } catch (ParseException e) {
-                    // Fallback to wildcard queries if parsing fails
+                    // Fallback to wildcard queries if parsing fails; restrict to visible fields
                     String lowered = qs.toLowerCase();
                     String[] fallbackFields1 = {"message", "rawContent"};
                     for (String field : fallbackFields1) {
-                        Query fieldQuery = new WildcardQuery(new Term(field, "*" + lowered + "*"));
-                        textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
-                    }
-                    String[] fallbackFields2 = {"metadata_ip_address", "metadata_client_ip", "metadata_path", "metadata_request",
-                            "metadata_ip_address_text", "metadata_client_ip_text", "metadata_path_text", "metadata_request_text"};
-                    for (String field : fallbackFields2) {
                         Query fieldQuery = new WildcardQuery(new Term(field, "*" + lowered + "*"));
                         textQueryBuilder.add(fieldQuery, BooleanClause.Occur.SHOULD);
                     }

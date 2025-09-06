@@ -19,8 +19,6 @@ export class StreamingService {
 
     const token = getAccessToken();
     const logsWithToken = this.appendToken(logsUrl, token);
-    const histWithToken = this.appendToken(histogramUrl, token);
-
     const esLogs = new EventSource(logsWithToken);
     this.logsEs = esLogs;
 
@@ -38,29 +36,33 @@ export class StreamingService {
       cb.onLogsError?.(e);
     });
 
-    const esHist = new EventSource(histWithToken);
-    this.histEs = esHist;
+    // Start histogram SSE only if URL is provided (optional)
+    if (histogramUrl) {
+      const histWithToken = this.appendToken(histogramUrl, token);
+      const esHist = new EventSource(histWithToken);
+      this.histEs = esHist;
 
-    esHist.addEventListener('init', (ev: MessageEvent) => {
-      cb.onHistInit?.((ev as any).data);
-    });
-    esHist.addEventListener('hist', (ev: MessageEvent) => {
-      cb.onHistUpdate?.((ev as any).data);
-    });
-    esHist.addEventListener('done', () => {
-      cb.onHistDone?.();
-      try {
-        esHist.close();
-      } catch {}
-      this.histEs = null;
-    });
-    esHist.addEventListener('error', (e) => {
-      cb.onHistError?.(e);
-      try {
-        esHist.close();
-      } catch {}
-      this.histEs = null;
-    });
+      esHist.addEventListener('init', (ev: MessageEvent) => {
+        cb.onHistInit?.((ev as any).data);
+      });
+      esHist.addEventListener('hist', (ev: MessageEvent) => {
+        cb.onHistUpdate?.((ev as any).data);
+      });
+      esHist.addEventListener('done', () => {
+        cb.onHistDone?.();
+        try {
+          esHist.close();
+        } catch {}
+        this.histEs = null;
+      });
+      esHist.addEventListener('error', (e) => {
+        cb.onHistError?.(e);
+        try {
+          esHist.close();
+        } catch {}
+        this.histEs = null;
+      });
+    }
   }
 
   stopAll() {

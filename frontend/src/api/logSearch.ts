@@ -16,7 +16,7 @@ export interface LogEntry {
 export interface SearchParams {
   query?: string;
   isRegex?: boolean;
-  timeRange?: '1h' | '3h' | '12h' | '24h' | 'custom';
+  timeRange?: '1h' | '3h' | '12h' | '24h' | '7d' | '30d' | 'custom';
   startTime?: number;
   endTime?: number;
 }

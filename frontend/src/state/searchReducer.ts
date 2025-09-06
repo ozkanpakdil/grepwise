@@ -49,7 +49,7 @@ export interface SearchState {
 export const initialSearchState: SearchState = {
   query: '',
   isRegex: false,
-  timeRange: '24h',
+  timeRange: '30d',
   customStartTime: undefined,
   customEndTime: undefined,
 

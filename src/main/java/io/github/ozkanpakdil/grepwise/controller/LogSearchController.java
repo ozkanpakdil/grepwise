@@ -537,15 +537,21 @@ public class LogSearchController {
             countsByTimestamp.put(intervalStartTime, 0);
         }
 
-        // Count logs in each interval
+        // Count logs in each interval using consistent within-range time selection
+        // We treat the upper bound as exclusive: [from, to)
         for (LogEntry log : logs) {
-            // Use record time if available, otherwise use entry time
-            long timeToCheck = log.recordTime() != null ? log.recordTime() : log.timestamp();
+            Long rt = log.recordTime();
+            long ts = log.timestamp();
 
-            // Find which interval this log belongs to
-            int intervalIndex = (int) ((timeToCheck - from) / intervalMs);
+            Long chosen = null;
+            if (rt != null && rt >= from && rt < to) {
+                chosen = rt;
+            } else if (ts >= from && ts < to) {
+                chosen = ts;
+            }
+            if (chosen == null) continue; // skip logs that matched only via the other field outside range
 
-            // Ensure the interval index is valid
+            int intervalIndex = (int) ((chosen - from) / intervalMs);
             if (intervalIndex >= 0 && intervalIndex < intervals) {
                 long intervalStartTime = from + (intervalIndex * intervalMs);
                 countsByTimestamp.put(intervalStartTime, countsByTimestamp.get(intervalStartTime) + 1);
@@ -942,11 +948,20 @@ public class LogSearchController {
                         a.recordTime() != null ? a.recordTime() : a.timestamp()
                 ));
                 for (LogEntry log : logs) {
-                    long t = log.recordTime() != null ? log.recordTime() : log.timestamp();
-                    int idx = (int) ((t - fs) / fIntervalMs);
-                    if (idx >= 0 && idx < buckets) {
-                        long bucketTs = fs + (idx * fIntervalMs);
-                        countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                    Long rt = log.recordTime();
+                    long ts = log.timestamp();
+                    Long chosen = null;
+                    if (rt != null && rt >= fs && rt < fe) {
+                        chosen = rt;
+                    } else if (ts >= fs && ts < fe) {
+                        chosen = ts;
+                    }
+                    if (chosen != null) {
+                        int idx = (int) ((chosen - fs) / fIntervalMs);
+                        if (idx >= 0 && idx < buckets) {
+                            long bucketTs = fs + (idx * fIntervalMs);
+                            countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                        }
                     }
                     processed++;
                     if (processed % batch == 0) {
@@ -1091,11 +1106,20 @@ public class LogSearchController {
                 int batch = 200;
                 int processed = 0;
                 for (LogEntry log : logs) {
-                    long t = log.recordTime() != null ? log.recordTime() : log.timestamp();
-                    int idx = (int) ((t - fs) / fIntervalMs);
-                    if (idx >= 0 && idx < buckets) {
-                        long bucketTs = fs + (idx * fIntervalMs);
-                        countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                    Long rt = log.recordTime();
+                    long ts = log.timestamp();
+                    Long chosen = null;
+                    if (rt != null && rt >= fs && rt < fe) {
+                        chosen = rt;
+                    } else if (ts >= fs && ts < fe) {
+                        chosen = ts;
+                    }
+                    if (chosen != null) {
+                        int idx = (int) ((chosen - fs) / fIntervalMs);
+                        if (idx >= 0 && idx < buckets) {
+                            long bucketTs = fs + (idx * fIntervalMs);
+                            countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
+                        }
                     }
                     processed++;
                     if (processed % batch == 0) {

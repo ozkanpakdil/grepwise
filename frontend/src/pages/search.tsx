@@ -213,12 +213,12 @@ export default function SearchPage() {
         setCustomStartTime(parsed.startTime);
         setCustomEndTime(parsed.endTime);
         // trigger initial search without adding a new history entry (we already have the URL)
-        handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false);
+        handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false, parsed.query);
       } else if (parsed.timeRange) {
         setTimeRange(parsed.timeRange);
         // If we have a query or regex flag, perform initial search without pushing
         if (parsed.query || parsed.isRegex) {
-          handleSearch(undefined, undefined, false);
+          handleSearch(undefined, undefined, false, parsed.query);
         }
       }
     } catch (e) {
@@ -240,10 +240,10 @@ export default function SearchPage() {
           setTimeRange('custom');
           setCustomStartTime(parsed.startTime);
           setCustomEndTime(parsed.endTime);
-          handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false);
+          handleSearch(undefined, { start: parsed.startTime, end: parsed.endTime }, false, parsed.query);
         } else {
-          setTimeRange((parsed.timeRange as any) || '24h');
-          handleSearch(undefined, undefined, false);
+          setTimeRange((parsed.timeRange as any) || '30d');
+          handleSearch(undefined, undefined, false, parsed.query);
         }
       } catch (e) {
         console.warn('Failed to handle popstate', e);
@@ -286,7 +286,7 @@ export default function SearchPage() {
         // Clear inputs and state back to defaults
         setQuery('');
         setIsRegex(false);
-        setTimeRange('24h');
+        setTimeRange('30d');
         setCustomStartTime(undefined);
         setCustomEndTime(undefined);
         setSearchResults([]);
@@ -325,15 +325,16 @@ export default function SearchPage() {
       start: number;
       end: number;
     },
-    pushHistory: boolean = true
+    pushHistory: boolean = true,
+    overrideQuery?: string
   ) => {
     // If this is a form submission event, prevent the default behavior
     if (e && 'preventDefault' in e) {
       e.preventDefault();
     }
 
-    // Get the current value from the editor if available
-    const currentEditorValue = editorRef.current?.getValue() || query;
+    // Determine query to use: explicit override > editor value > state
+    const currentEditorValue = overrideQuery !== undefined ? overrideQuery : editorRef.current?.getValue() || query;
 
     // Update the query state with the current editor value
     if (currentEditorValue !== query) {
@@ -367,18 +368,23 @@ export default function SearchPage() {
         query: trimmed,
         isRegex,
         timeRange: (!overrideRange ? timeRange : 'custom') as SearchParams['timeRange'],
-        startTime: overrideRange ? startTime : timeRange === 'custom' ? startTime : undefined,
-        endTime: overrideRange ? endTime : timeRange === 'custom' ? endTime : undefined,
+        startTime: overrideRange ? startTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? startTime : undefined,
+        endTime: overrideRange ? endTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? endTime : undefined,
         interval: overrideRange || timeRange === 'custom' || (timeRange && timeRange !== '24h') ? interval : undefined,
         pageSize,
       });
 
       const logsUrl = `${apiUrl(`${config.apiPaths.logs}/search/stream`)}?${params.toString()}`;
-      const histParams = SearchService.buildHistogramParamsFrom(params);
-      const histUrl = `${apiUrl(`${config.apiPaths.logs}/search/timetable/stream`)}?${histParams.toString()}`;
+      // Disable SSE timetable stream to reduce redundant calls; use REST histogram instead
+      const histUrl = '';
       setIsStreaming(true);
+      // Track whether histogram SSE has initialized to decide fallback
+      let histInited = false;
+      let fallbackTimer: number | undefined;
       const streaming = new StreamingService();
       streamingRef.current = streaming;
+
+      // Start timetable (histogram) SSE alongside logs
       streaming.start(logsUrl, histUrl, {
         onLogsPage: (json) => {
           try {
@@ -403,6 +409,11 @@ export default function SearchPage() {
           console.error('SSE error (logs stream)');
         },
         onHistInit: (json) => {
+          histInited = true;
+          if (fallbackTimer !== undefined) {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = undefined;
+          }
           try {
             const data = JSON.parse(json);
             const buckets: { timestamp: string; count: number }[] = data.buckets || [];
@@ -428,6 +439,129 @@ export default function SearchPage() {
         },
       });
 
+      // Fallback: only if histogram SSE init does not arrive shortly (e.g., blocked second EventSource)
+      // Schedule a one-off REST histogram fetch after a short delay and cancel if SSE init fires.
+      // With SSE timetable disabled, run REST histogram immediately
+      fallbackTimer = window.setTimeout(async () => {
+        if (histInited) return;
+        try {
+          const fStart = startTime;
+          const fEnd = endTime;
+          const fallbackInterval = interval;
+          const u = new URL(apiUrl(`${config.apiPaths.logs}/histogram`), window.location.origin);
+          if (trimmed && trimmed !== '*') u.searchParams.set('query', trimmed);
+          if (isRegex) u.searchParams.set('isRegex', 'true');
+          u.searchParams.set('from', String(fStart));
+          u.searchParams.set('to', String(fEnd));
+          u.searchParams.set('interval', fallbackInterval);
+
+          const synthesizeZeroBuckets = () => {
+            try {
+              const ms =
+                fallbackInterval === '1m' ? 60_000 :
+                fallbackInterval === '5m' ? 300_000 :
+                fallbackInterval === '15m' ? 900_000 :
+                fallbackInterval === '30m' ? 1_800_000 :
+                fallbackInterval === '1h' ? 3_600_000 :
+                fallbackInterval === '3h' ? 10_800_000 :
+                fallbackInterval === '6h' ? 21_600_000 :
+                fallbackInterval === '12h' ? 43_200_000 :
+                86_400_000; // '24h' default
+              const buckets: { timestamp: string; count: number }[] = [];
+              const total = Math.max(1, Math.ceil((fEnd - fStart) / ms));
+              for (let i = 0; i < total; i++) {
+                const ts = fStart + i * ms;
+                const iso = new Date(ts).toISOString();
+                buckets.push({ timestamp: iso, count: 0 });
+              }
+              if (buckets.length > 0) {
+                setHistogramData((prev) => (prev && prev.length > 0 ? prev : buckets));
+              }
+            } catch {}
+          };
+
+          const res = await fetch(u.toString());
+          if (res.ok) {
+            const list: { timestamp: string; count: number }[] = await res.json();
+            if (Array.isArray(list) && list.length > 0) {
+              setHistogramData(list);
+              // Auto-zoom: if requested window is large but activity is tightly clustered, zoom to active range once
+              try {
+                const requestedStart = fStart;
+                const requestedEnd = fEnd;
+                const requestedRangeMs = Math.max(1, requestedEnd - requestedStart);
+                // find first and last non-zero buckets
+                let firstIdx = -1;
+                let lastIdx = -1;
+                for (let i = 0; i < list.length; i++) {
+                  if ((list[i]?.count || 0) > 0) { firstIdx = i; break; }
+                }
+                for (let i = list.length - 1; i >= 0; i--) {
+                  if ((list[i]?.count || 0) > 0) { lastIdx = i; break; }
+                }
+                if (firstIdx >= 0 && lastIdx >= firstIdx) {
+                  const ts0 = new Date(list[firstIdx].timestamp).getTime();
+                  const ts1 = new Date(list[lastIdx].timestamp).getTime();
+                  // intervalMs: derive from adjacent buckets or from fallbackInterval
+                  let intervalMs = 0;
+                  if (firstIdx + 1 < list.length) {
+                    intervalMs = Math.max(1000, new Date(list[firstIdx + 1].timestamp).getTime() - ts0);
+                  } else if (firstIdx - 1 >= 0) {
+                    intervalMs = Math.max(1000, ts0 - new Date(list[firstIdx - 1].timestamp).getTime());
+                  }
+                  if (!intervalMs) {
+                    intervalMs = (
+                      fallbackInterval === '1m' ? 60_000 :
+                      fallbackInterval === '5m' ? 300_000 :
+                      fallbackInterval === '15m' ? 900_000 :
+                      fallbackInterval === '30m' ? 1_800_000 :
+                      fallbackInterval === '1h' ? 3_600_000 :
+                      fallbackInterval === '3h' ? 10_800_000 :
+                      fallbackInterval === '6h' ? 21_600_000 :
+                      fallbackInterval === '12h' ? 43_200_000 :
+                      86_400_000
+                    );
+                  }
+                  // active range from first non-zero to just after last non-zero
+                  let activeStart = ts0;
+                  let activeEnd = ts1 + intervalMs;
+                  // add padding (half-bucket, minimum 5 minutes) if within requested window
+                  const pad = Math.max(5 * 60 * 1000, Math.floor(intervalMs / 2));
+                  activeStart = Math.max(requestedStart, activeStart - pad);
+                  activeEnd = Math.min(requestedEnd, activeEnd + pad);
+                  const activeRangeMs = Math.max(1, activeEnd - activeStart);
+                  const oneDay = 24 * 60 * 60 * 1000;
+                  const activeBuckets = (lastIdx - firstIdx + 1);
+                  // Heuristic: auto-zoom if activity spans <= 25% of requested window OR <= 1 day,
+                  // OR if daily buckets and only a handful of active days (<= 3) out of many.
+                  const manyBuckets = list.length >= 14; // ~two weeks+ when daily
+                  const fewActiveDays = activeBuckets <= 3;
+                  const shouldZoom = (timeRange !== 'custom') && (
+                    activeRangeMs <= Math.min(requestedRangeMs * 0.25, oneDay) ||
+                    (manyBuckets && fewActiveDays)
+                  );
+                  // Avoid infinite loops: only auto-zoom if we are not already zooming from this search
+                  if (shouldZoom) {
+                    // Switch to custom and re-run search within active window
+                    setTimeRange('custom');
+                    setCustomStartTime(activeStart);
+                    setCustomEndTime(activeEnd);
+                    // Re-run search with override; pushHistory true to reflect precise window
+                    handleSearch(undefined, { start: activeStart, end: activeEnd }, true);
+                  }
+                }
+              } catch {}
+            } else {
+              synthesizeZeroBuckets();
+            }
+          } else {
+            synthesizeZeroBuckets();
+          }
+        } catch (e) {
+          // ignore and let SSE continue
+        }
+      }, 0);
+
       // Push URL state for history/share if requested
       try {
         if (pushHistory) {
@@ -435,8 +569,8 @@ export default function SearchPage() {
             query: currentEditorValue || '',
             isRegex,
             timeRange: (overrideRange ? 'custom' : timeRange) as SearchParams['timeRange'],
-            startTime: overrideRange ? startTime : timeRange === 'custom' ? startTime : undefined,
-            endTime: overrideRange ? endTime : timeRange === 'custom' ? endTime : undefined,
+            startTime: overrideRange ? startTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? startTime : undefined,
+            endTime: overrideRange ? endTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? endTime : undefined,
             pageSize,
             autoRefreshEnabled,
             autoRefreshInterval,
@@ -555,7 +689,6 @@ export default function SearchPage() {
       setIsSearching(false);
     }
   };
-
 
   const getLevelClass = (level: string) => {
     switch (level.toUpperCase()) {
@@ -731,7 +864,6 @@ export default function SearchPage() {
 
     return results;
   }, [searchResults, sortColumn, sortDirection, filterValues]);
-
 
   const zoomStack = s.zoomStack;
   const setZoomStack = (updater: any) => {

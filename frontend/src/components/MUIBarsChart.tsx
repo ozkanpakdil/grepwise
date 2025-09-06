@@ -18,8 +18,8 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
   return (
-    <div className="w-full h-64">
-      <div className="relative w-full h-full flex items-end gap-[2px]" role="list">
+    <div className="w-full h-64 overflow-hidden">
+      <div className="relative w-full h-full flex items-end gap-[2px] overflow-hidden" role="list" style={{paddingRight: 2}}>
         {data.map((d, idx) => {
           const heightPct = (d.count / max) * 100;
           const title = `${new Date(d.timestamp).toUTCString()}\nLogs: ${d.count}`;
@@ -29,6 +29,9 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
           if (idx < data.length - 1) slotSizeMs = Math.max(1000, new Date(data[idx + 1].timestamp).getTime() - start);
           else if (idx > 0) slotSizeMs = Math.max(1000, start - new Date(data[idx - 1].timestamp).getTime());
 
+          // Decide whether to show top labels (counts). Show when number of bars is reasonable (<= 60).
+          const showTopLabels = data.length <= 60;
+
           return (
             <div
               key={d.timestamp}
@@ -37,10 +40,25 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
               onDoubleClick={() => onBarDoubleClick?.(start, start + slotSizeMs)}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className="flex-1 h-full flex flex-col justify-end cursor-pointer"
+              className="flex-1 h-full flex flex-col justify-end cursor-pointer relative"
               style={{ minWidth: `${Math.max(2, 100 / Math.max(1, data.length))}%` }}
             >
-              <div className="bg-blue-500 transition-all duration-150" style={{ height: `${heightPct}%` }} />
+              {/* Bar */}
+              <div className="bg-blue-500 transition-all duration-150" style={{ height: `${heightPct}%`, minHeight: d.count>0?1:0 }} />
+              {/* Top count label */}
+              {showTopLabels && (
+                <div
+                  className="pointer-events-none absolute text-[10px] text-foreground/90 px-0.5 rounded"
+                  style={{
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    bottom: `calc(${heightPct}% + 2px)`,
+                  }}
+                >
+                  {d.count}
+                </div>
+              )}
+              {/* Bottom tick label when few buckets */}
               {data.length <= 24 && (
                 <div className="text-[10px] text-center mt-1 select-none">{formatLabel(d.timestamp)}</div>
               )}

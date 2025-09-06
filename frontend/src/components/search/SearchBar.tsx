@@ -101,6 +101,8 @@ export default function SearchBar({
                 <SelectItem value="3h">Last 3 hours</SelectItem>
                 <SelectItem value="12h">Last 12 hours</SelectItem>
                 <SelectItem value="24h">Last 24 hours</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
                 <SelectItem value="custom">Custom range</SelectItem>
               </SelectContent>
             </Select>

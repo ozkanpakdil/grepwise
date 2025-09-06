@@ -28,8 +28,17 @@ export function useTimeRange() {
             startTime = endTime - 12 * 60 * 60 * 1000;
             break;
           case '24h':
-          default:
             startTime = endTime - 24 * 60 * 60 * 1000;
+            break;
+          case '7d':
+            startTime = endTime - 7 * 24 * 60 * 60 * 1000;
+            break;
+          case '30d':
+            startTime = endTime - 30 * 24 * 60 * 60 * 1000;
+            break;
+          default:
+            // Default to 30 days if unspecified
+            startTime = endTime - 30 * 24 * 60 * 60 * 1000;
             break;
         }
       }
@@ -41,6 +50,9 @@ export function useTimeRange() {
 
   const pickInterval = useCallback((startTime: number, endTime: number) => {
     const timeRangeMs = endTime - startTime;
+    const day = 24 * 60 * 60 * 1000;
+    if (timeRangeMs >= 7 * day) return '24h'; // daily for >= 7 days
+    if (timeRangeMs >= day) return '1h';
     if (timeRangeMs <= 60 * 60 * 1000) return '1m';
     if (timeRangeMs <= 3 * 60 * 60 * 1000) return '5m';
     if (timeRangeMs <= 12 * 60 * 60 * 1000) return '15m';

@@ -22,6 +22,12 @@ export default function Layout() {
   const { theme, setTheme } = useTheme();
   const auth = getAuthState();
   const user: any = auth?.state?.user || null;
+  const roleNames: string[] = Array.isArray((user as any)?.roleNames)
+    ? (user as any).roleNames
+    : Array.isArray((user as any)?.roles)
+    ? (user as any).roles
+    : [];
+  const isAdmin = roleNames.includes('ADMIN');
   const logout = () => {
     clearAuthState();
     window.location.href = '/login';
@@ -79,15 +85,17 @@ export default function Layout() {
                 <BellIcon className="h-4 w-4" />
                 Alarms
               </Link>
-              <Link
-                to="/settings"
-                className={`flex items-center gap-2 ${
-                  isActive('/settings') ? 'text-foreground font-medium' : 'text-muted-foreground'
-                } transition-colors hover:text-foreground`}
-              >
-                <SettingsIcon className="h-4 w-4" />
-                Settings
-              </Link>
+              {isAdmin && (
+                <Link
+                  to="/settings"
+                  className={`flex items-center gap-2 ${
+                    isActive('/settings') ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  } transition-colors hover:text-foreground`}
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  Settings
+                </Link>
+              )}
               <Link
                 to="/monitoring"
                 className={`flex items-center gap-2 ${
@@ -97,24 +105,28 @@ export default function Layout() {
                 <ActivityIcon className="h-4 w-4" />
                 Monitoring
               </Link>
-              <Link
-                to="/users"
-                className={`flex items-center gap-2 ${
-                  isActive('/users') ? 'text-foreground font-medium' : 'text-muted-foreground'
-                } transition-colors hover:text-foreground`}
-              >
-                <UsersIcon className="h-4 w-4" />
-                Users
-              </Link>
-              <Link
-                to="/roles"
-                className={`flex items-center gap-2 ${
-                  isActive('/roles') ? 'text-foreground font-medium' : 'text-muted-foreground'
-                } transition-colors hover:text-foreground`}
-              >
-                <ShieldIcon className="h-4 w-4" />
-                Roles
-              </Link>
+              {isAdmin && (
+                <Link
+                  to="/users"
+                  className={`flex items-center gap-2 ${
+                    isActive('/users') ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  } transition-colors hover:text-foreground`}
+                >
+                  <UsersIcon className="h-4 w-4" />
+                  Users
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/roles"
+                  className={`flex items-center gap-2 ${
+                    isActive('/roles') ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  } transition-colors hover:text-foreground`}
+                >
+                  <ShieldIcon className="h-4 w-4" />
+                  Roles
+                </Link>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-4">
@@ -201,18 +213,20 @@ export default function Layout() {
                   <span>Alarms</span>
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/settings"
-                  className={`flex items-center gap-3 p-2 rounded-md ${
-                    isActive('/settings') ? 'bg-muted font-medium' : ''
-                  }`}
-                  onClick={toggleMobileMenu}
-                >
-                  <SettingsIcon className="h-5 w-5" />
-                  <span>Settings</span>
-                </Link>
-              </li>
+              {isAdmin && (
+                <li>
+                  <Link
+                    to="/settings"
+                    className={`flex items-center gap-3 p-2 rounded-md ${
+                      isActive('/settings') ? 'bg-muted font-medium' : ''
+                    }`}
+                    onClick={toggleMobileMenu}
+                  >
+                    <SettingsIcon className="h-5 w-5" />
+                    <span>Settings</span>
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   to="/monitoring"
@@ -225,30 +239,34 @@ export default function Layout() {
                   <span>Monitoring</span>
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/users"
-                  className={`flex items-center gap-3 p-2 rounded-md ${
-                    isActive('/users') ? 'bg-muted font-medium' : ''
-                  }`}
-                  onClick={toggleMobileMenu}
-                >
-                  <UsersIcon className="h-5 w-5" />
-                  <span>Users</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/roles"
-                  className={`flex items-center gap-3 p-2 rounded-md ${
-                    isActive('/roles') ? 'bg-muted font-medium' : ''
-                  }`}
-                  onClick={toggleMobileMenu}
-                >
-                  <ShieldIcon className="h-5 w-5" />
-                  <span>Roles</span>
-                </Link>
-              </li>
+              {isAdmin && (
+                <li>
+                  <Link
+                    to="/users"
+                    className={`flex items-center gap-3 p-2 rounded-md ${
+                      isActive('/users') ? 'bg-muted font-medium' : ''
+                    }`}
+                    onClick={toggleMobileMenu}
+                  >
+                    <UsersIcon className="h-5 w-5" />
+                    <span>Users</span>
+                  </Link>
+                </li>
+              )}
+              {isAdmin && (
+                <li>
+                  <Link
+                    to="/roles"
+                    className={`flex items-center gap-3 p-2 rounded-md ${
+                      isActive('/roles') ? 'bg-muted font-medium' : ''
+                    }`}
+                    onClick={toggleMobileMenu}
+                  >
+                    <ShieldIcon className="h-5 w-5" />
+                    <span>Roles</span>
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
 

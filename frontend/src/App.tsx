@@ -12,12 +12,20 @@ import DashboardView from '@/pages/dashboard-view';
 import UsersPage from '@/pages/users';
 import MonitoringPage from '@/pages/monitoring';
 import NotFoundPage from '@/pages/not-found';
+import RolesPage from '@/pages/roles';
 
 import { useEffect, useState } from 'react';
 
 function App() {
   const [token, setToken] = useState<string | null>(getAuthState()?.state?.accessToken || null);
   const isAuthenticated = !!token;
+  const user: any = getAuthState()?.state?.user || null;
+  const roleNames: string[] = Array.isArray((user as any)?.roleNames)
+    ? (user as any).roleNames
+    : Array.isArray((user as any)?.roles)
+    ? (user as any).roles
+    : [];
+  const isAdmin = roleNames.includes('ADMIN');
 
   useEffect(() => {
     const update = () => setToken(getAuthState()?.state?.accessToken || null);
@@ -49,9 +57,10 @@ function App() {
             path="/alarm-monitoring"
             element={isAuthenticated ? <AlarmMonitoringPage /> : <Navigate to="/login" replace />}
           />
-          <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />} />
+          <Route path="/settings" element={isAuthenticated ? (isAdmin ? <SettingsPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
           <Route path="/monitoring" element={isAuthenticated ? <MonitoringPage /> : <Navigate to="/login" replace />} />
-          <Route path="/users" element={isAuthenticated ? <UsersPage /> : <Navigate to="/login" replace />} />
+          <Route path="/users" element={isAuthenticated ? (isAdmin ? <UsersPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
+          <Route path="/roles" element={isAuthenticated ? (isAdmin ? <RolesPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
         </Route>
 
         {/* 404 route */}

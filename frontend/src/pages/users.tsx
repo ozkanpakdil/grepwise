@@ -337,7 +337,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3 text-sm">{user.username}</td>
                     <td className="px-4 py-3 text-sm">{`${user.firstName} ${user.lastName}`}</td>
                     <td className="px-4 py-3 text-sm">{user.email}</td>
-                    <td className="px-4 py-3 text-sm">{user.roles.join(', ')}</td>
+                    <td className="px-4 py-3 text-sm">{(user.roleNames || []).join(', ')}</td>
                     <td className="px-4 py-3 text-sm text-right">
                       <div className="flex justify-end space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>

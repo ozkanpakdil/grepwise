@@ -6,7 +6,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  roles: string[];
+  roleNames: string[];
   roleIds?: string[];
   enabled?: boolean;
 }
@@ -47,12 +47,14 @@ export const userApi = {
   createUser: async (user: UserRequest): Promise<User> => {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
-
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(user),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create user');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to create user');
     }
     return response.json();
   },
@@ -61,12 +63,14 @@ export const userApi = {
   updateUser: async (id: string, user: Partial<UserRequest>): Promise<User> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
-
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(user),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update user');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to update user');
     }
     return response.json();
   },
@@ -77,8 +81,8 @@ export const userApi = {
       method: 'DELETE',
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete user');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to delete user');
     }
   },
 

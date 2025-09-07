@@ -42,12 +42,14 @@ export const roleApi = {
   createRole: async (role: RoleRequest): Promise<Role> => {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
-
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(role),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create role');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to create role');
     }
     return response.json();
   },
@@ -56,12 +58,14 @@ export const roleApi = {
   updateRole: async (id: string, role: Partial<RoleRequest>): Promise<Role> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
-
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(role),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update role');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to update role');
     }
     return response.json();
   },
@@ -72,8 +76,8 @@ export const roleApi = {
       method: 'DELETE',
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete role');
+      const error = await response.json().catch(() => ({}));
+      throw new Error((error as any).error || 'Failed to delete role');
     }
   },
 

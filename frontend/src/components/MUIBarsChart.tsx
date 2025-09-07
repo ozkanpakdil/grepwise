@@ -1,23 +1,28 @@
-import * as React from 'react';
 import { HistogramData } from '@/api/logSearch';
+import { FC, useRef, useState } from 'react';
 
 interface Props {
   data: HistogramData[];
   onBarDoubleClick?: (start: number, end: number) => void;
 }
 
-// Convert ISO timestamp to a readable label (UTC)
+// Convert ISO timestamp to a readable label (local time). If day changes, show Mon DD.
 const formatLabel = (iso: string) => {
   const d = new Date(iso);
-  return d.toUTCString().split(' ')[4]; // HH:MM:SS
+  // If bucket represents a date boundary (00:00), show day label for more meaningful axis
+  if (d.getHours() === 0 && d.getMinutes() === 0) {
+    const mon = d.toLocaleString(undefined, { month: 'short' });
+    return `${mon} ${d.getDate()}`;
+  }
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 };
 
-export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
+export const MUIBarsChart: FC<Props> = ({ data, onBarDoubleClick }) => {
   const values = data.map((d) => d.count);
   const max = Math.max(1, ...values);
-  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [mousePos, setMousePos] = React.useState<{ x: number; y: number } | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Determine bottom label frequency to reduce overlap
   const bucketCount = data.length;
@@ -34,7 +39,6 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
       >
         {data.map((d, idx) => {
           const heightPct = (d.count / max) * 100;
-          const title = `${new Date(d.timestamp).toUTCString()}\nLogs: ${d.count}`;
           const start = new Date(d.timestamp).getTime();
           // infer slot size from next or previous bucket
           let slotSizeMs = 60 * 1000; // default 1m
@@ -85,7 +89,7 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
                 </div>
               )}
               {/* Bottom tick label when few buckets (rotate to avoid overlap) */}
-              {data.length <= 24 && idx % labelEvery === 0 && (
+              {data.length <= 14 && idx % labelEvery === 0 && (
                 <div
                   className="pointer-events-none absolute text-[10px] select-none"
                   style={{
@@ -108,7 +112,7 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
           mousePos &&
           (() => {
             const hovered = data[hoveredIndex];
-            const ts = new Date(hovered.timestamp).toUTCString();
+            const ts = new Date(hovered.timestamp).toLocaleString();
             const rect = containerRef.current?.getBoundingClientRect();
             const cw = rect?.width ?? 0;
             const ch = rect?.height ?? 0;

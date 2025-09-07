@@ -133,7 +133,7 @@ public class LogSourceConfig {
                 legacyConfig.getDirectoryPath(),
                 legacyConfig.getFilePattern(),
                 legacyConfig.getScanIntervalSeconds(),
-                legacyConfig.isEnabled()
+                true
         );
     }
 
@@ -150,7 +150,6 @@ public class LogSourceConfig {
         legacyConfig.setDirectoryPath(directoryPath);
         legacyConfig.setFilePattern(filePattern);
         legacyConfig.setScanIntervalSeconds(scanIntervalSeconds);
-        legacyConfig.setEnabled(enabled);
         return legacyConfig;
     }
 

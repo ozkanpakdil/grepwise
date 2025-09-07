@@ -120,7 +120,7 @@ public class LogDirectoryConfigRepository {
                 logger.info("No '{}' key in JSON settings; initializing defaults", KEY_LOG_DIR_CONFIGS);
                 return;
             }
-            List<LogDirectoryConfig> list = objectMapper.convertValue(arr, new TypeReference<List<LogDirectoryConfig>>() {
+            List<LogDirectoryConfig> list = objectMapper.convertValue(arr, new TypeReference<>() {
             });
             configs.clear();
             for (LogDirectoryConfig c : list) {
@@ -143,7 +143,7 @@ public class LogDirectoryConfigRepository {
             }
             File file = new File(APP_SETTINGS_FILE);
             Map<String, Object> root = Map.of(
-                    KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
+                KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
             );
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, root);
             logger.info("Persisted {} log directory configs to {}", configs.size(), file.getAbsolutePath());

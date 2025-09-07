@@ -8,22 +8,26 @@ import java.util.Objects;
 public class LogDirectoryConfig {
     private String id;
     private String directoryPath;
-    private boolean enabled;
     private String filePattern;
     private long scanIntervalSeconds;
+    // 'enabled' has been removed from configuration semantics. Kept via methods for backward compatibility.
 
     public LogDirectoryConfig() {
-        this.enabled = true;
         this.filePattern = "*.log";
         this.scanIntervalSeconds = 60;
     }
 
-    public LogDirectoryConfig(String id, String directoryPath, boolean enabled, String filePattern, long scanIntervalSeconds) {
+    // Backward compatible ctors
+    public LogDirectoryConfig(String id, String directoryPath, String filePattern, long scanIntervalSeconds) {
         this.id = id;
         this.directoryPath = directoryPath;
-        this.enabled = enabled;
         this.filePattern = filePattern;
         this.scanIntervalSeconds = scanIntervalSeconds;
+    }
+    // Deprecated: maintained for backward compatibility with older tests/usages
+    @Deprecated
+    public LogDirectoryConfig(String id, String directoryPath, boolean enabled, String filePattern, long scanIntervalSeconds) {
+        this(id, directoryPath, filePattern, scanIntervalSeconds);
     }
 
     public String getId() {
@@ -42,13 +46,6 @@ public class LogDirectoryConfig {
         this.directoryPath = directoryPath;
     }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     public String getFilePattern() {
         return filePattern;
@@ -71,8 +68,7 @@ public class LogDirectoryConfig {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LogDirectoryConfig that = (LogDirectoryConfig) o;
-        return enabled == that.enabled &&
-                scanIntervalSeconds == that.scanIntervalSeconds &&
+        return scanIntervalSeconds == that.scanIntervalSeconds &&
                 Objects.equals(id, that.id) &&
                 Objects.equals(directoryPath, that.directoryPath) &&
                 Objects.equals(filePattern, that.filePattern);
@@ -80,7 +76,7 @@ public class LogDirectoryConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, directoryPath, enabled, filePattern, scanIntervalSeconds);
+        return Objects.hash(id, directoryPath, filePattern, scanIntervalSeconds);
     }
 
     @Override
@@ -88,9 +84,14 @@ public class LogDirectoryConfig {
         return "LogDirectoryConfig{" +
                 "id='" + id + '\'' +
                 ", directoryPath='" + directoryPath + '\'' +
-                ", enabled=" + enabled +
                 ", filePattern='" + filePattern + '\'' +
                 ", scanIntervalSeconds=" + scanIntervalSeconds +
                 '}';
     }
+
+    // Deprecated compatibility methods - no effect
+    @Deprecated
+    public boolean isEnabled() { return true; }
+    @Deprecated
+    public void setEnabled(boolean enabled) { /* no-op */ }
 }

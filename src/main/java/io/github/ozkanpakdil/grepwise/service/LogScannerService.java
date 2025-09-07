@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.service;
 import io.github.ozkanpakdil.grepwise.model.LogDirectoryConfig;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogDirectoryConfigRepository;
+import io.github.ozkanpakdil.grepwise.repository.LogIndexMetaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +42,22 @@ public class LogScannerService {
     @Value("${grepwise.log-scanner.use-buffer:true}")
     private boolean useBuffer;
 
+    private LogIndexMetaRepository logIndexMetaRepository; // optional bean, may be null in some tests
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public LogScannerService(LogDirectoryConfigRepository configRepository,
+                             LuceneService luceneService,
+                             LogBufferService logBufferService,
+                             NginxLogParser nginxLogParser,
+                             ApacheLogParser apacheLogParser,
+                             LogPatternRecognitionService patternRecognitionService, RealTimeUpdateService realTimeUpdateService,
+                             LogIndexMetaRepository logIndexMetaRepository) {
+        this(configRepository, luceneService, logBufferService, nginxLogParser, apacheLogParser,
+                patternRecognitionService, realTimeUpdateService);
+        this.logIndexMetaRepository = logIndexMetaRepository;
+    }
+
+    // Backward-compatible constructor for older tests without meta repository
     public LogScannerService(LogDirectoryConfigRepository configRepository,
                              LuceneService luceneService,
                              LogBufferService logBufferService,
@@ -66,15 +84,13 @@ public class LogScannerService {
 
         int scannedCount = 0;
         for (LogDirectoryConfig config : configs) {
-            if (config.isEnabled()) {
-                try {
-                    int processed = scanDirectory(config);
-                    if (processed > 0) {
-                        scannedCount++;
-                    }
-                } catch (Exception e) {
-                    logger.error("Error scanning directory: " + config.getDirectoryPath(), e);
+            try {
+                int processed = scanDirectory(config);
+                if (processed > 0) {
+                    scannedCount++;
                 }
+            } catch (Exception e) {
+                logger.error("Error scanning directory: " + config.getDirectoryPath(), e);
             }
         }
         logger.info("Completed scanning {} directories", scannedCount);
@@ -97,11 +113,14 @@ public class LogScannerService {
 
         List<Path> logFiles;
         try (Stream<Path> stream = Files.list(dir)) {
+            final String pattern = (config.getFilePattern() == null || config.getFilePattern().isBlank()) ? "*.log" : config.getFilePattern();
+            final PathMatcher matcher = dir.getFileSystem().getPathMatcher("glob:" + pattern);
             logFiles = stream
                     .filter(Files::isRegularFile)
+                    .filter(p -> matcher.matches(p.getFileName()))
                     .toList();
 
-            logger.info("Found {} log files matching pattern in directory: {}", logFiles.size(), directoryPath);
+            logger.info("Found {} log files matching pattern in directory: {} (pattern={})", logFiles.size(), directoryPath, pattern);
         } catch (IOException e) {
             logger.error("Error listing files in directory: {}", directoryPath, e);
             return 0;
@@ -111,9 +130,20 @@ public class LogScannerService {
 
         for (Path logFile : logFiles) {
             try {
-                int processed = processLogFile(logFile.toFile());
+                File f = logFile.toFile();
+                long size = f.length();
+                long lastMod = f.lastModified();
+                if (!logIndexMetaRepository.hasSizeChanged(f.getAbsolutePath(), size)) {
+                    logger.debug("Skipping unchanged log file: {} (size={})", f.getAbsolutePath(), size);
+                    continue;
+                }
+
+                int processed = processLogFile(f);
                 totalProcessed += processed;
                 logger.info("Processed {} log entries from file: {}", processed, logFile);
+
+                // Update meta after processing
+                logIndexMetaRepository.upsert(f.getAbsolutePath(), size, lastMod);
             } catch (Exception e) {
                 logger.error("Error processing log file: {}", logFile, e);
             }

@@ -318,11 +318,9 @@ public class LogSourceService {
         try {
             switch (config.getSourceType()) {
                 case FILE:
-                    // For file sources, we just disable them in the legacy repository
-                    LogDirectoryConfig legacyConfig = config.toLogDirectoryConfig();
-                    legacyConfig.setEnabled(false);
-                    logScannerService.saveConfig(legacyConfig);
-                    logger.info("Stopped file log source: {}", config.getId());
+                    // For file sources, do not delete persisted configuration on stop.
+                    // Stopping is a runtime concern; configurations persist across restarts.
+                    logger.info("Stopped file log source (configuration retained): {}", config.getId());
                     return true;
 
                 case SYSLOG:

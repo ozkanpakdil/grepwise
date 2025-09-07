@@ -5,7 +5,6 @@ const API_URL = 'http://localhost:8080/api/config/log-directories';
 export interface LogDirectoryConfig {
   id?: string;
   directoryPath: string;
-  enabled: boolean;
   filePattern: string;
   scanIntervalSeconds: number;
 }

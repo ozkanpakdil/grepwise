@@ -16,10 +16,22 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
   const values = data.map((d) => d.count);
   const max = Math.max(1, ...values);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const [mousePos, setMousePos] = React.useState<{ x: number; y: number } | null>(null);
+
+  // Determine bottom label frequency to reduce overlap
+  const bucketCount = data.length;
+  const labelEvery = bucketCount <= 12 ? 1 : bucketCount <= 18 ? 2 : 3;
 
   return (
     <div className="w-full h-64 overflow-hidden">
-      <div className="relative w-full h-full flex items-end gap-[2px] overflow-hidden" role="list" style={{paddingRight: 2}}>
+      <div
+        ref={containerRef}
+        className="relative w-full h-full flex items-end gap-[2px] overflow-hidden"
+        role="list"
+        // Keep a small bottom padding so rotated labels can be visible without pushing bars too far up
+        style={{ paddingRight: 2, paddingBottom: 2 }}
+      >
         {data.map((d, idx) => {
           const heightPct = (d.count / max) * 100;
           const title = `${new Date(d.timestamp).toUTCString()}\nLogs: ${d.count}`;
@@ -36,15 +48,29 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
             <div
               key={d.timestamp}
               role="listitem"
-              title={title}
+              // Remove native title to avoid browser tooltip delay; we render our own instant tooltip below
               onDoubleClick={() => onBarDoubleClick?.(start, start + slotSizeMs)}
-              onMouseEnter={() => setHoveredIndex(idx)}
-              onMouseLeave={() => setHoveredIndex(null)}
+              onMouseEnter={(e) => {
+                setHoveredIndex(idx);
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (rect) setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+              }}
+              onMouseMove={(e) => {
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (rect) setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+              }}
+              onMouseLeave={() => {
+                setHoveredIndex(null);
+                setMousePos(null);
+              }}
               className="flex-1 h-full flex flex-col justify-end cursor-pointer relative"
               style={{ minWidth: `${Math.max(2, 100 / Math.max(1, data.length))}%` }}
             >
               {/* Bar */}
-              <div className="bg-blue-500 transition-all duration-150" style={{ height: `${heightPct}%`, minHeight: d.count>0?1:0 }} />
+              <div
+                className="bg-blue-500 transition-all duration-150"
+                style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 1 : 0 }}
+              />
               {/* Top count label */}
               {showTopLabels && (
                 <div
@@ -58,9 +84,20 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
                   {d.count}
                 </div>
               )}
-              {/* Bottom tick label when few buckets */}
-              {data.length <= 24 && (
-                <div className="text-[10px] text-center mt-1 select-none">{formatLabel(d.timestamp)}</div>
+              {/* Bottom tick label when few buckets (rotate to avoid overlap) */}
+              {data.length <= 24 && idx % labelEvery === 0 && (
+                <div
+                  className="pointer-events-none absolute text-[10px] select-none"
+                  style={{
+                    left: '50%',
+                    transform: 'translateX(-50%) rotate(-50deg)',
+                    transformOrigin: 'top left',
+                    whiteSpace: 'nowrap',
+                    bottom: 4,
+                  }}
+                >
+                  {formatLabel(d.timestamp)}
+                </div>
               )}
             </div>
           );
@@ -68,18 +105,32 @@ export const MUIBarsChart: React.FC<Props> = ({ data, onBarDoubleClick }) => {
         {hoveredIndex !== null &&
           hoveredIndex >= 0 &&
           hoveredIndex < data.length &&
+          mousePos &&
           (() => {
             const hovered = data[hoveredIndex];
-            const heightPct = (hovered.count / max) * 100;
+            const ts = new Date(hovered.timestamp).toUTCString();
+            const rect = containerRef.current?.getBoundingClientRect();
+            const cw = rect?.width ?? 0;
+            const ch = rect?.height ?? 0;
+            const tooltipWidth = 160;
+            const estHeight = 54; // rough estimate for clamping
+            // Prefer showing below-right of cursor, clamp to container bounds
+            const desiredLeft = mousePos.x + 12;
+            const desiredTop = mousePos.y + 12;
+            const left = Math.max(4, Math.min(desiredLeft, cw ? cw - tooltipWidth - 4 : desiredLeft));
+            const top = Math.max(4, Math.min(desiredTop, ch ? ch - estHeight - 4 : desiredTop));
             return (
               <div
-                className="pointer-events-none absolute text-[10px] bg-background/90 px-1 rounded border"
+                className="pointer-events-none absolute text-[11px] bg-background/95 px-2 py-1 rounded border shadow"
                 style={{
-                  left: `calc(${((hoveredIndex + 0.5) * 100) / Math.max(1, data.length)}% - 16px)`,
-                  bottom: `calc(${heightPct}% + 2px)`,
+                  left,
+                  top,
+                  width: tooltipWidth,
+                  textAlign: 'center',
                 }}
               >
-                {hovered.count}
+                <div className="font-medium">{hovered.count} logs</div>
+                <div className="opacity-80">{ts}</div>
               </div>
             );
           })()}

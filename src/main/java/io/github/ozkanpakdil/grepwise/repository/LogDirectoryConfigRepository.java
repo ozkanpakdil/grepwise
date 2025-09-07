@@ -1,5 +1,7 @@
 package io.github.ozkanpakdil.grepwise.repository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ozkanpakdil.grepwise.model.LogDirectoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,52 +16,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Repository for storing and retrieving log directory configurations.
- * This is a simple in-memory implementation for now.
- * In a production environment, this would be replaced with a database implementation.
+ * Persists configurations to a simple json file for durability across restarts.
  */
 @Repository
 public class LogDirectoryConfigRepository {
     private static final Logger logger = LoggerFactory.getLogger(LogDirectoryConfigRepository.class);
+    private static final String CONFIG_DIR = System.getProperty("user.home")
+            + File.separator + ".grepwise" + File.separator + "config";
+    private static final String APP_SETTINGS_FILE = CONFIG_DIR + File.separator + "appsettings.json";
+    private static final String KEY_LOG_DIR_CONFIGS = "logDirectoryConfigs"; // JSON array value
+
     private final Map<String, LogDirectoryConfig> configs = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * Constructor that initializes the repository with a default configuration.
+     * Constructor that initializes the repository, loading from json if available
+     * and creating a sensible default otherwise.
      */
     public LogDirectoryConfigRepository() {
         logger.info("Initializing LogDirectoryConfigRepository");
-
-        // Create a default configuration for the logs directory in the user's home directory
-        String userHome = System.getProperty("user.home");
-        logger.debug("User home directory: {}", userHome);
-
-        String defaultLogDir = userHome + File.separator + "logs";
-        logger.debug("Default log directory path: {}", defaultLogDir);
-
-        // Create the directory if it doesn't exist
-        File logDir = new File(defaultLogDir);
-        if (!logDir.exists()) {
-            logger.info("Default log directory does not exist, attempting to create it");
-            boolean created = logDir.mkdirs();
-            if (created) {
-                logger.info("Created default log directory: {}", defaultLogDir);
-            } else {
-                logger.warn("Failed to create default log directory: {}", defaultLogDir);
-                // Use the current directory as a fallback
-                defaultLogDir = System.getProperty("user.dir");
-                logger.info("Using current directory as fallback: {}", defaultLogDir);
-            }
-        } else {
-            logger.info("Default log directory already exists: {}", defaultLogDir);
-        }
-
-        LogDirectoryConfig defaultConfig = new LogDirectoryConfig();
-        defaultConfig.setDirectoryPath(defaultLogDir);
-        defaultConfig.setEnabled(true);
-        defaultConfig.setFilePattern("*.log");
-        defaultConfig.setScanIntervalSeconds(60);
-
-        save(defaultConfig);
-        logger.info("Initialized default log directory configuration: {}", defaultConfig);
+        loadFromJson();
     }
 
     /**
@@ -68,11 +44,12 @@ public class LogDirectoryConfigRepository {
      * @param config The configuration to save
      * @return The saved configuration with a generated ID
      */
-    public LogDirectoryConfig save(LogDirectoryConfig config) {
+    public synchronized LogDirectoryConfig save(LogDirectoryConfig config) {
         if (config.getId() == null || config.getId().isEmpty()) {
             config.setId(UUID.randomUUID().toString());
         }
         configs.put(config.getId(), config);
+        persistToJson();
         return config;
     }
 
@@ -101,8 +78,12 @@ public class LogDirectoryConfigRepository {
      * @param id The ID of the configuration to delete
      * @return true if the configuration was deleted, false otherwise
      */
-    public boolean deleteById(String id) {
-        return configs.remove(id) != null;
+    public synchronized boolean deleteById(String id) {
+        boolean removed = configs.remove(id) != null;
+        if (removed) {
+            persistToJson();
+        }
+        return removed;
     }
 
     /**
@@ -110,9 +91,10 @@ public class LogDirectoryConfigRepository {
      *
      * @return The number of configurations deleted
      */
-    public int deleteAll() {
+    public synchronized int deleteAll() {
         int count = configs.size();
         configs.clear();
+        persistToJson();
         return count;
     }
 
@@ -123,5 +105,50 @@ public class LogDirectoryConfigRepository {
      */
     public int count() {
         return configs.size();
+    }
+
+    private void loadFromJson() {
+        try {
+            File file = new File(APP_SETTINGS_FILE);
+            if (!file.exists()) {
+                logger.info("JSON settings file not found: {}", APP_SETTINGS_FILE);
+                return;
+            }
+            Map<String, Object> root = objectMapper.readValue(file, Map.class);
+            Object arr = root.get(KEY_LOG_DIR_CONFIGS);
+            if (arr == null) {
+                logger.info("No '{}' key in JSON settings; initializing defaults", KEY_LOG_DIR_CONFIGS);
+                return;
+            }
+            List<LogDirectoryConfig> list = objectMapper.convertValue(arr, new TypeReference<List<LogDirectoryConfig>>() {
+            });
+            configs.clear();
+            for (LogDirectoryConfig c : list) {
+                if (c.getId() == null || c.getId().isBlank()) {
+                    c.setId(UUID.randomUUID().toString());
+                }
+                configs.put(c.getId(), c);
+            }
+            logger.info("Loaded {} log directory configs from {}", configs.size(), APP_SETTINGS_FILE);
+        } catch (Exception e) {
+            logger.error("Failed to load log directory configs from JSON", e);
+        }
+    }
+
+    private void persistToJson() {
+        try {
+            File dir = new File(CONFIG_DIR);
+            if (!dir.exists() && !dir.mkdirs()) {
+                logger.warn("Could not create config directory at {}", dir.getAbsolutePath());
+            }
+            File file = new File(APP_SETTINGS_FILE);
+            Map<String, Object> root = Map.of(
+                    KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
+            );
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, root);
+            logger.info("Persisted {} log directory configs to {}", configs.size(), file.getAbsolutePath());
+        } catch (Exception e) {
+            logger.error("Failed to persist log directory configs to JSON", e);
+        }
     }
 }

@@ -12,7 +12,6 @@ interface Props {
 }
 
 export default function TimeRangePicker({
-  timeRange,
   setTimeRange,
   customStartTime,
   customEndTime,
@@ -37,7 +36,9 @@ export default function TimeRangePicker({
               key={p.label}
               type="button"
               className="text-xs px-2 py-1 rounded-md border hover:bg-accent hover:text-accent-foreground"
-              onClick={() => { setTimeRange(p.value); onClose && onClose(); }}
+              onClick={() => {
+                setTimeRange(p.value);
+              }}
             >
               {p.label}
             </button>
@@ -69,7 +70,9 @@ export default function TimeRangePicker({
             className="rounded-md border border-input bg-background px-2 py-1 text-sm"
           />
         </div>
-        <div className="text-xs text-muted-foreground mt-2">Choose a preset above or enter a custom From/To range, then run the search.</div>
+        <div className="text-xs text-muted-foreground mt-2">
+          Choose a preset above or enter a custom From/To range, then run the search.
+        </div>
       </div>
     </>
   );

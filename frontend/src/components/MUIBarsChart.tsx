@@ -25,7 +25,15 @@ function useRelativeMouse(containerRef: React.RefObject<HTMLDivElement>, setMous
   };
 }
 
-function Tooltip({ containerRef, mousePos, item }: { containerRef: React.RefObject<HTMLDivElement>; mousePos: { x: number; y: number }; item: HistogramData }) {
+function Tooltip({
+  containerRef,
+  mousePos,
+  item,
+}: {
+  containerRef: React.RefObject<HTMLDivElement>;
+  mousePos: { x: number; y: number };
+  item: HistogramData;
+}) {
   const ts = new Date(item.timestamp).toLocaleString();
   const rect = containerRef.current?.getBoundingClientRect();
   const cw = rect?.width ?? 0;
@@ -57,7 +65,6 @@ export const MUIBarsChart: FC<Props> = ({ data, onBarDoubleClick }) => {
   const bucketCount = data.length;
   const labelEvery = useMemo(() => (bucketCount <= 12 ? 1 : bucketCount <= 18 ? 2 : 3), [bucketCount]);
   const showTopLabels = bucketCount <= 60;
-  const barMinWidthPct = useMemo(() => `${Math.max(2, 100 / Math.max(1, bucketCount))}%`, [bucketCount]);
 
   // Precompute slot sizes (ms) for each bar
   const slotSizes = useMemo(() => {

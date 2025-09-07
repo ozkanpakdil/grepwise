@@ -28,32 +28,6 @@ type FilterValues = {
   source: string;
   message: string;
 };
-
-const intervalToMs = (ival: string): number => {
-  switch (ival) {
-    case '1m':
-      return 60_000;
-    case '5m':
-      return 5 * 60_000;
-    case '15m':
-      return 15 * 60_000;
-    case '30m':
-      return 30 * 60_000;
-    case '1h':
-      return 60 * 60_000;
-    case '3h':
-      return 3 * 60 * 60_000;
-    case '6h':
-      return 6 * 60 * 60_000;
-    case '12h':
-      return 12 * 60 * 60_000;
-    case '24h':
-      return 24 * 60 * 60_000;
-    default:
-      return 24 * 60 * 60_000; // safe default to daily
-  }
-};
-
 export default function SearchPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -509,22 +483,6 @@ export default function SearchPage() {
             // Lazy import via global helper
           } catch {}
 
-          const synthesizeZeroBuckets = () => {
-            try {
-              const ms = intervalToMs(fallbackInterval);
-              const buckets: { timestamp: string; count: number }[] = [];
-              const total = Math.max(1, Math.ceil((fEnd - fStart) / ms));
-              for (let i = 0; i < total; i++) {
-                const ts = fStart + i * ms;
-                const iso = new Date(ts).toISOString();
-                buckets.push({ timestamp: iso, count: 0 });
-              }
-              if (buckets.length > 0) {
-                setHistogramData((prev) => (prev && prev.length > 0 ? prev : buckets));
-              }
-            } catch {}
-          };
-
           // include access_token in query and avoid Authorization header to prevent CORS preflight
           try {
             const { getAccessToken } = await import('@/api/http');
@@ -544,11 +502,7 @@ export default function SearchPage() {
               try {
                 // no-op
               } catch {}
-            } else {
-              synthesizeZeroBuckets();
             }
-          } else {
-            synthesizeZeroBuckets();
           }
         } catch (e) {
           // ignore and let SSE continue

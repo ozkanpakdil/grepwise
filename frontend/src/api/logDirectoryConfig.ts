@@ -7,6 +7,7 @@ export interface LogDirectoryConfig {
   directoryPath: string;
   filePattern: string;
   scanIntervalSeconds: number;
+  enabled: boolean;
 }
 
 export const getLogDirectoryConfigs = async (): Promise<LogDirectoryConfig[]> => {

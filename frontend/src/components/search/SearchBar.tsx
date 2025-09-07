@@ -34,7 +34,6 @@ export default function SearchBar({
   isRegex,
   setIsRegex,
   timeRange,
-  setTimeRange,
   isSearching,
   onSearch,
   onRefresh,
@@ -121,7 +120,14 @@ export default function SearchBar({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Button type="button" size="sm" disabled={isSearching} className="px-3" data-testid="run-search" onClick={(e) => onSearch(e)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={isSearching}
+            className="px-3"
+            data-testid="run-search"
+            onClick={(e) => onSearch(e)}
+          >
             {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
           </Button>
         </div>

@@ -510,6 +510,10 @@ export default function SearchPage() {
           u.searchParams.set('from', String(fStart));
           u.searchParams.set('to', String(fEnd));
           u.searchParams.set('interval', fallbackInterval);
+          // Append access_token to avoid Authorization header and CORS preflight
+          try {
+            // Lazy import via global helper
+          } catch {}
 
           const synthesizeZeroBuckets = () => {
             try {
@@ -527,71 +531,24 @@ export default function SearchPage() {
             } catch {}
           };
 
-          const res = await fetch(u.toString());
+          // include access_token in query and avoid Authorization header to prevent CORS preflight
+          try {
+            const { getAccessToken } = await import('@/api/http');
+            const token = getAccessToken();
+            if (token && !u.searchParams.get('access_token')) {
+              u.searchParams.set('access_token', token);
+            }
+          } catch {}
+
+          const res = await fetch(u.toString(), { gwNoAuth: true } as any);
           if (res.ok) {
             const list: { timestamp: string; count: number }[] = await res.json();
             if (Array.isArray(list) && list.length > 0) {
               setHistogramData(list);
-              // Auto-zoom: if requested window is large but activity is tightly clustered, zoom to active range once
+              // Note: Auto-zoom disabled to avoid triggering additional backend calls.
+              // If needed, user can manually zoom via histogram interactions.
               try {
-                const requestedStart = fStart;
-                const requestedEnd = fEnd;
-                const requestedRangeMs = Math.max(1, requestedEnd - requestedStart);
-                // find first and last non-zero buckets
-                let firstIdx = -1;
-                let lastIdx = -1;
-                for (let i = 0; i < list.length; i++) {
-                  if ((list[i]?.count || 0) > 0) {
-                    firstIdx = i;
-                    break;
-                  }
-                }
-                for (let i = list.length - 1; i >= 0; i--) {
-                  if ((list[i]?.count || 0) > 0) {
-                    lastIdx = i;
-                    break;
-                  }
-                }
-                if (firstIdx >= 0 && lastIdx >= firstIdx) {
-                  const ts0 = new Date(list[firstIdx].timestamp).getTime();
-                  const ts1 = new Date(list[lastIdx].timestamp).getTime();
-                  // intervalMs: derive from adjacent buckets or from fallbackInterval
-                  let intervalMs = 0;
-                  if (firstIdx + 1 < list.length) {
-                    intervalMs = Math.max(1000, new Date(list[firstIdx + 1].timestamp).getTime() - ts0);
-                  } else if (firstIdx - 1 >= 0) {
-                    intervalMs = Math.max(1000, ts0 - new Date(list[firstIdx - 1].timestamp).getTime());
-                  }
-                  if (!intervalMs) {
-                    intervalMs = intervalToMs(fallbackInterval);
-                  }
-                  // active range from first non-zero to just after last non-zero
-                  let activeStart = ts0;
-                  let activeEnd = ts1 + intervalMs;
-                  // add padding (half-bucket, minimum 5 minutes) if within requested window
-                  const pad = Math.max(5 * 60 * 1000, Math.floor(intervalMs / 2));
-                  activeStart = Math.max(requestedStart, activeStart - pad);
-                  activeEnd = Math.min(requestedEnd, activeEnd + pad);
-                  const activeRangeMs = Math.max(1, activeEnd - activeStart);
-                  const oneDay = 24 * 60 * 60 * 1000;
-                  const activeBuckets = lastIdx - firstIdx + 1;
-                  // Heuristic: auto-zoom if activity spans <= 25% of requested window OR <= 1 day,
-                  // OR if daily buckets and only a handful of active days (<= 3) out of many.
-                  const manyBuckets = list.length >= 14; // ~two weeks+ when daily
-                  const fewActiveDays = activeBuckets <= 3;
-                  const shouldZoom =
-                    timeRange !== 'custom' &&
-                    (activeRangeMs <= Math.min(requestedRangeMs * 0.25, oneDay) || (manyBuckets && fewActiveDays));
-                  // Avoid infinite loops: only auto-zoom if we are not already zooming from this search
-                  if (shouldZoom) {
-                    // Switch to custom and re-run search within active window
-                    setTimeRange('custom');
-                    setCustomStartTime(activeStart);
-                    setCustomEndTime(activeEnd);
-                    // Re-run search with override; pushHistory true to reflect precise window
-                    handleSearch(undefined, { start: activeStart, end: activeEnd }, true);
-                  }
-                }
+                // no-op
               } catch {}
             } else {
               synthesizeZeroBuckets();

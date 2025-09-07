@@ -49,7 +49,7 @@ export default function SearchBar({
   setShowTimePanel,
 }: Props) {
   return (
-    <form onSubmit={(e) => onSearch(e)} data-testid="search-form">
+    <form onSubmit={(e) => e.preventDefault()} data-testid="search-form">
       <div className="flex gap-2 items-center">
         <div className="flex-1" data-testid="query-editor">
           <Editor
@@ -121,7 +121,7 @@ export default function SearchBar({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Button type="submit" size="sm" disabled={isSearching} className="px-3" data-testid="run-search">
+          <Button type="button" size="sm" disabled={isSearching} className="px-3" data-testid="run-search" onClick={(e) => onSearch(e)}>
             {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
           </Button>
         </div>

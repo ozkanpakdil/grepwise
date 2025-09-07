@@ -14,6 +14,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 public class GrepWiseApplication {
     private static final Logger logger = LoggerFactory.getLogger(GrepWiseApplication.class);
 
+    public static String appName = "GrepWise";
+
     public static void main(String[] args) {
         SpringApplication.run(GrepWiseApplication.class, args);
     }

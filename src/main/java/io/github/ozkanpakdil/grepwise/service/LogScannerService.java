@@ -84,13 +84,17 @@ public class LogScannerService {
 
         int scannedCount = 0;
         for (LogDirectoryConfig config : configs) {
-            try {
-                int processed = scanDirectory(config);
-                if (processed > 0) {
-                    scannedCount++;
+            if (config.isEnabled()) {
+                try {
+                    int processed = scanDirectory(config);
+                    if (processed > 0) {
+                        scannedCount++;
+                    }
+                } catch (Exception e) {
+                    logger.error("Error scanning directory: " + config.getDirectoryPath(), e);
                 }
-            } catch (Exception e) {
-                logger.error("Error scanning directory: " + config.getDirectoryPath(), e);
+            } else {
+                logger.info("Skipping disabled log directory: {}", config.getId());
             }
         }
         logger.info("Completed scanning {} directories", scannedCount);

@@ -2,6 +2,7 @@ package io.github.ozkanpakdil.grepwise.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ozkanpakdil.grepwise.GrepWiseApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -19,7 +20,7 @@ public class LogIndexMetaRepository {
     private static final Logger logger = LoggerFactory.getLogger(LogIndexMetaRepository.class);
 
     private static final String META_DIR = System.getProperty("user.home")
-            + File.separator + ".grepwise" + File.separator + "index";
+            + File.separator + "." + GrepWiseApplication.appName + File.separator + "index";
     private static final String META_FILE = META_DIR + File.separator + "log-index-meta.json";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -59,7 +60,8 @@ public class LogIndexMetaRepository {
             if (!file.exists()) {
                 return;
             }
-            Map<String, FileMeta> data = objectMapper.readValue(file, new TypeReference<>() {});
+            Map<String, FileMeta> data = objectMapper.readValue(file, new TypeReference<>() {
+            });
             meta.clear();
             meta.putAll(data);
             logger.info("Loaded {} log index meta entries", meta.size());
@@ -86,7 +88,9 @@ public class LogIndexMetaRepository {
         public long size;
         public long lastModified;
 
-        public FileMeta() {}
+        public FileMeta() {
+        }
+
         public FileMeta(long size, long lastModified) {
             this.size = size;
             this.lastModified = lastModified;

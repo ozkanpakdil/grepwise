@@ -2,6 +2,7 @@ package io.github.ozkanpakdil.grepwise.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ozkanpakdil.grepwise.GrepWiseApplication;
 import io.github.ozkanpakdil.grepwise.model.LogDirectoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LogDirectoryConfigRepository {
     private static final Logger logger = LoggerFactory.getLogger(LogDirectoryConfigRepository.class);
     private static final String CONFIG_DIR = System.getProperty("user.home")
-            + File.separator + ".grepwise" + File.separator + "config";
-    private static final String APP_SETTINGS_FILE = CONFIG_DIR + File.separator + "appsettings.json";
+            + File.separator + "." + GrepWiseApplication.appName + File.separator + "config";
+    private static final String APP_SETTINGS_FILE = CONFIG_DIR + File.separator + "log-sources.json";
     private static final String KEY_LOG_DIR_CONFIGS = "logDirectoryConfigs"; // JSON array value
 
     private final Map<String, LogDirectoryConfig> configs = new ConcurrentHashMap<>();
@@ -143,7 +144,7 @@ public class LogDirectoryConfigRepository {
             }
             File file = new File(APP_SETTINGS_FILE);
             Map<String, Object> root = Map.of(
-                KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
+                    KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
             );
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, root);
             logger.info("Persisted {} log directory configs to {}", configs.size(), file.getAbsolutePath());

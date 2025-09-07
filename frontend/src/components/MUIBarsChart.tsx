@@ -77,9 +77,9 @@ export const MUIBarsChart: FC<Props> = ({ data, onBarDoubleClick }) => {
     <div className="w-full h-64 overflow-hidden">
       <div
         ref={containerRef}
-        className="relative w-full h-full flex items-end gap-[2px] overflow-hidden"
+        className="relative w-full h-full overflow-hidden"
         role="list"
-        style={{ paddingRight: 2, paddingBottom: 2 }}
+        style={{ paddingBottom: 2, display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '1fr', columnGap: '1px' }}
       >
         {data.map((d, idx) => {
           const heightPct = (d.count / max) * 100;
@@ -100,12 +100,12 @@ export const MUIBarsChart: FC<Props> = ({ data, onBarDoubleClick }) => {
                 setHoveredIndex(null);
                 setMousePos(null);
               }}
-              className="flex-1 h-full flex flex-col justify-end cursor-pointer relative"
-              style={{ minWidth: barMinWidthPct }}
+              className="h-full flex flex-col justify-end cursor-pointer relative"
+              style={{ minWidth: 0 }}
             >
               <div
                 className="bg-blue-500 transition-all duration-150"
-                style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 1 : 0 }}
+                style={{ height: `${heightPct}%`, minHeight: 1 }}
               />
               {showTopLabels && (
                 <div

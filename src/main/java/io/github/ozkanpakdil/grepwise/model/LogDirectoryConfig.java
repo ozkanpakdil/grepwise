@@ -10,6 +10,7 @@ public class LogDirectoryConfig {
     private String directoryPath;
     private String filePattern;
     private long scanIntervalSeconds;
+    private boolean enabled;
     // 'enabled' has been removed from configuration semantics. Kept via methods for backward compatibility.
 
     public LogDirectoryConfig() {
@@ -89,9 +90,6 @@ public class LogDirectoryConfig {
                 '}';
     }
 
-    // Deprecated compatibility methods - no effect
-    @Deprecated
-    public boolean isEnabled() { return true; }
-    @Deprecated
-    public void setEnabled(boolean enabled) { /* no-op */ }
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean _enabled) { enabled = _enabled; }
 }

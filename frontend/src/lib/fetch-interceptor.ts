@@ -72,10 +72,14 @@ export function installFetchAuthInterceptor() {
       // Skip attaching for authentication endpoints (login/refresh/logout/etc.)
       const isAuthEndpoint = urlString.includes('/api/auth/');
 
+      // Caller can explicitly skip Authorization header (to avoid CORS preflight)
+      const noAuthFlag = (init as any)?.gwNoAuth === true ||
+        (typeof input !== 'string' && !(input instanceof URL) ? (input as any).__gwNoAuth === true : false);
+
       let nextInput = input;
       let nextInit: RequestInit | undefined = init;
 
-      if (shouldAttach && !isAuthEndpoint) {
+      if (shouldAttach && !isAuthEndpoint && !noAuthFlag) {
         // Build headers preserving caller-provided headers
         const headers = new Headers(
           (init && init.headers) ||

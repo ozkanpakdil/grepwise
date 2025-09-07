@@ -905,28 +905,16 @@ public class LogSearchController {
 
         exec.submit(() -> {
             try {
-                // Initialize bucket map
-                long buckets = (long) Math.ceil((double) fRangeMs / fIntervalMs);
-                Map<Long, Integer> countsByTs = new TreeMap<>();
-                for (int i = 0; i < buckets; i++) {
-                    long ts = fs + (i * fIntervalMs);
-                    countsByTs.put(ts, 0);
-                }
+                // Initialize bucket count and counts array
+                int bucketCount = (int) Math.ceil((double) fRangeMs / fIntervalMs);
+                if (bucketCount <= 0) bucketCount = 1;
 
-                // Send init with UTC bucket starts
-                List<Map<String, Object>> initBuckets = new ArrayList<>();
-                for (Long ts : countsByTs.keySet()) {
-                    Map<String, Object> b = new HashMap<>();
-                    String iso = Instant.ofEpochMilli(ts).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                    b.put("timestamp", iso);
-                    b.put("count", 0);
-                    initBuckets.add(b);
-                }
+                // Send compact init (no full buckets array)
                 emitter.send(SseEmitter.event().name("init").data(Map.of(
                         "from", fs,
                         "to", fe,
                         "interval", fInterval,
-                        "buckets", initBuckets
+                        "bucketCount", bucketCount
                 )));
 
                 // Fetch all matching logs (synchronously for now)
@@ -942,50 +930,13 @@ public class LogSearchController {
                 // Progressively aggregate
                 int batch = 200; // update cadence
                 int processed = 0;
-                // Process logs in descending time order (latest to earliest) to fill bars from last seen backwards
+                // Process logs in descending time order (latest to earliest)
                 logs.sort((a, b) -> Long.compare(
                         b.recordTime() != null ? b.recordTime() : b.timestamp(),
                         a.recordTime() != null ? a.recordTime() : a.timestamp()
                 ));
-                for (LogEntry log : logs) {
-                    Long rt = log.recordTime();
-                    long ts = log.timestamp();
-                    Long chosen = null;
-                    if (rt != null && rt >= fs && rt < fe) {
-                        chosen = rt;
-                    } else if (ts >= fs && ts < fe) {
-                        chosen = ts;
-                    }
-                    if (chosen != null) {
-                        int idx = (int) ((chosen - fs) / fIntervalMs);
-                        if (idx >= 0 && idx < buckets) {
-                            long bucketTs = fs + (idx * fIntervalMs);
-                            countsByTs.put(bucketTs, countsByTs.get(bucketTs) + 1);
-                        }
-                    }
-                    processed++;
-                    if (processed % batch == 0) {
-                        // send partial snapshot
-                        List<Map<String, Object>> snapshot = countsByTs.entrySet().stream().map(e -> {
-                            Map<String, Object> m = new HashMap<>();
-                            String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                            m.put("timestamp", iso);
-                            m.put("count", e.getValue());
-                            return m;
-                        }).collect(Collectors.toList());
-                        emitter.send(SseEmitter.event().name("hist").data(snapshot));
-                    }
-                }
 
                 // Final snapshot and done
-                List<Map<String, Object>> finalSnapshot = countsByTs.entrySet().stream().map(e -> {
-                    Map<String, Object> m = new HashMap<>();
-                    String iso = Instant.ofEpochMilli(e.getKey()).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                    m.put("timestamp", iso);
-                    m.put("count", e.getValue());
-                    return m;
-                }).collect(Collectors.toList());
-                emitter.send(SseEmitter.event().name("hist").data(finalSnapshot));
                 emitter.send(SseEmitter.event().name("done").data(Map.of("total", logs.size())));
                 emitter.complete();
             } catch (Exception ex) {

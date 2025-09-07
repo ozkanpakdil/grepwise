@@ -31,16 +31,26 @@ type FilterValues = {
 
 const intervalToMs = (ival: string): number => {
   switch (ival) {
-    case '1m': return 60_000;
-    case '5m': return 5 * 60_000;
-    case '15m': return 15 * 60_000;
-    case '30m': return 30 * 60_000;
-    case '1h': return 60 * 60_000;
-    case '3h': return 3 * 60 * 60_000;
-    case '6h': return 6 * 60 * 60_000;
-    case '12h': return 12 * 60 * 60_000;
-    case '24h': return 24 * 60 * 60_000;
-    default: return 24 * 60 * 60_000; // safe default to daily
+    case '1m':
+      return 60_000;
+    case '5m':
+      return 5 * 60_000;
+    case '15m':
+      return 15 * 60_000;
+    case '30m':
+      return 30 * 60_000;
+    case '1h':
+      return 60 * 60_000;
+    case '3h':
+      return 3 * 60 * 60_000;
+    case '6h':
+      return 6 * 60 * 60_000;
+    case '12h':
+      return 12 * 60 * 60_000;
+    case '24h':
+      return 24 * 60 * 60_000;
+    default:
+      return 24 * 60 * 60_000; // safe default to daily
   }
 };
 
@@ -432,7 +442,6 @@ export default function SearchPage() {
 
       const logsUrl = `${apiUrl(`${config.apiPaths.logs}/search/stream`)}?${params.toString()}`;
       // Disable SSE timetable stream to reduce redundant calls; use REST histogram instead
-      const histUrl = '';
       setIsStreaming(true);
       // Track whether histogram SSE has initialized to decide fallback
       let histInited = false;
@@ -441,7 +450,7 @@ export default function SearchPage() {
       streamingRef.current = streaming;
 
       // Start timetable (histogram) SSE alongside logs
-      streaming.start(logsUrl, histUrl, {
+      streaming.start(logsUrl, {
         onLogsPage: (json) => {
           try {
             const logs: LogEntry[] = JSON.parse(json);
@@ -477,21 +486,6 @@ export default function SearchPage() {
           } catch (e) {
             console.error('timetable init parse error', e);
           }
-        },
-        onHistUpdate: (json) => {
-          try {
-            const snapshot: HistogramData[] = JSON.parse(json);
-            setHistogramData(snapshot);
-          } catch (e) {
-            console.error('timetable hist parse error', e);
-          }
-        },
-        onHistDone: () => {
-          setIsStreaming(false);
-        },
-        onHistError: () => {
-          console.error('SSE error (timetable stream)');
-          setIsStreaming(false);
         },
       });
 

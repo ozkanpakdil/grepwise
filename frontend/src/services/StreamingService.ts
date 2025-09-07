@@ -14,7 +14,7 @@ export class StreamingService {
   private logsEs: EventSource | null = null;
   private histEs: EventSource | null = null;
 
-  start(logsUrl: string, histogramUrl: string, cb: StreamCallbacks) {
+  start(logsUrl: string, cb: StreamCallbacks) {
     this.stopAll();
 
     const token = getAccessToken();
@@ -22,6 +22,7 @@ export class StreamingService {
     const esLogs = new EventSource(logsWithToken);
     this.logsEs = esLogs;
 
+    // Always listen for log pages and overall done on the main stream
     esLogs.addEventListener('page', (ev: MessageEvent) => {
       cb.onLogsPage?.((ev as any).data);
     });
@@ -36,33 +37,10 @@ export class StreamingService {
       cb.onLogsError?.(e);
     });
 
-    // Start histogram SSE only if URL is provided (optional)
-    if (histogramUrl) {
-      const histWithToken = this.appendToken(histogramUrl, token);
-      const esHist = new EventSource(histWithToken);
-      this.histEs = esHist;
-
-      esHist.addEventListener('init', (ev: MessageEvent) => {
-        cb.onHistInit?.((ev as any).data);
-      });
-      esHist.addEventListener('hist', (ev: MessageEvent) => {
-        cb.onHistUpdate?.((ev as any).data);
-      });
-      esHist.addEventListener('done', () => {
-        cb.onHistDone?.();
-        try {
-          esHist.close();
-        } catch {}
-        this.histEs = null;
-      });
-      esHist.addEventListener('error', (e) => {
-        cb.onHistError?.(e);
-        try {
-          esHist.close();
-        } catch {}
-        this.histEs = null;
-      });
-    }
+    // Consume histogram events (init/hist) directly from the logs stream
+    esLogs.addEventListener('init', (ev: MessageEvent) => {
+      cb.onHistInit?.((ev as any).data);
+    });
   }
 
   stopAll() {

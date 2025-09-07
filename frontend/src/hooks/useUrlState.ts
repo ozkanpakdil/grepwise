@@ -7,6 +7,7 @@ export type UrlState = {
   timeRange: SearchParams['timeRange'];
   startTime?: number;
   endTime?: number;
+  page?: number;
   pageSize: number;
   autoRefreshEnabled: boolean;
   autoRefreshInterval: string;
@@ -18,21 +19,24 @@ export function useUrlState() {
     if (state.query?.trim()) sp.set('query', state.query.trim());
     if (state.isRegex) sp.set('isRegex', 'true');
     sp.set('pageSize', String(state.pageSize));
+    // Always include page, defaulting to 1
+    sp.set('page', String(state.page ?? 1));
     if (state.autoRefreshEnabled) {
       sp.set('autoRefresh', 'on');
       sp.set('autoRefreshInterval', state.autoRefreshInterval);
     }
-    if (state.timeRange === 'custom' && state.startTime && state.endTime) {
-      sp.set('timeRange', 'custom');
+    // Always include timeRange
+    sp.set('timeRange', state.timeRange || '24h');
+    // Include start/end if provided, regardless of timeRange type
+    if (state.startTime != null && state.endTime != null) {
       sp.set('startTime', String(state.startTime));
       sp.set('endTime', String(state.endTime));
-    } else {
-      sp.set('timeRange', state.timeRange || '24h');
     }
     return sp;
   }, []);
 
   const parse = useCallback((): Partial<SearchParams> & {
+    page?: number;
     pageSize?: number;
     autoRefreshEnabled?: boolean;
     autoRefreshInterval?: string;
@@ -41,6 +45,7 @@ export function useUrlState() {
   } => {
     const sp = new URLSearchParams(window.location.search);
     const parsed: Partial<SearchParams> & {
+      page?: number;
       pageSize?: number;
       autoRefreshEnabled?: boolean;
       autoRefreshInterval?: string;
@@ -52,12 +57,14 @@ export function useUrlState() {
     const tr = (sp.get('timeRange') as SearchParams['timeRange']) || undefined;
     const st = sp.get('startTime');
     const et = sp.get('endTime');
+    const pg = sp.get('page');
     const ps = sp.get('pageSize');
     const ar = sp.get('autoRefresh');
     const ari = sp.get('autoRefreshInterval') || '10s';
     if (q) parsed.query = q;
     if (isRegex) parsed.isRegex = true;
     if (ps) parsed.pageSize = parseInt(ps, 10) || undefined;
+    if (pg) parsed.page = Math.max(1, parseInt(pg, 10) || 1);
     if (ar === 'on') parsed.autoRefreshEnabled = true;
     parsed.autoRefreshInterval = ari;
     if (tr === 'custom' && st && et) {

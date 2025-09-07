@@ -11,7 +11,7 @@ export default function SearchPagination({ totalCount, pageSize, currentPage, on
   if (totalCount === null || totalCount <= pageSize) return null;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   return (
-    <div className="flex items-center justify-between mt-3" data-testid="pagination">
+    <div className="flex items-center justify-between h-8" data-testid="pagination">
       <div className="text-sm text-muted-foreground">
         Page {currentPage} of {totalPages}
       </div>

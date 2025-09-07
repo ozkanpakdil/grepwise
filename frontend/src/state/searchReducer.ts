@@ -127,7 +127,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
     case 'SET_PAGE':
       return { ...state, currentPage: action.page };
     case 'SET_PAGE_SIZE':
-      return { ...state, pageSize: action.pageSize };
+      return { ...state, pageSize: action.pageSize, currentPage: 1 };
     case 'SET_HISTOGRAM':
       return { ...state, histogramData: action.data };
     case 'SET_TIMESLOTS':

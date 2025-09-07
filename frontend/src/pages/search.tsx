@@ -29,6 +29,21 @@ type FilterValues = {
   message: string;
 };
 
+const intervalToMs = (ival: string): number => {
+  switch (ival) {
+    case '1m': return 60_000;
+    case '5m': return 5 * 60_000;
+    case '15m': return 15 * 60_000;
+    case '30m': return 30 * 60_000;
+    case '1h': return 60 * 60_000;
+    case '3h': return 3 * 60 * 60_000;
+    case '6h': return 6 * 60 * 60_000;
+    case '12h': return 12 * 60 * 60_000;
+    case '24h': return 24 * 60 * 60_000;
+    default: return 24 * 60 * 60_000; // safe default to daily
+  }
+};
+
 export default function SearchPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,17 +54,6 @@ export default function SearchPage() {
   const { computeRange, pickInterval } = useTimeRange();
   const [pageSize, setPageSize] = useLocalStorage<number>('grepwise.dashboard.pagesize', 100);
   const [s, dispatch] = useReducer(searchReducer, { ...initialSearchState, pageSize });
-  // Listen for page size change requests coming from children (SearchResults)
-  useEffect(() => {
-    const handler = (e: any) => {
-      const newSize = parseInt(e?.detail, 10);
-      if (newSize && !Number.isNaN(newSize)) {
-        setPageSize(newSize);
-      }
-    };
-    window.addEventListener('grepwise:setPageSize', handler as any);
-    return () => window.removeEventListener('grepwise:setPageSize', handler as any);
-  }, [setPageSize]);
   const query = s.query;
   const setQuery = (v: string) => dispatch({ type: 'SET_QUERY', query: v });
   const isRegex = s.isRegex;
@@ -253,6 +257,12 @@ export default function SearchPage() {
           handleSearch(undefined, undefined, false, parsed.query);
         }
       }
+
+      // If page param is present, update current page and fetch that page
+      if (parsed.page && parsed.page > 1) {
+        setCurrentPage(parsed.page);
+        fetchPage(parsed.page);
+      }
     } catch (e) {
       console.warn('Failed to parse initial URL state', e);
     }
@@ -276,6 +286,12 @@ export default function SearchPage() {
         } else {
           setTimeRange((parsed.timeRange as any) || '30d');
           handleSearch(undefined, undefined, false, parsed.query);
+        }
+
+        // Handle page from URL on back/forward
+        if (parsed.page && parsed.page > 1) {
+          setCurrentPage(parsed.page);
+          fetchPage(parsed.page);
         }
       } catch (e) {
         console.warn('Failed to handle popstate', e);
@@ -400,10 +416,18 @@ export default function SearchPage() {
         query: trimmed,
         isRegex,
         timeRange: (!overrideRange ? timeRange : 'custom') as SearchParams['timeRange'],
-        startTime: overrideRange ? startTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? startTime : undefined,
-        endTime: overrideRange ? endTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? endTime : undefined,
+        startTime: overrideRange
+          ? startTime
+          : timeRange === 'custom' || timeRange === '7d' || timeRange === '30d'
+            ? startTime
+            : undefined,
+        endTime: overrideRange
+          ? endTime
+          : timeRange === 'custom' || timeRange === '7d' || timeRange === '30d'
+            ? endTime
+            : undefined,
         interval: overrideRange || timeRange === 'custom' || (timeRange && timeRange !== '24h') ? interval : undefined,
-        pageSize,
+        pageSize: s.pageSize,
       });
 
       const logsUrl = `${apiUrl(`${config.apiPaths.logs}/search/stream`)}?${params.toString()}`;
@@ -489,16 +513,7 @@ export default function SearchPage() {
 
           const synthesizeZeroBuckets = () => {
             try {
-              const ms =
-                fallbackInterval === '1m' ? 60_000 :
-                fallbackInterval === '5m' ? 300_000 :
-                fallbackInterval === '15m' ? 900_000 :
-                fallbackInterval === '30m' ? 1_800_000 :
-                fallbackInterval === '1h' ? 3_600_000 :
-                fallbackInterval === '3h' ? 10_800_000 :
-                fallbackInterval === '6h' ? 21_600_000 :
-                fallbackInterval === '12h' ? 43_200_000 :
-                86_400_000; // '24h' default
+              const ms = intervalToMs(fallbackInterval);
               const buckets: { timestamp: string; count: number }[] = [];
               const total = Math.max(1, Math.ceil((fEnd - fStart) / ms));
               for (let i = 0; i < total; i++) {
@@ -526,10 +541,16 @@ export default function SearchPage() {
                 let firstIdx = -1;
                 let lastIdx = -1;
                 for (let i = 0; i < list.length; i++) {
-                  if ((list[i]?.count || 0) > 0) { firstIdx = i; break; }
+                  if ((list[i]?.count || 0) > 0) {
+                    firstIdx = i;
+                    break;
+                  }
                 }
                 for (let i = list.length - 1; i >= 0; i--) {
-                  if ((list[i]?.count || 0) > 0) { lastIdx = i; break; }
+                  if ((list[i]?.count || 0) > 0) {
+                    lastIdx = i;
+                    break;
+                  }
                 }
                 if (firstIdx >= 0 && lastIdx >= firstIdx) {
                   const ts0 = new Date(list[firstIdx].timestamp).getTime();
@@ -542,17 +563,7 @@ export default function SearchPage() {
                     intervalMs = Math.max(1000, ts0 - new Date(list[firstIdx - 1].timestamp).getTime());
                   }
                   if (!intervalMs) {
-                    intervalMs = (
-                      fallbackInterval === '1m' ? 60_000 :
-                      fallbackInterval === '5m' ? 300_000 :
-                      fallbackInterval === '15m' ? 900_000 :
-                      fallbackInterval === '30m' ? 1_800_000 :
-                      fallbackInterval === '1h' ? 3_600_000 :
-                      fallbackInterval === '3h' ? 10_800_000 :
-                      fallbackInterval === '6h' ? 21_600_000 :
-                      fallbackInterval === '12h' ? 43_200_000 :
-                      86_400_000
-                    );
+                    intervalMs = intervalToMs(fallbackInterval);
                   }
                   // active range from first non-zero to just after last non-zero
                   let activeStart = ts0;
@@ -563,15 +574,14 @@ export default function SearchPage() {
                   activeEnd = Math.min(requestedEnd, activeEnd + pad);
                   const activeRangeMs = Math.max(1, activeEnd - activeStart);
                   const oneDay = 24 * 60 * 60 * 1000;
-                  const activeBuckets = (lastIdx - firstIdx + 1);
+                  const activeBuckets = lastIdx - firstIdx + 1;
                   // Heuristic: auto-zoom if activity spans <= 25% of requested window OR <= 1 day,
                   // OR if daily buckets and only a handful of active days (<= 3) out of many.
                   const manyBuckets = list.length >= 14; // ~two weeks+ when daily
                   const fewActiveDays = activeBuckets <= 3;
-                  const shouldZoom = (timeRange !== 'custom') && (
-                    activeRangeMs <= Math.min(requestedRangeMs * 0.25, oneDay) ||
-                    (manyBuckets && fewActiveDays)
-                  );
+                  const shouldZoom =
+                    timeRange !== 'custom' &&
+                    (activeRangeMs <= Math.min(requestedRangeMs * 0.25, oneDay) || (manyBuckets && fewActiveDays));
                   // Avoid infinite loops: only auto-zoom if we are not already zooming from this search
                   if (shouldZoom) {
                     // Switch to custom and re-run search within active window
@@ -601,9 +611,18 @@ export default function SearchPage() {
             query: currentEditorValue || '',
             isRegex,
             timeRange: (overrideRange ? 'custom' : timeRange) as SearchParams['timeRange'],
-            startTime: overrideRange ? startTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? startTime : undefined,
-            endTime: overrideRange ? endTime : (timeRange === 'custom' || timeRange === '7d' || timeRange === '30d') ? endTime : undefined,
-            pageSize,
+            startTime: overrideRange
+              ? startTime
+              : timeRange === 'custom' || timeRange === '7d' || timeRange === '30d'
+                ? startTime
+                : undefined,
+            endTime: overrideRange
+              ? endTime
+              : timeRange === 'custom' || timeRange === '7d' || timeRange === '30d'
+                ? endTime
+                : undefined,
+            page: 1,
+            pageSize: s.pageSize,
             autoRefreshEnabled,
             autoRefreshInterval,
           });
@@ -638,7 +657,6 @@ export default function SearchPage() {
   const fetchPage = async (page: number) => {
     try {
       setExpandedLogId(null);
-      if (totalCount === null) return;
       const trimmed = (editorRef.current?.getValue() || query).trim();
       const st = customStartTime;
       const et = customEndTime;
@@ -649,11 +667,31 @@ export default function SearchPage() {
         startTime: st,
         endTime: et,
         page,
-        pageSize,
+        pageSize: s.pageSize,
       });
       setSearchResults(data.items || []);
       setTotalCount(data.total ?? totalCount);
-      setCurrentPage(data.page || page);
+      const newPage = data.page || page;
+      setCurrentPage(newPage);
+      // Update URL to reflect current page for shareability
+      try {
+        // Preserve the exact start/end from current state or URL; do not recompute on pagination
+        const parsed = parseFromLocation();
+        const stForUrl = customStartTime ?? parsed.startTime;
+        const etForUrl = customEndTime ?? parsed.endTime;
+        const sp = serializeToParams({
+          query,
+          isRegex,
+          timeRange,
+          startTime: stForUrl,
+          endTime: etForUrl,
+          page: newPage,
+          pageSize: s.pageSize,
+          autoRefreshEnabled,
+          autoRefreshInterval,
+        });
+        pushUrl(sp);
+      } catch {}
     } catch (e) {
       console.error('Pagination error', e);
       toast({
@@ -1019,17 +1057,24 @@ export default function SearchPage() {
           <div
             className="fixed z-50"
             style={{
-              top: (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
-                ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect().bottom + window.scrollY
-                : 64) + 'px',
-              left: (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
-                ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect().left + window.scrollX
-                : 16) + 'px',
+              top:
+                (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
+                  ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect()
+                      .bottom + window.scrollY
+                  : 64) + 'px',
+              left:
+                (typeof window !== 'undefined' && document.querySelector('[data-time-range-trigger]')
+                  ? (document.querySelector('[data-time-range-trigger]') as HTMLElement).getBoundingClientRect().left +
+                    window.scrollX
+                  : 16) + 'px',
             }}
           >
             <TimeRangePicker
               timeRange={timeRange}
-              setTimeRange={(tr) => { setTimeRange(tr); if (tr !== 'custom') setShowTimePanel(false); }}
+              setTimeRange={(tr) => {
+                setTimeRange(tr);
+                if (tr !== 'custom') setShowTimePanel(false);
+              }}
               customStartTime={customStartTime}
               customEndTime={customEndTime}
               setCustomStartTime={setCustomStartTime}
@@ -1102,13 +1147,12 @@ export default function SearchPage() {
         </div>
       ) : null}
 
-
       {searchResults.length > 0 && (
         <SearchResults
           results={searchResults}
           processedResults={processedResults}
           totalCount={totalCount}
-          pageSize={pageSize}
+          pageSize={s.pageSize}
           currentPage={currentPage}
           sortColumn={sortColumn}
           sortDirection={sortDirection}
@@ -1126,6 +1170,34 @@ export default function SearchPage() {
           onExportCsv={onExportCsv}
           onExportJson={onExportJson}
           onPageChange={(page) => fetchPage(page)}
+          onPageSizeChange={(newSize) => {
+            if (!newSize || Number.isNaN(newSize)) return;
+            // Persist and update state
+            setPageSize(newSize);
+            dispatch({ type: 'SET_PAGE_SIZE', pageSize: newSize });
+            dispatch({ type: 'SET_PAGE', page: 1 });
+            // Fetch first page with new size
+            fetchPage(1);
+            // Update URL for shareability
+            try {
+              // Preserve current start/end from state or URL when page size changes
+              const parsed = parseFromLocation();
+              const stForUrl = customStartTime ?? parsed.startTime;
+              const etForUrl = customEndTime ?? parsed.endTime;
+              const sp = serializeToParams({
+                query,
+                isRegex,
+                timeRange,
+                startTime: stForUrl,
+                endTime: etForUrl,
+                page: 1,
+                pageSize: newSize,
+                autoRefreshEnabled,
+                autoRefreshInterval,
+              });
+              pushUrl(sp);
+            } catch {}
+          }}
         />
       )}
 

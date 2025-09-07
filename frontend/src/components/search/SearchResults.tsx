@@ -29,6 +29,7 @@ type Props = {
   onExportCsv: (params: SearchParams) => void;
   onExportJson: (params: SearchParams) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 };
 
 export default function SearchResults(props: Props) {
@@ -53,31 +54,40 @@ export default function SearchResults(props: Props) {
     onExportCsv,
     onExportJson,
     onPageChange,
-  } = props;
+    onPageSizeChange,
+    } = props;
 
   return (
     <div className="space-y-2" data-testid="results-section">
       <div className="flex justify-between items-center">
         <div>
-          <span className="text-sm text-muted-foreground" data-testid="results-summary">
-            Showing {processedResults.length} of {totalCount ?? '…'} logs
-          </span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="results-summary">
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Show:</span>
+              <select
+                className="h-8 w-[110px] rounded-md border border-input bg-background px-2 text-xs"
+                value={String(pageSize)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (onPageSizeChange) onPageSizeChange(val);
+                }}
+                data-testid="page-size"
+              >
+                <option value="10">10 Per Page</option>
+                <option value="20">20 Per Page</option>
+                <option value="50">50 Per Page</option>
+                <option value="100">100 Per Page</option>
+              </select>
+            </div>
+            <SearchPagination
+              totalCount={totalCount}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Show:</span>
-            <select
-              className="h-8 w-[110px] rounded-md border border-input bg-background px-2 text-xs"
-              value={String(pageSize)}
-              onChange={(e) => onPageChange(1) || (window.dispatchEvent(new CustomEvent('grepwise:setPageSize', { detail: parseInt(e.target.value, 10) } as any)))}
-              data-testid="page-size"
-            >
-              <option value="10">10 Per Page</option>
-              <option value="20">20 Per Page</option>
-              <option value="50">50 Per Page</option>
-              <option value="100">100 Per Page</option>
-            </select>
-          </div>
           <Button
             variant="outline"
             size="sm"
@@ -229,13 +239,6 @@ export default function SearchResults(props: Props) {
           </table>
         </div>
       </div>
-
-      <SearchPagination
-        totalCount={totalCount}
-        pageSize={pageSize}
-        currentPage={currentPage}
-        onPageChange={onPageChange}
-      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package io.github.ozkanpakdil.grepwise.service.alerting;
 
 import io.github.ozkanpakdil.grepwise.model.Alarm;
+import io.github.ozkanpakdil.grepwise.service.RedactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,7 @@ public class OpsGenieService {
             // Create the payload according to OpsGenie Alert API v2
             Map<String, Object> payload = new HashMap<>();
             payload.put("message", "Alarm Triggered: " + alarm.getName());
+            message = RedactionUtil.redactIfSensitive(message, "***");
             payload.put("description", message);
             payload.put("priority", "P1");
             payload.put("source", "GrepWise");
@@ -104,6 +106,7 @@ public class OpsGenieService {
             // Create the payload according to OpsGenie Alert API v2
             Map<String, Object> payload = new HashMap<>();
             payload.put("message", "Grouped Alarms Triggered (" + alarmCount + " alarms)");
+            message = RedactionUtil.redactIfSensitive(message, "***");
             payload.put("description", message);
             payload.put("priority", "P1");
             payload.put("source", "GrepWise");

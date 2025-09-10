@@ -3,6 +3,7 @@ package io.github.ozkanpakdil.grepwise.controller;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.repository.LogRepository;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
+import io.github.ozkanpakdil.grepwise.service.RedactionUtil;
 import io.github.ozkanpakdil.grepwise.service.SearchCacheService;
 import io.github.ozkanpakdil.grepwise.service.SplQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +36,26 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/logs")
 @CrossOrigin(origins = "*") // Allow requests from any origin for development
 public class LogSearchController {
+    private static final String SEARCH_MASK = "*****";
+
+    private LogEntry redactLog(LogEntry log, String mask) {
+        if (log == null) return null;
+        // Redact message, rawContent, and metadata values
+        String redactedMessage = RedactionUtil.redactIfSensitive(log.message(), mask);
+        String redactedRaw = RedactionUtil.redactIfSensitive(log.rawContent(), mask);
+        Map<String, String> md = new HashMap<>(log.metadata() == null ? Collections.emptyMap() : log.metadata());
+        RedactionUtil.redactMetadataValues(md, mask);
+        return new io.github.ozkanpakdil.grepwise.model.LogEntry(
+                log.id(),
+                log.timestamp(),
+                log.recordTime(),
+                log.level(),
+                redactedMessage,
+                log.source(),
+                md,
+                redactedRaw
+        );
+    }
 
     private final LuceneService luceneService;
     private final SplQueryService splQueryService;
@@ -123,7 +144,8 @@ public class LogSearchController {
 
         try {
             List<LogEntry> logs = luceneService.search(query, isRegex, startTime, endTime);
-            return ResponseEntity.ok(logs);
+            List<LogEntry> redacted = logs.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+            return ResponseEntity.ok(redacted);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -175,7 +197,12 @@ public class LogSearchController {
             SplQueryService.SplQueryResult result = splQueryService.executeSplQuery(splQuery);
 
             return switch (result.getResultType()) {
-                case LOG_ENTRIES -> ResponseEntity.ok(result.getLogEntries());
+                case LOG_ENTRIES -> {
+                    List<LogEntry> redacted = result.getLogEntries().stream()
+                            .map(l -> redactLog(l, SEARCH_MASK))
+                            .collect(Collectors.toList());
+                    yield ResponseEntity.ok(redacted);
+                }
                 case STATISTICS -> ResponseEntity.ok(result.getStatistics());
                 default -> ResponseEntity.badRequest().body("Unknown result type");
             };
@@ -193,13 +220,17 @@ public class LogSearchController {
      * @return The log entry
      */
     @GetMapping("/{id}")
-    public ResponseEntity<LogEntry> getLogById(@PathVariable String id) {
+    public ResponseEntity<LogEntry> getLogById(@PathVariable String id,
+                                               @RequestParam(required = false, defaultValue = "false") boolean reveal) {
         try {
             LogEntry log = luceneService.findById(id);
             if (log == null) {
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(log);
+            if (reveal) {
+                return ResponseEntity.ok(log);
+            }
+            return ResponseEntity.ok(redactLog(log, SEARCH_MASK));
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -214,7 +245,9 @@ public class LogSearchController {
     public ResponseEntity<List<LogEntry>> getAllLogs() {
         try {
             // Pass null for query and time range to get all logs
-            return ResponseEntity.ok(luceneService.search(null, false, null, null));
+            List<LogEntry> logs = luceneService.search(null, false, null, null);
+            List<LogEntry> redacted = logs.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+            return ResponseEntity.ok(redacted);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -229,7 +262,9 @@ public class LogSearchController {
     @GetMapping("/level/{level}")
     public ResponseEntity<List<LogEntry>> getLogsByLevel(@PathVariable String level) {
         try {
-            return ResponseEntity.ok(luceneService.findByLevel(level));
+            List<LogEntry> logs = luceneService.findByLevel(level);
+            List<LogEntry> redacted = logs.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+            return ResponseEntity.ok(redacted);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -244,7 +279,9 @@ public class LogSearchController {
     @GetMapping("/source/{source}")
     public ResponseEntity<List<LogEntry>> getLogsBySource(@PathVariable String source) {
         try {
-            return ResponseEntity.ok(luceneService.findBySource(source));
+            List<LogEntry> logs = luceneService.findBySource(source);
+            List<LogEntry> redacted = logs.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+            return ResponseEntity.ok(redacted);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -263,7 +300,9 @@ public class LogSearchController {
             @RequestParam long endTime) {
         try {
             // Use search with null query and specified time range
-            return ResponseEntity.ok(luceneService.search(null, false, startTime, endTime));
+            List<LogEntry> logs = luceneService.search(null, false, startTime, endTime);
+            List<LogEntry> redacted = logs.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+            return ResponseEntity.ok(redacted);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -925,7 +964,8 @@ public class LogSearchController {
                 // Send first page quickly
                 int ps = Math.max(1, pageSize == null ? 100 : pageSize);
                 List<LogEntry> firstPage = logs.subList(0, Math.min(ps, logs.size()));
-                emitter.send(SseEmitter.event().name("page").data(firstPage));
+                List<LogEntry> redFirst = firstPage.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
+                emitter.send(SseEmitter.event().name("page").data(redFirst));
 
                 // Progressively aggregate
                 int batch = 200; // update cadence
@@ -1156,9 +1196,10 @@ public class LogSearchController {
             int fromIndex = Math.min((p - 1) * ps, total);
             int toIndex = Math.min(fromIndex + ps, total);
             List<LogEntry> items = logs.subList(fromIndex, toIndex);
+            List<LogEntry> redactedItems = items.stream().map(l -> redactLog(l, SEARCH_MASK)).collect(Collectors.toList());
 
             Map<String, Object> body = new HashMap<>();
-            body.put("items", items);
+            body.put("items", redactedItems);
             body.put("total", total);
             body.put("page", p);
             body.put("pageSize", ps);

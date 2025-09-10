@@ -26,11 +26,18 @@ import { configBackupApi } from '@/api/configBackup';
 import { profileApi, ProfileUpdateRequest } from '@/api/profile';
 import { LdapSettings, ldapSettingsApi } from '@/api/ldapSettings';
 import { settingsPropertiesApi } from '@/api/settingsProperties';
+import { Link } from 'react-router-dom';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const auth = getAuthState();
   const user: any = (auth?.state?.user as any) || null;
+  const roleNames: string[] = Array.isArray((user as any)?.roleNames)
+    ? (user as any).roleNames
+    : Array.isArray((user as any)?.roles)
+    ? (user as any).roles
+    : [];
+  const isAdmin = roleNames.includes('ADMIN');
   const { toast } = useToast();
 
   // User profile form state
@@ -910,6 +917,21 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account settings and preferences</p>
       </div>
+
+      {/* Admin tools */}
+      {isAdmin && (
+        <div className="border rounded-md p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">Redaction</h3>
+              <p className="text-sm text-muted-foreground">Configure redaction rules for search results and alerts</p>
+            </div>
+            <Link to="/admin/redaction" className="inline-flex">
+              <Button>Open Redaction Editor</Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Theme Settings */}
       <div className="space-y-4">

@@ -1,8 +1,8 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import SearchFilters, { FilterValues } from '@/components/search/SearchFilters';
 import SearchPagination from '@/components/search/SearchPagination';
-import { LogEntry, SearchParams } from '@/api/logSearch';
+import { LogEntry, SearchParams, getLogById } from '@/api/logSearch';
 
 export type SortColumn = 'timestamp' | 'level' | 'message' | 'source' | null;
 export type SortDirection = 'asc' | 'desc';
@@ -56,6 +56,38 @@ export default function SearchResults(props: Props) {
     onPageChange,
     onPageSizeChange,
     } = props;
+
+  // State for reveal/unredact of the currently expanded row
+  const [revealedLog, setRevealedLog] = useState<LogEntry | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
+
+  // Clear reveal state whenever expanded row changes
+  useEffect(() => {
+    setRevealedLog(null);
+    setIsRevealing(false);
+    setRevealError(null);
+  }, [expandedLogId]);
+
+  const handleRevealClick = async (e: React.MouseEvent, log: LogEntry) => {
+    e.stopPropagation();
+    if (revealedLog && revealedLog.id === log.id) {
+      // Hide again
+      setRevealedLog(null);
+      setRevealError(null);
+      return;
+    }
+    try {
+      setIsRevealing(true);
+      setRevealError(null);
+      const full = await getLogById(log.id, true);
+      setRevealedLog(full);
+    } catch (err: any) {
+      setRevealError(err?.message || 'Failed to reveal');
+    } finally {
+      setIsRevealing(false);
+    }
+  };
 
   return (
     <div className="space-y-2" data-testid="results-section">
@@ -190,18 +222,34 @@ export default function SearchResults(props: Props) {
                     <tr className="border-b bg-muted/20" data-testid="result-row-expanded">
                       <td colSpan={4} className="px-4 py-3">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-sm font-medium">Log Details</h3>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRowClick(log.id);
-                            }}
-                          >
-                            Close
-                          </Button>
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-sm font-medium">Log Details</h3>
+                            <span className="text-[10px] text-muted-foreground">Sensitive fields are redacted by default</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => handleRevealClick(e, log)}
+                              disabled={isRevealing}
+                            >
+                              {revealedLog && revealedLog.id === log.id ? 'Hide secrets' : isRevealing ? 'Revealing…' : 'Reveal secrets'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRowClick(log.id);
+                              }}
+                            >
+                              Close
+                            </Button>
+                          </div>
                         </div>
+                        {revealError && (
+                          <div className="text-[11px] text-red-600 mb-2">{revealError}</div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs font-medium">Timestamp</p>
@@ -222,14 +270,20 @@ export default function SearchResults(props: Props) {
                         </div>
                         <div className="mt-3">
                           <p className="text-xs font-medium">Message</p>
-                          <p className="text-xs mt-1 p-2 bg-background rounded-md">{log.message}</p>
+                          <p className="text-xs mt-1 p-2 bg-background rounded-md">{revealedLog && revealedLog.id === log.id ? revealedLog.message : log.message}</p>
                         </div>
                         <div className="mt-3">
                           <p className="text-xs font-medium">Metadata</p>
                           <pre className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">
-                            {JSON.stringify(log.metadata, null, 2)}
+                            {JSON.stringify((revealedLog && revealedLog.id === log.id ? revealedLog.metadata : log.metadata), null, 2)}
                           </pre>
                         </div>
+                        { (revealedLog && revealedLog.id === log.id && revealedLog.rawContent) ? (
+                          <div className="mt-3">
+                            <p className="text-xs font-medium">Raw</p>
+                            <pre className="text-xs mt-1 p-2 bg-background rounded-md overflow-x-auto">{revealedLog.rawContent}</pre>
+                          </div>
+                        ) : null }
                       </td>
                     </tr>
                   )}

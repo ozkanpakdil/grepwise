@@ -13,6 +13,7 @@ import UsersPage from '@/pages/users';
 import MonitoringPage from '@/pages/monitoring';
 import NotFoundPage from '@/pages/not-found';
 import RolesPage from '@/pages/roles';
+import RedactionEditorPage from '@/pages/redaction-editor';
 
 import { useEffect, useState } from 'react';
 
@@ -61,6 +62,7 @@ function App() {
           <Route path="/monitoring" element={isAuthenticated ? <MonitoringPage /> : <Navigate to="/login" replace />} />
           <Route path="/users" element={isAuthenticated ? (isAdmin ? <UsersPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
           <Route path="/roles" element={isAuthenticated ? (isAdmin ? <RolesPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
+          <Route path="/admin/redaction" element={isAuthenticated ? (isAdmin ? <RedactionEditorPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
         </Route>
 
         {/* 404 route */}

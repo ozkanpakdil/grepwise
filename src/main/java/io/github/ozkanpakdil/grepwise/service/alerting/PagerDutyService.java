@@ -1,6 +1,7 @@
 package io.github.ozkanpakdil.grepwise.service.alerting;
 
 import io.github.ozkanpakdil.grepwise.model.Alarm;
+import io.github.ozkanpakdil.grepwise.service.RedactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ public class PagerDutyService {
 
             Map<String, Object> payload_details = new HashMap<>();
             payload_details.put("summary", "Alarm Triggered: " + alarm.getName());
+            message = RedactionUtil.redactIfSensitive(message, "***");
             payload_details.put("source", "GrepWise");
             payload_details.put("severity", "critical");
             payload_details.put("component", "Log Monitoring");
@@ -104,6 +106,7 @@ public class PagerDutyService {
 
             Map<String, Object> payload_details = new HashMap<>();
             payload_details.put("summary", "Grouped Alarms Triggered (" + alarmCount + " alarms)");
+            message = RedactionUtil.redactIfSensitive(message, "***");
             payload_details.put("source", "GrepWise");
             payload_details.put("severity", "critical");
             payload_details.put("component", "Log Monitoring");

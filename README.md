@@ -155,6 +155,7 @@ PW_NO_SERVER=1 BASE_URL=http://localhost:3000 npm test
 - Alarm creation and management
 - User authentication and authorization
 - Dark/light theme support
+- Redaction of sensitive fields (configurable via config/redaction.json); in log details it can be revealed
 
 ## Development
 
@@ -170,6 +171,29 @@ PW_NO_SERVER=1 BASE_URL=http://localhost:3000 npm test
 - UI components use Tailwind CSS and shadcn/ui
 - State management is handled with Zustand
 - The application is responsive and works on mobile devices
+
+## Configuration
+
+Redaction configuration
+- Backend loads redaction settings from: ~/.GrepWise/config/redaction.json
+- Grouped format (required):
+  {
+    "[\"password\",\"passwd\"]": { "patterns": [
+      "(?i)(authorization\\s*:\\s*Bearer\\s+)([^\\n\\r]+)"
+    ]},
+    "cardnumber": { "patterns": [
+      "(?i)(card(number)?\\s*[:=]\\s*)(\\b(?:\\d[ -]*?){13,19}\\b)"
+    ]}
+  }
+  Note: JSON object keys must be strings. For multi-key groups, the property name is a JSON-stringified array (as shown above).
+- If the file is missing, it will be created on startup with defaults ["password","passwd"]. If a legacy flat file is detected on startup, it will be migrated and rewritten to the grouped format automatically.
+- Managing at runtime:
+  - GET /api/redaction/config – returns groups (authoritative) and also convenience flattened keys/patterns
+  - POST /api/redaction/config – grouped-map format only; flat {keys,patterns} is rejected
+  - Legacy: GET /api/redaction/keys, POST /api/redaction/keys, POST /api/redaction/reload
+- Redaction applies to search results and exports (mask *****), and alerts (mask ***). Use the Reveal button in log details to fetch unredacted content for a single row.
+
+See docs/REDACTION.md for more examples (telephone, credit card, idnumber).
 
 ## Troubleshooting
 

@@ -102,3 +102,14 @@ export const exportLogsAsJson = (params: SearchParams): string => {
 
   return url;
 };
+
+// Fetch a single log by ID; when reveal=true, returns unredacted content
+export async function getLogById(id: string, reveal: boolean = false): Promise<LogEntry> {
+  const url = `${API_URL}/${encodeURIComponent(id)}${reveal ? '?reveal=true' : ''}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `Failed to fetch log ${id}`);
+  }
+  return (await res.json()) as LogEntry;
+}

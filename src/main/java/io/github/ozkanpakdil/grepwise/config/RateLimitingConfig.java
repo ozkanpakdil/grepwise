@@ -47,8 +47,10 @@ public class RateLimitingConfig {
      * This is used for sensitive operations like user management.
      */
     private Bucket createAdminBucket() {
+        // Increase admin limits to better accommodate normal UI refresh bursts
+        // Old: 20 req/min. New: burst 60 with 60/min refill.
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1))))
                 .build();
     }
 

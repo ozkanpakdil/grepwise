@@ -3,12 +3,20 @@ package io.github.ozkanpakdil.grepwise.repository;
 import io.github.ozkanpakdil.grepwise.model.Permission;
 import org.springframework.stereotype.Repository;
 
+import jakarta.annotation.PostConstruct;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static io.github.ozkanpakdil.grepwise.GrepWiseApplication.CONFIG_DIR;
 
 /**
  * Repository for storing and retrieving permission information.
@@ -18,6 +26,38 @@ import java.util.stream.Collectors;
 @Repository
 public class PermissionRepository {
     private final Map<String, Permission> permissions = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private final File dataFile = new File(CONFIG_DIR + File.separator + "permissions.json");
+
+    @PostConstruct
+    private void loadFromDisk() {
+        try {
+            if (dataFile.exists()) {
+                Permission[] arr = objectMapper.readValue(dataFile, Permission[].class);
+                for (Permission p : arr) {
+                    if (p.getId() == null || p.getId().isEmpty()) {
+                        p.setId(UUID.randomUUID().toString());
+                    }
+                    permissions.put(p.getId(), p);
+                }
+            } else {
+                if (!dataFile.getParentFile().exists()) {
+                    dataFile.getParentFile().mkdirs();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void persist() {
+        try {
+            if (!dataFile.getParentFile().exists()) {
+                dataFile.getParentFile().mkdirs();
+            }
+            objectMapper.writeValue(dataFile, new ArrayList<>(permissions.values()));
+        } catch (IOException ignored) {
+        }
+    }
 
     /**
      * Save a permission.
@@ -38,6 +78,7 @@ public class PermissionRepository {
         permission.setUpdatedAt(now);
 
         permissions.put(permission.getId(), permission);
+        persist();
         return permission;
     }
 
@@ -92,7 +133,11 @@ public class PermissionRepository {
      * @return true if the permission was deleted, false otherwise
      */
     public boolean deleteById(String id) {
-        return permissions.remove(id) != null;
+        boolean removed = permissions.remove(id) != null;
+        if (removed) {
+            persist();
+        }
+        return removed;
     }
 
     /**

@@ -3,12 +3,20 @@ package io.github.ozkanpakdil.grepwise.repository;
 import io.github.ozkanpakdil.grepwise.model.User;
 import org.springframework.stereotype.Repository;
 
+import jakarta.annotation.PostConstruct;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static io.github.ozkanpakdil.grepwise.GrepWiseApplication.CONFIG_DIR;
 
 /**
  * Repository for storing and retrieving user information.
@@ -18,6 +26,41 @@ import java.util.stream.Collectors;
 @Repository
 public class UserRepository {
     private final Map<String, User> users = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private final File dataFile = new File(CONFIG_DIR + File.separator + "users.json");
+
+    @PostConstruct
+    private void loadFromDisk() {
+        try {
+            if (dataFile.exists()) {
+                User[] arr = objectMapper.readValue(dataFile, User[].class);
+                for (User u : arr) {
+                    if (u.getId() == null || u.getId().isEmpty()) {
+                        u.setId(UUID.randomUUID().toString());
+                    }
+                    users.put(u.getId(), u);
+                }
+            } else {
+                // Ensure directory exists for future saves
+                if (!dataFile.getParentFile().exists()) {
+                    dataFile.getParentFile().mkdirs();
+                }
+            }
+        } catch (Exception ignored) {
+            // If load fails, start with empty in-memory store
+        }
+    }
+
+    private void persist() {
+        try {
+            if (!dataFile.getParentFile().exists()) {
+                dataFile.getParentFile().mkdirs();
+            }
+            objectMapper.writeValue(dataFile, new ArrayList<>(users.values()));
+        } catch (IOException ignored) {
+            // Best-effort persistence; ignore IO errors to avoid breaking API calls
+        }
+    }
 
     /**
      * Save a user.
@@ -38,6 +81,7 @@ public class UserRepository {
         user.setUpdatedAt(now);
 
         users.put(user.getId(), user);
+        persist();
         return user;
     }
 
@@ -117,7 +161,11 @@ public class UserRepository {
      * @return true if the user was deleted, false otherwise
      */
     public boolean deleteById(String id) {
-        return users.remove(id) != null;
+        boolean removed = users.remove(id) != null;
+        if (removed) {
+            persist();
+        }
+        return removed;
     }
 
     /**

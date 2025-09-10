@@ -2,7 +2,6 @@ package io.github.ozkanpakdil.grepwise.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ozkanpakdil.grepwise.GrepWiseApplication;
 import io.github.ozkanpakdil.grepwise.model.LogDirectoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +14,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.github.ozkanpakdil.grepwise.GrepWiseApplication.CONFIG_DIR;
+
 /**
  * Repository for storing and retrieving log directory configurations.
  * Persists configurations to a simple json file for durability across restarts.
@@ -22,9 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Repository
 public class LogDirectoryConfigRepository {
     private static final Logger logger = LoggerFactory.getLogger(LogDirectoryConfigRepository.class);
-    private static final String CONFIG_DIR = System.getProperty("user.home")
-            + File.separator + "." + GrepWiseApplication.appName + File.separator + "config";
-    private static final String APP_SETTINGS_FILE = CONFIG_DIR + File.separator + "log-sources.json";
+    private static final String LOG_SOURCES_CONFIG_FILE = CONFIG_DIR + File.separator + "log-sources.json";
     private static final String KEY_LOG_DIR_CONFIGS = "logDirectoryConfigs"; // JSON array value
 
     private final Map<String, LogDirectoryConfig> configs = new ConcurrentHashMap<>();
@@ -110,9 +109,9 @@ public class LogDirectoryConfigRepository {
 
     private void loadFromJson() {
         try {
-            File file = new File(APP_SETTINGS_FILE);
+            File file = new File(LOG_SOURCES_CONFIG_FILE);
             if (!file.exists()) {
-                logger.info("JSON settings file not found: {}", APP_SETTINGS_FILE);
+                logger.info("JSON settings file not found: {}", LOG_SOURCES_CONFIG_FILE);
                 return;
             }
             Map<String, Object> root = objectMapper.readValue(file, Map.class);
@@ -130,7 +129,7 @@ public class LogDirectoryConfigRepository {
                 }
                 configs.put(c.getId(), c);
             }
-            logger.info("Loaded {} log directory configs from {}", configs.size(), APP_SETTINGS_FILE);
+            logger.info("Loaded {} log directory configs from {}", configs.size(), LOG_SOURCES_CONFIG_FILE);
         } catch (Exception e) {
             logger.error("Failed to load log directory configs from JSON", e);
         }
@@ -142,7 +141,7 @@ public class LogDirectoryConfigRepository {
             if (!dir.exists() && !dir.mkdirs()) {
                 logger.warn("Could not create config directory at {}", dir.getAbsolutePath());
             }
-            File file = new File(APP_SETTINGS_FILE);
+            File file = new File(LOG_SOURCES_CONFIG_FILE);
             Map<String, Object> root = Map.of(
                     KEY_LOG_DIR_CONFIGS, new ArrayList<>(configs.values())
             );

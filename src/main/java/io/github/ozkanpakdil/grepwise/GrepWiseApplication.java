@@ -9,12 +9,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
+import java.io.File;
+
 @SpringBootApplication
 @EnableScheduling
 public class GrepWiseApplication {
     private static final Logger logger = LoggerFactory.getLogger(GrepWiseApplication.class);
 
     public static String appName = "GrepWise";
+    public static final String CONFIG_DIR = System.getProperty("user.home")
+            + File.separator + "." + GrepWiseApplication.appName + File.separator + "config";
+
 
     public static void main(String[] args) {
         SpringApplication.run(GrepWiseApplication.class, args);

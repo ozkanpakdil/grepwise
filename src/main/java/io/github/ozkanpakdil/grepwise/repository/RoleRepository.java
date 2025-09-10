@@ -1,16 +1,23 @@
 package io.github.ozkanpakdil.grepwise.repository;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.ozkanpakdil.grepwise.model.Permission;
 import io.github.ozkanpakdil.grepwise.model.Role;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static io.github.ozkanpakdil.grepwise.GrepWiseApplication.CONFIG_DIR;
 
 /**
  * Repository for storing and retrieving role information.
@@ -20,9 +27,41 @@ import java.util.stream.Collectors;
 @Repository
 public class RoleRepository {
     private final Map<String, Role> roles = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private final File dataFile = new File(CONFIG_DIR + File.separator + "roles.json");
 
     @Autowired
     private PermissionRepository permissionRepository;
+
+    @PostConstruct
+    private void loadFromDisk() {
+        try {
+            if (dataFile.exists()) {
+                Role[] arr = objectMapper.readValue(dataFile, Role[].class);
+                for (Role r : arr) {
+                    if (r.getId() == null || r.getId().isEmpty()) {
+                        r.setId(UUID.randomUUID().toString());
+                    }
+                    roles.put(r.getId(), r);
+                }
+            } else {
+                if (!dataFile.getParentFile().exists()) {
+                    dataFile.getParentFile().mkdirs();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void persist() {
+        try {
+            if (!dataFile.getParentFile().exists()) {
+                dataFile.getParentFile().mkdirs();
+            }
+            objectMapper.writeValue(dataFile, new ArrayList<>(roles.values()));
+        } catch (IOException ignored) {
+        }
+    }
 
     /**
      * Save a role.
@@ -43,6 +82,7 @@ public class RoleRepository {
         role.setUpdatedAt(now);
 
         roles.put(role.getId(), role);
+        persist();
         return role;
     }
 
@@ -85,7 +125,11 @@ public class RoleRepository {
      * @return true if the role was deleted, false otherwise
      */
     public boolean deleteById(String id) {
-        return roles.remove(id) != null;
+        boolean removed = roles.remove(id) != null;
+        if (removed) {
+            persist();
+        }
+        return removed;
     }
 
     /**

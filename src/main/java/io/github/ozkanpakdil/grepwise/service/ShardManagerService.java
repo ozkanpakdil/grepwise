@@ -65,15 +65,17 @@ public class ShardManagerService {
         this.shardConfiguration = config;
         this.shardingEnabled = config.isShardingEnabled();
 
-        // Update shard node map
+        // Update shard node map with deterministic sequential node IDs
         shardNodeMap.clear();
-        shardNodeMap.put(localNodeId, localNodeUrl);
+        int counter = 1;
+        shardNodeMap.put("node" + counter, localNodeUrl); // ensure local node is node1
+        counter++;
 
         if (config.getShardNodes() != null) {
-            for (int i = 0; i < config.getShardNodes().size(); i++) {
-                String nodeUrl = config.getShardNodes().get(i);
-                if (!nodeUrl.equals(localNodeUrl)) {
-                    shardNodeMap.put("node" + (i + 2), nodeUrl);
+            for (String nodeUrl : config.getShardNodes()) {
+                if (!Objects.equals(nodeUrl, localNodeUrl)) {
+                    shardNodeMap.put("node" + counter, nodeUrl);
+                    counter++;
                 }
             }
         }
@@ -273,15 +275,21 @@ public class ShardManagerService {
             return;
         }
 
+        // Ensure local node is always present
+        shardNodeMap.putIfAbsent(localNodeId, localNodeUrl);
+
         shardNodeMap.put(nodeId, nodeUrl);
 
         // Update configuration
         if (shardConfiguration != null) {
             List<String> nodes = shardConfiguration.getShardNodes();
+            if (!nodes.contains(localNodeUrl)) {
+                nodes.add(localNodeUrl);
+            }
             if (!nodes.contains(nodeUrl)) {
                 nodes.add(nodeUrl);
-                shardConfiguration.setShardNodes(nodes);
             }
+            shardConfiguration.setShardNodes(nodes);
         }
 
         logger.info("Registered shard node: {} at {}", nodeId, nodeUrl);

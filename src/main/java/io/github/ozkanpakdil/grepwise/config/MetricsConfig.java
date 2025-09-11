@@ -5,6 +5,7 @@ import io.github.ozkanpakdil.grepwise.service.LogScannerService;
 import io.github.ozkanpakdil.grepwise.service.LuceneService;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.binder.MeterBinder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -23,6 +24,7 @@ public class MetricsConfig {
      * Registers metrics for the Lucene service.
      */
     @Bean
+    @ConditionalOnBean(LuceneService.class)
     public MeterBinder luceneMetrics(LuceneService luceneService) {
         return registry -> {
             // We can't directly access internal Lucene metrics, but we can expose
@@ -37,6 +39,7 @@ public class MetricsConfig {
      * Registers metrics for the LogBuffer service.
      */
     @Bean
+    @ConditionalOnBean(LogBufferService.class)
     public MeterBinder logBufferMetrics(LogBufferService logBufferService) {
         return registry -> {
             // Register a gauge for buffer size
@@ -66,6 +69,7 @@ public class MetricsConfig {
      * Registers metrics for the LogScanner service.
      */
     @Bean
+    @ConditionalOnBean(LogScannerService.class)
     public MeterBinder logScannerMetrics(LogScannerService logScannerService) {
         return registry -> {
             // Register a gauge for the number of configured log directories

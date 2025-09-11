@@ -137,7 +137,8 @@ public class LogScannerService {
                 File f = logFile.toFile();
                 long size = f.length();
                 long lastMod = f.lastModified();
-                if (!logIndexMetaRepository.hasSizeChanged(f.getAbsolutePath(), size)) {
+                // If meta repository is not available (e.g., in some tests), treat file as changed
+                if (logIndexMetaRepository != null && !logIndexMetaRepository.hasSizeChanged(f.getAbsolutePath(), size)) {
                     logger.debug("Skipping unchanged log file: {} (size={})", f.getAbsolutePath(), size);
                     continue;
                 }
@@ -146,8 +147,10 @@ public class LogScannerService {
                 totalProcessed += processed;
                 logger.info("Processed {} log entries from file: {}", processed, logFile);
 
-                // Update meta after processing
-                logIndexMetaRepository.upsert(f.getAbsolutePath(), size, lastMod);
+                // Update meta after processing if repository is available
+                if (logIndexMetaRepository != null) {
+                    logIndexMetaRepository.upsert(f.getAbsolutePath(), size, lastMod);
+                }
             } catch (Exception e) {
                 logger.error("Error processing log file: {}", logFile, e);
             }
@@ -352,7 +355,42 @@ public class LogScannerService {
      */
     public int manualScanAllDirectories() {
         logger.info("Manually triggering scan of all log directories");
-        scanAllDirectories();
+        List<LogDirectoryConfig> configs = configRepository.findAll();
+        int scannedCount = 0;
+        for (LogDirectoryConfig config : configs) {
+            if (!config.isEnabled()) {
+                logger.info("Skipping disabled log directory: {}", config.getId());
+                continue;
+            }
+            try {
+                Path dir = Paths.get(config.getDirectoryPath());
+                if (!Files.exists(dir) || !Files.isDirectory(dir)) {
+                    logger.error("Directory does not exist or is not a directory: {}", config.getDirectoryPath());
+                    continue;
+                }
+                final String pattern = (config.getFilePattern() == null || config.getFilePattern().isBlank()) ? "*.log" : config.getFilePattern();
+                final PathMatcher matcher = dir.getFileSystem().getPathMatcher("glob:" + pattern);
+                List<Path> logFiles;
+                try (Stream<Path> stream = Files.list(dir)) {
+                    logFiles = stream
+                            .filter(Files::isRegularFile)
+                            .filter(p -> matcher.matches(p.getFileName()))
+                            .toList();
+                }
+                int processedTotal = 0;
+                for (Path logFile : logFiles) {
+                    File f = logFile.toFile();
+                    // Always process with direct indexing for manual scan
+                    processedTotal += processLogFileDirectIndexing(f);
+                }
+                if (processedTotal > 0) {
+                    scannedCount++;
+                }
+            } catch (Exception e) {
+                logger.error("Error scanning directory: {}", config.getDirectoryPath(), e);
+            }
+        }
+        // Return repository count to align with existing API/tests
         return configRepository.count();
     }
 

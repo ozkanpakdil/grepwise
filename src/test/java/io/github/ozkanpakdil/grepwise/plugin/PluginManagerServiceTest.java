@@ -2,46 +2,42 @@ package io.github.ozkanpakdil.grepwise.plugin;
 
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.plugin.sample.SampleLogSourcePlugin;
-import io.github.ozkanpakdil.grepwise.service.PluginManagerService;
 import io.github.ozkanpakdil.grepwise.service.impl.PluginManagerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
 public class PluginManagerServiceTest {
 
-    @Autowired
     private PluginRegistry pluginRegistry;
-
-    @Autowired
-    private PluginManagerService pluginManagerService;
-
-    @Mock
-    private ApplicationContext applicationContext;
+    private PluginManagerServiceImpl pluginManagerService;
 
     private SampleLogSourcePlugin samplePlugin;
+    private Path tempPluginsDir;
 
     @BeforeEach
-    void setUp() {
-        // Clear the registry before each test
-        pluginRegistry.clear();
+    void setUp() throws Exception {
+        // Create a fresh registry and service for each test (no Spring context)
+        pluginRegistry = new PluginRegistry();
+        pluginManagerService = new PluginManagerServiceImpl();
+
+        // Avoid scanning classpath or filesystem during tests
+        tempPluginsDir = Files.createTempDirectory("plugins-test");
+        ReflectionTestUtils.setField(pluginManagerService, "pluginRegistry", pluginRegistry);
+        ReflectionTestUtils.setField(pluginManagerService, "scanClasspath", false);
+        ReflectionTestUtils.setField(pluginManagerService, "pluginsDirectory", tempPluginsDir.toString());
+
+        // Initialize the service (will scan empty temp dir, classpath scanning disabled)
+        pluginManagerService.initialize();
 
         // Create a sample plugin for testing
         samplePlugin = new SampleLogSourcePlugin();

@@ -104,7 +104,7 @@ public class LogSourceHorizontalScalingIntegrationTest {
         ReflectionTestUtils.setField(logSourceService2, "sources", sources);
         
         // Set up mocks
-        when(logScannerService.saveConfig(any())).thenReturn(any());
+        when(logScannerService.saveConfig(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(syslogServer.startListener(any())).thenReturn(true);
         when(httpLogController.registerHttpSource(any())).thenReturn(true);
         when(cloudWatchLogService.registerSource(any())).thenReturn(true);
@@ -147,7 +147,6 @@ public class LogSourceHorizontalScalingIntegrationTest {
         for (LogSourceConfig source : allSources.values()) {
             if (coordinatorService1.shouldProcessSource(source.getId())) {
                 startedOnInstance1++;
-                verify(logScannerService, times(1)).scanDirectory(any());
             } else if (coordinatorService2.shouldProcessSource(source.getId())) {
                 startedOnInstance2++;
             }
@@ -155,6 +154,8 @@ public class LogSourceHorizontalScalingIntegrationTest {
         
         // Verify that all sources are started
         assertEquals(allSources.size(), startedOnInstance1 + startedOnInstance2);
+        // Verify that the file scan was triggered exactly once per source overall
+        verify(logScannerService, times(allSources.size())).scanDirectory(any());
     }
     
     @Test

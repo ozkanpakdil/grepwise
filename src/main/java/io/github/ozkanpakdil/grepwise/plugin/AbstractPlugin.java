@@ -26,7 +26,7 @@ public abstract class AbstractPlugin implements Plugin {
      * @param version     The version of this plugin
      * @param description A description of this plugin
      */
-    protected AbstractPlugin(String id, String name, String version, String description) {
+    protected AbstractPlugin(String id, String name, String description, String version) {
         this.id = id;
         this.name = name;
         this.version = version;

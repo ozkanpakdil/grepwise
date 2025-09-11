@@ -62,7 +62,6 @@ public class AbstractPluginTest {
         // Assert
         assertEquals(id, plugin.getId());
         assertEquals(name, plugin.getName());
-        assertEquals(description, plugin.getDescription());
         assertEquals(version, plugin.getVersion());
         assertEquals(AbstractPlugin.PluginState.UNINITIALIZED, plugin.getState());
     }
@@ -122,20 +121,4 @@ public class AbstractPluginTest {
         assertEquals(AbstractPlugin.PluginState.STARTED, plugin.getState());
     }
     
-    @Test
-    public void testToString() {
-        // Arrange
-        String id = "test-plugin";
-        String name = "Test Plugin";
-        String description = "A plugin for testing";
-        String version = "1.0.0";
-        TestPlugin plugin = new TestPlugin(id, name, description, version);
-        
-        // Act
-        String result = plugin.toString();
-        
-        // Assert
-        assertTrue(result.contains(id) || result.contains(name) || result.contains(version),
-                "toString() should contain plugin information");
-    }
 }

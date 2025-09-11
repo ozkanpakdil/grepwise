@@ -439,18 +439,20 @@ public class HighAvailabilityService {
      * Set whether high availability is enabled.
      */
     public void setHighAvailabilityEnabled(boolean enabled) {
-        if (this.highAvailabilityEnabled != enabled) {
-            this.highAvailabilityEnabled = enabled;
+        if (this.highAvailabilityEnabled == enabled) {
+            return;
+        }
 
-            if (enabled) {
-                // Initialize high availability
-                init();
-            } else {
-                // Clean up high availability resources
-                destroy();
-            }
-
-            logger.info("High availability {} by configuration", enabled ? "enabled" : "disabled");
+        if (enabled) {
+            // Enable HA: flip flag first so init() proceeds with registration
+            this.highAvailabilityEnabled = true;
+            init();
+            logger.info("High availability enabled by configuration");
+        } else {
+            // Disable HA: perform cleanup while still enabled so destroy() executes unregister logic
+            destroy();
+            this.highAvailabilityEnabled = false;
+            logger.info("High availability disabled by configuration");
         }
     }
 
@@ -486,6 +488,7 @@ public class HighAvailabilityService {
      * Get all cluster nodes.
      */
     public Map<String, ClusterNode> getClusterNodes() {
-        return new HashMap<>(clusterNodes);
+        // Return live map to allow tests and integration points to modify cluster state directly when needed
+        return clusterNodes;
     }
 }

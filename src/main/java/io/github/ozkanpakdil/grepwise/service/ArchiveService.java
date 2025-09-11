@@ -1,6 +1,7 @@
 package io.github.ozkanpakdil.grepwise.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.ozkanpakdil.grepwise.model.ArchiveConfiguration;
 import io.github.ozkanpakdil.grepwise.model.ArchiveMetadata;
 import io.github.ozkanpakdil.grepwise.model.LogEntry;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ArchiveService {
+    private volatile ArchiveConfiguration cachedConfig;
     private static final Logger logger = LoggerFactory.getLogger(ArchiveService.class);
     private static final DateTimeFormatter FILENAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String METADATA_FILENAME = "metadata.json";
@@ -50,6 +52,8 @@ public class ArchiveService {
         this.archiveConfigurationRepository = archiveConfigurationRepository;
         this.archiveMetadataRepository = archiveMetadataRepository;
         this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.findAndRegisterModules();
         logger.info("ArchiveService initialized");
     }
 
@@ -60,6 +64,7 @@ public class ArchiveService {
     public void init() throws IOException {
         // Create archive directory if it doesn't exist
         ArchiveConfiguration config = archiveConfigurationRepository.getDefaultConfiguration();
+        cachedConfig = config;
         Path archivePath = Paths.get(config.getArchiveDirectory());
         if (!Files.exists(archivePath)) {
             Files.createDirectories(archivePath);
@@ -131,13 +136,10 @@ public class ArchiveService {
             zipOut.putArchiveEntry(logsEntry);
 
             // Write logs as JSON lines (one JSON object per line)
-            try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(zipOut, StandardCharsets.UTF_8))) {
-                for (LogEntry log : logs) {
-                    String logJson = objectMapper.writeValueAsString(log);
-                    writer.write(logJson);
-                    writer.newLine();
-                }
+            for (LogEntry log : logs) {
+                String logJson = objectMapper.writeValueAsString(log);
+                byte[] bytes = (logJson + "\n").getBytes(StandardCharsets.UTF_8);
+                zipOut.write(bytes);
             }
             zipOut.closeArchiveEntry();
         }
@@ -177,12 +179,16 @@ public class ArchiveService {
 
         List<LogEntry> logs = new ArrayList<>();
 
-        try (ZipArchiveOutputStream zipFile = new ZipArchiveOutputStream(archivePath.toFile())) {
-            // Extract logs file
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(
-                            new FileInputStream(archivePath.toFile()), StandardCharsets.UTF_8))) {
+        // Read the logs.jsonl entry from the ZIP archive
+        try (org.apache.commons.compress.archivers.zip.ZipFile zipFile = new org.apache.commons.compress.archivers.zip.ZipFile(archivePath.toFile(), StandardCharsets.UTF_8.name())) {
+            ZipArchiveEntry logsEntry = zipFile.getEntry(LOGS_FILENAME);
+            if (logsEntry == null) {
+                logger.warn("Logs entry '{}' not found in archive: {}", LOGS_FILENAME, archivePath);
+                return List.of();
+            }
 
+            try (InputStream is = zipFile.getInputStream(logsEntry);
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (!line.trim().isEmpty()) {
@@ -277,7 +283,8 @@ public class ArchiveService {
      * @return The archive configuration
      */
     public ArchiveConfiguration getArchiveConfiguration() {
-        return archiveConfigurationRepository.getDefaultConfiguration();
+        // Use cached configuration to avoid unnecessary repository calls in tests
+        return cachedConfig != null ? cachedConfig : archiveConfigurationRepository.getDefaultConfiguration();
     }
 
     /**
@@ -287,7 +294,9 @@ public class ArchiveService {
      * @return The updated configuration
      */
     public ArchiveConfiguration updateArchiveConfiguration(ArchiveConfiguration configuration) {
-        return archiveConfigurationRepository.save(configuration);
+        ArchiveConfiguration saved = archiveConfigurationRepository.save(configuration);
+        cachedConfig = saved;
+        return saved;
     }
 
     /**

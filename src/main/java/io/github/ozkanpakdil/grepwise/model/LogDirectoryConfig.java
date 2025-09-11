@@ -29,6 +29,7 @@ public class LogDirectoryConfig {
     @Deprecated
     public LogDirectoryConfig(String id, String directoryPath, boolean enabled, String filePattern, long scanIntervalSeconds) {
         this(id, directoryPath, filePattern, scanIntervalSeconds);
+        this.enabled = enabled; // maintain backward compatibility for tests/usages that pass enabled
     }
 
     public String getId() {

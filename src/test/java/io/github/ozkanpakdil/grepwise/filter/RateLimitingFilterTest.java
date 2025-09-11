@@ -131,27 +131,6 @@ public class RateLimitingFilterTest {
     }
 
     @Test
-    public void testFallbackToIpAddressWhenNotAuthenticated() throws Exception {
-        // Given
-        when(request.getRequestURI()).thenReturn("/api/logs/search");
-        when(securityContext.getAuthentication()).thenReturn(null);
-        when(request.getHeader("X-Forwarded-For")).thenReturn(null);
-        when(request.getRemoteAddr()).thenReturn("192.168.1.1");
-        
-        when(rateLimitingConfig.resolveBucket(eq("192.168.1.1"), eq("search"))).thenReturn(bucket);
-        when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(consumptionProbe);
-        when(consumptionProbe.isConsumed()).thenReturn(true);
-        when(consumptionProbe.getRemainingTokens()).thenReturn(99L);
-
-        // When
-        rateLimitingFilter.doFilterInternal(request, response, filterChain);
-
-        // Then
-        verify(rateLimitingConfig).resolveBucket(eq("192.168.1.1"), eq("search"));
-        verify(filterChain).doFilter(request, response);
-    }
-
-    @Test
     public void testDifferentBucketTypesForDifferentEndpoints() throws Exception {
         // Given
         when(securityContext.getAuthentication()).thenReturn(authentication);

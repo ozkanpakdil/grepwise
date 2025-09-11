@@ -4,10 +4,13 @@ import io.github.ozkanpakdil.grepwise.model.Tenant;
 import io.github.ozkanpakdil.grepwise.repository.TenantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -19,8 +22,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for the TenantController.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
+@org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest(controllers = TenantController.class)
+@org.springframework.context.annotation.Import({
+        io.github.ozkanpakdil.grepwise.service.TenantService.class,
+        io.github.ozkanpakdil.grepwise.repository.TenantRepository.class,
+        io.github.ozkanpakdil.grepwise.service.AuditLogService.class,
+        io.github.ozkanpakdil.grepwise.repository.AuditLogRepository.class,
+        io.github.ozkanpakdil.grepwise.config.TestConfig.class
+})
+@org.junit.jupiter.api.parallel.Execution(org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD)
 public class TenantControllerIntegrationTest {
 
     @Autowired

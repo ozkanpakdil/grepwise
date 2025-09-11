@@ -4,14 +4,10 @@ import io.github.ozkanpakdil.grepwise.model.LogEntry;
 import io.github.ozkanpakdil.grepwise.model.PredictiveResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import io.github.ozkanpakdil.grepwise.config.PredictiveAnalyticsTestConfig;
-
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,35 +20,40 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration test for PredictiveAnalyticsService.
  * Tests the integration of PredictiveAnalyticsService with LuceneService and other components.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@Import(PredictiveAnalyticsTestConfig.class)
 public class PredictiveAnalyticsIntegrationTest {
 
-    @Autowired
     private PredictiveAnalyticsService predictiveAnalyticsService;
-
-    @Autowired
     private LuceneService luceneService;
 
     @BeforeEach
     void setUp() throws Exception {
-        // Configure service for testing
+        // Fresh LuceneService with a temp single-index directory
+        luceneService = new LuceneService();
+        Path tempIndex = Files.createTempDirectory("test-lucene-index");
+        luceneService.setIndexPath(tempIndex.toString());
+        luceneService.setPartitioningEnabled(false);
+        luceneService.setRealTimeUpdateService(null);
+        // Provide minimal dependencies for LuceneService
+        luceneService.setFieldConfigurationService(new FieldConfigurationService(new io.github.ozkanpakdil.grepwise.repository.FieldConfigurationRepository()));
+        // Provide a simple in-memory search cache service
+        luceneService.setSearchCacheService(new SearchCacheService());
+        luceneService.init();
+
+        // Create PredictiveAnalyticsService and inject luceneService
+        predictiveAnalyticsService = new PredictiveAnalyticsService();
+        ReflectionTestUtils.setField(predictiveAnalyticsService, "luceneService", luceneService);
         ReflectionTestUtils.setField(predictiveAnalyticsService, "predictiveAnalyticsEnabled", true);
         ReflectionTestUtils.setField(predictiveAnalyticsService, "minSampleSize", 5);
-        
-        // Clear any existing logs
-        luceneService.close();
-        
+
         // Create test logs with increasing frequency pattern
         List<LogEntry> testLogs = new ArrayList<>();
         long baseTime = System.currentTimeMillis() - (24 * 60 * 60 * 1000); // 24 hours ago
-        
+
         // Create logs with a clear increasing trend over 24 hours
         for (int hour = 0; hour < 24; hour++) {
             // More logs as we get closer to present time
             int logsPerHour = 5 + hour;
-            
+
             for (int i = 0; i < logsPerHour; i++) {
                 testLogs.add(createLogEntry(
                         baseTime + (hour * 60 * 60 * 1000) + (i * 60 * 1000),
@@ -61,7 +62,7 @@ public class PredictiveAnalyticsIntegrationTest {
                 ));
             }
         }
-        
+
         // Index test logs
         luceneService.indexLogEntries(testLogs);
     }

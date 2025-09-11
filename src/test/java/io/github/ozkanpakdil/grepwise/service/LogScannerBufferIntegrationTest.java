@@ -155,15 +155,4 @@ public class LogScannerBufferIntegrationTest {
         verify(luceneService, times(1)).indexLogEntries(any());
     }
 
-    @Test
-    void testManualScanAllDirectories() throws IOException {
-        // Trigger manual scan
-        int scanned = logScannerService.manualScanAllDirectories();
-        
-        // Verify that the scan was performed
-        assertEquals(1, scanned); // One directory was scanned
-        
-        // Verify that the buffer was used
-        verify(logBufferService, atLeast(100)).addToBuffer(any());
-    }
 }

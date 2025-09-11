@@ -780,7 +780,10 @@ public class LogSearchController {
             // Set headers for file download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType("text/csv"));
-            headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".csv");
+            headers.setContentDisposition(org.springframework.http.ContentDisposition
+                    .attachment()
+                    .filename("logs_export_" + System.currentTimeMillis() + ".csv")
+                    .build());
 
             return ResponseEntity.ok()
                     .headers(headers)
@@ -841,7 +844,10 @@ public class LogSearchController {
             // Set headers for file download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setContentDispositionFormData("attachment", "logs_export_" + System.currentTimeMillis() + ".json");
+            headers.setContentDisposition(org.springframework.http.ContentDisposition
+                    .attachment()
+                    .filename("logs_export_" + System.currentTimeMillis() + ".json")
+                    .build());
 
             return ResponseEntity.ok()
                     .headers(headers)

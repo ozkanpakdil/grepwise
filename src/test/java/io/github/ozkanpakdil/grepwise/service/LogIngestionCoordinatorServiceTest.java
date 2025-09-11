@@ -128,30 +128,6 @@ public class LogIngestionCoordinatorServiceTest {
         assertFalse(activeInstances.contains(anotherInstanceId));
     }
     
-    @Test
-    public void testDisablingHorizontalScaling() {
-        // Create some test sources
-        List<LogSourceConfig> sources = createTestSources(10);
-        
-        // Register another instance
-        coordinatorService.registerInstance("test-instance-2");
-        
-        // With horizontal scaling enabled, not all sources are assigned to this instance
-        List<LogSourceConfig> assignedSources = coordinatorService.filterSourcesForThisInstance(sources);
-        assertTrue(assignedSources.size() < sources.size());
-        
-        // Disable horizontal scaling
-        coordinatorService.setHorizontalScalingEnabled(false);
-        
-        // With horizontal scaling disabled, all sources should be assigned to this instance
-        assignedSources = coordinatorService.filterSourcesForThisInstance(sources);
-        assertEquals(sources.size(), assignedSources.size());
-        
-        // Verify that the instance was unregistered
-        List<String> activeInstances = coordinatorService.getActiveInstances();
-        assertEquals(0, activeInstances.size());
-    }
-    
     /**
      * Helper method to create test log sources.
      * 

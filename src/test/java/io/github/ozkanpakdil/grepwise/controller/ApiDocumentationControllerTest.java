@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true"})
+@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true", "gg.jte.developmentMode=true", "management.health.ldap.enabled=false"})
 @AutoConfigureMockMvc
 @org.springframework.test.context.ActiveProfiles("test")
 @org.springframework.context.annotation.Import(io.github.ozkanpakdil.grepwise.config.TestConfig.class)

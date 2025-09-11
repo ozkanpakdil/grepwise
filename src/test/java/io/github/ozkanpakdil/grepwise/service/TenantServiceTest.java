@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -50,7 +51,7 @@ public class TenantServiceTest {
         // Setup
         when(tenantRepository.existsByName(anyString())).thenReturn(false);
         when(tenantRepository.save(any(Tenant.class))).thenReturn(testTenant);
-        doNothing().when(auditLogService).createAuditLog(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any());
+        when(auditLogService.createAuditLog(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any())).thenReturn(new io.github.ozkanpakdil.grepwise.model.AuditLog());
 
         // Execute
         Tenant result = tenantService.createTenant(testTenant);

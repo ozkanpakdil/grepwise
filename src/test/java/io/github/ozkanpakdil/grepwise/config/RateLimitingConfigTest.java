@@ -1,21 +1,19 @@
 package io.github.ozkanpakdil.grepwise.config;
 
 import io.github.bucket4j.Bucket;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 public class RateLimitingConfigTest {
 
-    @Spy
-    @InjectMocks
     private RateLimitingConfig rateLimitingConfig;
+
+    @BeforeEach
+    void setUp() {
+        rateLimitingConfig = new RateLimitingConfig();
+    }
 
     @Test
     public void testDefaultBucketCreation() {
@@ -55,86 +53,40 @@ public class RateLimitingConfigTest {
         // Then
         assertNotNull(bucket, "Admin bucket should not be null");
         
-        // Verify bucket has correct capacity by consuming tokens
+        // Verify bucket has correct capacity by consuming tokens (current config: 60/min)
         assertTrue(bucket.tryConsume(1), "Should be able to consume 1 token");
-        assertTrue(bucket.tryConsume(10), "Should be able to consume 10 tokens");
-        assertTrue(bucket.tryConsume(9), "Should be able to consume 9 tokens");
+        assertTrue(bucket.tryConsume(30), "Should be able to consume 30 tokens");
+        assertTrue(bucket.tryConsume(29), "Should be able to consume 29 tokens");
         assertFalse(bucket.tryConsume(1), "Should not be able to consume more tokens than capacity");
     }
 
     @Test
-    public void testResolveBucket_Default() {
-        // Given
-        Bucket defaultBucket = mock(Bucket.class);
-        doReturn(defaultBucket).when(rateLimitingConfig).resolveBucket("client1", "default");
-        
+    public void testResolveBucket_CachingSameClient() {
         // When
-        Bucket result = rateLimitingConfig.resolveBucket("client1", "default");
-        
-        // Then
-        assertSame(defaultBucket, result, "Should return default bucket");
-        
-        // When called again with same client
+        Bucket result1 = rateLimitingConfig.resolveBucket("client1", "default");
         Bucket result2 = rateLimitingConfig.resolveBucket("client1", "default");
-        
-        // Then should return same bucket instance (cached)
-        assertSame(result, result2, "Should return cached bucket for same client");
-        
-        // Verify defaultBucket() was called only once due to caching
-        verify(rateLimitingConfig, times(1)).resolveBucket(anyString(), anyString());
-    }
 
-    @Test
-    public void testResolveBucket_Search() {
-        // Given
-        Bucket searchBucket = mock(Bucket.class);
-        doReturn(searchBucket).when(rateLimitingConfig).resolveBucket("client1", "search");
-        
-        // When
-        Bucket result = rateLimitingConfig.resolveBucket("client1", "search");
-        
-        // Then
-        assertSame(searchBucket, result, "Should return search bucket");
-        verify(rateLimitingConfig).resolveBucket("client1", "search");
-    }
-
-    @Test
-    public void testResolveBucket_Admin() {
-        // Given
-        Bucket adminBucket = mock(Bucket.class);
-        doReturn(adminBucket).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
-        
-        // When
-        Bucket result = rateLimitingConfig.resolveBucket("client1", "admin");
-        
-        // Then
-        assertSame(adminBucket, result, "Should return admin bucket");
-        verify(rateLimitingConfig).resolveBucket("client1", "admin");
+        // Then: same client and type should return same instance (cached)
+        assertSame(result1, result2, "Should return cached bucket for same client and type");
     }
 
     @Test
     public void testResolveBucket_DifferentClients() {
-        // Given
-        Bucket defaultBucket1 = mock(Bucket.class);
-        Bucket defaultBucket2 = mock(Bucket.class);
-        
-        // First call for client1 returns defaultBucket1
-        doReturn(defaultBucket1).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
-        
         // When
         Bucket result1 = rateLimitingConfig.resolveBucket("client1", "default");
-        
-        // Then
-        assertSame(defaultBucket1, result1, "Should return first default bucket");
-        
-        // For second client, return different bucket
-        doReturn(defaultBucket2).when(rateLimitingConfig).resolveBucket(anyString(), anyString());
-        
-        // When
         Bucket result2 = rateLimitingConfig.resolveBucket("client2", "default");
-        
-        // Then
-        assertSame(defaultBucket2, result2, "Should return second default bucket");
+
+        // Then: different clients should get different bucket instances
         assertNotSame(result1, result2, "Different clients should get different bucket instances");
+    }
+
+    @Test
+    public void testResolveBucket_DifferentTypesSameClient() {
+        // When
+        Bucket defaultBucket = rateLimitingConfig.resolveBucket("client1", "default");
+        Bucket searchBucket = rateLimitingConfig.resolveBucket("client1", "search");
+
+        // Then: different types for same client should create different buckets
+        assertNotSame(defaultBucket, searchBucket, "Different bucket types should produce different buckets for same client");
     }
 }

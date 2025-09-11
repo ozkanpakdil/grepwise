@@ -760,7 +760,14 @@ public class LuceneService {
      * @return A Term that uniquely identifies the document
      */
     private Term createDocumentIdTerm(LogEntry logEntry) {
-        return new Term("rawContent", logEntry.rawContent());
+        // Prefer the explicit unique ID if present to avoid accidental document overwrites
+        if (logEntry.id() != null && !logEntry.id().isEmpty()) {
+            return new Term("id", logEntry.id());
+        }
+        // Fallback: if no ID is provided, try to build a stable identifier.
+        // Using rawContent alone can cause collisions across different entries with same content,
+        // but we keep it as a last resort for backward compatibility.
+        return new Term("rawContent", logEntry.rawContent() != null ? logEntry.rawContent() : "");
     }
 
 

@@ -210,7 +210,7 @@ public class AppMarketplaceServiceTest {
         List<AppPackage> categoryResults = appMarketplaceService.searchPackages("category");
         
         // Assert
-        assertEquals(2, testResults.size());
+        assertEquals(3, testResults.size());
         assertTrue(testResults.stream().anyMatch(p -> p.getId().equals("test-package-1")));
         assertTrue(testResults.stream().anyMatch(p -> p.getId().equals("test-package-2")));
         

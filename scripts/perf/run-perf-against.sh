@@ -22,6 +22,16 @@ USERS="${USERS:-10}"
 DURATION="${DURATION:-60}"
 RAMP_UP="${RAMP_UP:-10}"
 
+# Determine Maven command (prefer wrapper if present)
+if [[ -x "./mvnw" ]]; then
+  MVN="./mvnw"
+elif command -v mvn >/dev/null 2>&1; then
+  MVN="mvn"
+else
+  echo "ERROR: Maven not found. Please install Maven or include the Maven Wrapper (./mvnw)." >&2
+  exit 127
+fi
+
 # Optional quick health check
 if command -v curl >/dev/null 2>&1; then
   echo "==> Checking health at http://$GW_HOST:$GW_HTTP_PORT/actuator/health"
@@ -35,7 +45,7 @@ echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=$
 TOTAL_TIMEOUT=$((RAMP_UP + DURATION + 30))
 if command -v timeout >/dev/null 2>&1; then
   echo "==> Using timeout ${TOTAL_TIMEOUT}s to guard the perf run"
-  timeout ${TOTAL_TIMEOUT}s mvn -B -Pperf-test \
+  timeout ${TOTAL_TIMEOUT}s $MVN -B -Pperf-test \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \
     -Dgw.syslog.port="$GW_SYSLOG_PORT" \

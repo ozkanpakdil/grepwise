@@ -26,6 +26,16 @@ USERS="${USERS:-10}"
 DURATION="${DURATION:-60}"
 RAMP_UP="${RAMP_UP:-10}"
 
+# Determine Maven command (prefer wrapper if present)
+if [[ -x "./mvnw" ]]; then
+  MVN="./mvnw"
+elif command -v mvn >/dev/null 2>&1; then
+  MVN="mvn"
+else
+  echo "ERROR: Maven not found. Please install Maven or include the Maven Wrapper (./mvnw)." >&2
+  exit 127
+fi
+
 JAR="target/grepwise-0.0.1-SNAPSHOT.jar"
 APP_LOG="app.log"
 APP_PID="app.pid"
@@ -40,7 +50,7 @@ function stop_app() {
 trap stop_app EXIT
 
 echo "==> Building application (skip unit tests)"
-mvn -B -DskipTests package
+$MVN -B -DskipTests package
 
 if [[ ! -f "$JAR" ]]; then
   echo "ERROR: Built jar not found at $JAR" >&2
@@ -73,7 +83,7 @@ echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=$
 TOTAL_TIMEOUT=$((RAMP_UP + DURATION + 30))
 if command -v timeout >/dev/null 2>&1; then
   echo "==> Using timeout ${TOTAL_TIMEOUT}s to guard the perf run"
-  timeout ${TOTAL_TIMEOUT}s mvn -B -Pperf-test \
+  timeout ${TOTAL_TIMEOUT}s $MVN -B -Pperf-test \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \
     -Dgw.syslog.port="$GW_SYSLOG_PORT" \
@@ -81,7 +91,7 @@ if command -v timeout >/dev/null 2>&1; then
     -DrampUp="$RAMP_UP" \
     -DdurationSeconds="$DURATION" verify
 else
-  mvn -B -Pperf-test \
+  $MVN -B -Pperf-test \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \
     -Dgw.syslog.port="$GW_SYSLOG_PORT" \

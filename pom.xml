@@ -489,10 +489,12 @@
                                 <jMeterTestFile>syslog-udp.jmx</jMeterTestFile>
                                 <jMeterTestFile>combined-parallel-bsh.jmx</jMeterTestFile>
                             </testFilesIncluded>
+                            <!-- Load our user properties (console summariser, defaults, etc.) -->
+                            <customPropertiesFiles>
+                                <customPropertiesFile>src/test/jmeter/jmeter.properties</customPropertiesFile>
+                            </customPropertiesFiles>
                             <generateReports>true</generateReports>
                             <resultsFileFormat>csv</resultsFileFormat>
-                            <appendResults>true</appendResults>
-                            <resultsOutputIsCSV>true</resultsOutputIsCSV>
                         </configuration>
                     </plugin>
                 </plugins>

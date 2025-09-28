@@ -83,7 +83,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ### Backend Container
 
-- Base image: Eclipse Temurin JRE 24 Alpine
+- Base image: Eclipse Temurin JRE 25 Alpine
 - Exposed port: 8080
 - Volumes:
   - `./logs:/app/logs` - Application logs

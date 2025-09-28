@@ -65,3 +65,8 @@ out/
 logs/app.log
 /frontend/coverage/
 /frontend/src/generated/
+/frontend/node/node
+/frontend/node/npm
+/frontend/node/npm.cmd
+/frontend/node/npx
+/frontend/node/npx.cmd

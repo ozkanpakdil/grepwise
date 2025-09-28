@@ -6,34 +6,34 @@ An open-source alternative to Splunk for log analysis and monitoring.
 
 Before you can run this project, you need to have the following installed:
 
-### 1. Java Development Kit (JDK) 21
+### 1. Java Development Kit (JDK) 25
 
-The project requires Java 21. Here's how to install it:
+The project requires Java 25. Here's how to install it:
 
 #### For Windows:
 
-1. Download JDK 21 from one of these sources:
-   - [Oracle JDK 21](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html)
-   - [Eclipse Temurin (OpenJDK) 21](https://adoptium.net/temurin/releases/?version=21)
-   - [Amazon Corretto 21](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
+1. Download JDK 25 from one of these sources:
+   - [Oracle JDK 25](https://www.oracle.com/java/technologies/downloads/#jdk25)
+   - [Eclipse Temurin (OpenJDK) 25](https://adoptium.net/temurin/releases/?version=25)
+   - [Amazon Corretto 25](https://docs.aws.amazon.com/corretto/latest/corretto-25-ug/downloads-list.html)
 
 2. Run the installer and follow the installation instructions.
 
 3. Set up environment variables:
-   - Set `JAVA_HOME` to the JDK installation directory (e.g., `C:\Program Files\Java\jdk-21`)
+   - Set `JAVA_HOME` to the JDK installation directory (e.g., `C:\Program Files\Java\jdk-25`)
    - Add `%JAVA_HOME%\bin` to your `PATH` environment variable
 
 4. Verify the installation by opening a new command prompt and running:
    ```
    java -version
    ```
-   You should see output indicating Java 21.
+   You should see output indicating Java 25.
 
 #### For macOS:
 
 1. Install using Homebrew:
    ```
-   brew install openjdk@21
+   brew install openjdk@25
    ```
 
 2. Follow the instructions from Homebrew to set up your environment variables.
@@ -43,7 +43,7 @@ The project requires Java 21. Here's how to install it:
 1. Install using your package manager, for example on Ubuntu:
    ```
    sudo apt-get update
-   sudo apt-get install openjdk-21-jdk
+   sudo apt-get install openjdk-25-jdk
    ```
 
 ### 2. Node.js and npm
@@ -201,10 +201,10 @@ See docs/REDACTION.md for more examples (telephone, credit card, idnumber).
 
 If you encounter errors related to Java version:
 
-1. Make sure you have JDK 21 installed
-2. Verify that `JAVA_HOME` points to JDK 21
-3. Ensure that the JDK 21 bin directory is in your PATH
-4. Run `java -version` to confirm you're using Java 21
+1. Make sure you have JDK 25 installed
+2. Verify that `JAVA_HOME` points to JDK 25
+3. Ensure that the JDK 25 bin directory is in your PATH
+4. Run `java -version` to confirm you're using Java 25
 
 ### Build System Issues
 

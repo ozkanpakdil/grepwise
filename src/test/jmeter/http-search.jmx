@@ -74,8 +74,6 @@
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">${users}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${rampUp}</stringProp>
-        <longProp name="ThreadGroup.start_time">${__time(,)}</longProp>
-        <longProp name="ThreadGroup.end_time">${__time(,)}</longProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.duration">${durationSeconds}</stringProp>
         <stringProp name="ThreadGroup.delay">0</stringProp>

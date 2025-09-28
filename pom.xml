@@ -493,6 +493,9 @@
                             <customPropertiesFiles>
                                 <customPropertiesFile>src/test/jmeter/jmeter.properties</customPropertiesFile>
                             </customPropertiesFiles>
+                            <!-- Allow overriding output base directory via -Djmeter.base.dir; default to target/jmeter -->
+                            <resultsDirectory>${jmeter.base.dir}/results</resultsDirectory>
+                            <reportDirectory>${jmeter.base.dir}/reports</reportDirectory>
                             <generateReports>true</generateReports>
                             <resultsFileFormat>csv</resultsFileFormat>
                         </configuration>

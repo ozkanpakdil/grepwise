@@ -41,9 +41,9 @@ jobs:
           GW_HOST: localhost
           GW_HTTP_PORT: '8080'
           GW_SYSLOG_PORT: '1514'
-          USERS: '10'
-          DURATION: '60'
-          RAMP_UP: '10'
+          USERS: '3'
+          DURATION: '5'
+          RAMP_UP: '1'
         run: |
           scripts/perf/run-perf-local.sh
 

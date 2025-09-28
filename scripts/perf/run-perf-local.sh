@@ -7,7 +7,7 @@
 #   scripts/perf/run-perf-local.sh
 #
 # Optional environment overrides:
-#   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=10 DURATION=60 RAMP_UP=10 \
+#   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=2 DURATION=10 RAMP_UP=3 \
 #   scripts/perf/run-perf-local.sh
 #
 # Notes:
@@ -22,9 +22,17 @@ cd "$ROOT_DIR"
 GW_HOST="${GW_HOST:-localhost}"
 GW_HTTP_PORT="${GW_HTTP_PORT:-8080}"
 GW_SYSLOG_PORT="${GW_SYSLOG_PORT:-1514}"
-USERS="${USERS:-10}"
-DURATION="${DURATION:-60}"
-RAMP_UP="${RAMP_UP:-10}"
+# Safer, short defaults for local sanity runs to avoid IDE freezes
+USERS="${USERS:-2}"
+DURATION="${DURATION:-2}"
+RAMP_UP="${RAMP_UP:-1}"
+
+# Decide JMeter output base directory early; use /tmp for local runs to avoid IDE file sync storms
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  JMETER_BASE_DIR="${JMETER_BASE_DIR:-$ROOT_DIR/target/jmeter}"
+else
+  JMETER_BASE_DIR="${JMETER_BASE_DIR:-/tmp/grepwise-perf-$(date +%s)}"
+fi
 
 # Determine Maven command (prefer wrapper if present)
 if [[ -x "./mvnw" ]]; then
@@ -79,13 +87,12 @@ done
 # For defaults, UDP listener 1514 may already be active; adjust if needed.
 
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
-# Safety timeout to avoid indefinite hangs. JMeter runs multiple plans sequentially.
-# Estimate total = (rampUp + duration + 30s buffer) * PLANS + 60s report buffer
-PLANS=${PLANS:-3}
-TOTAL_TIMEOUT=$(((RAMP_UP + DURATION + 30) * PLANS + 60))
-if command -v timeout >/dev/null 2>&1; then
-  echo "==> Using timeout ${TOTAL_TIMEOUT}s to guard the perf run (plans=${PLANS})"
-  timeout ${TOTAL_TIMEOUT}s $MVN -B -Pperf-test \
+# Optional safety timeout to avoid indefinite hangs, disabled by default to prevent abrupt kills in IDE terminals.
+# Enable by setting PERF_TIMEOUT seconds (e.g., PERF_TIMEOUT=120).
+if [[ -n "${PERF_TIMEOUT:-}" ]] && command -v timeout >/dev/null 2>&1; then
+  echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"
+  timeout "${PERF_TIMEOUT}s" $MVN -B -Pperf-test \
+    -Djmeter.base.dir="$JMETER_BASE_DIR" \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \
     -Dgw.syslog.port="$GW_SYSLOG_PORT" \
@@ -94,6 +101,7 @@ if command -v timeout >/dev/null 2>&1; then
     -DdurationSeconds="$DURATION" verify
 else
   $MVN -B -Pperf-test \
+    -Djmeter.base.dir="$JMETER_BASE_DIR" \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \
     -Dgw.syslog.port="$GW_SYSLOG_PORT" \
@@ -114,7 +122,17 @@ else
   echo "==> Detected GitHub Actions environment; deferring summary generation to workflow step"
 fi
 
-REPORT_DIR="target/jmeter"
+# Decide JMeter output base directory: use /tmp for local runs to avoid IDE file sync storms
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  JMETER_BASE_DIR="${JMETER_BASE_DIR:-$ROOT_DIR/target/jmeter}"
+else
+  JMETER_BASE_DIR="${JMETER_BASE_DIR:-/tmp/grepwise-perf-$(date +%s)}"
+fi
+
+# Re-run tests above already executed; the property needs to be passed earlier.
+# Note: We've already executed tests; from now on, just print locations based on JMETER_BASE_DIR.
+
+REPORT_DIR="$JMETER_BASE_DIR"
 echo "\n==> Done. Key outputs:"
 echo "- HTML dashboards: $REPORT_DIR/reports/<plan>/index.html"
 echo "- Raw CSV results: $REPORT_DIR/results/"
@@ -122,9 +140,13 @@ echo "- Perf summary:    $REPORT_DIR/perf-summary.md (and JSON if generated)"
 echo "- App log:         $APP_LOG"
 
 echo "==> Tip: open the main search report if available:"
-MAIN_REPORT=$(ls -1 $REPORT_DIR/reports 2>/dev/null | head -n1 || true)
+MAIN_REPORT=$(ls -1 "$REPORT_DIR"/reports 2>/dev/null | head -n1 || true)
 if [[ -n "$MAIN_REPORT" ]]; then
-  echo "   file://$ROOT_DIR/$REPORT_DIR/reports/$MAIN_REPORT/index.html"
+  if [[ "$REPORT_DIR" == "$ROOT_DIR"/* ]]; then
+    echo "   file://$REPORT_DIR/reports/$MAIN_REPORT/index.html"
+  else
+    echo "   $REPORT_DIR/reports/$MAIN_REPORT/index.html"
+  fi
 fi
 
 exit 0

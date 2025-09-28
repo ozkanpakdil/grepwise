@@ -79,10 +79,12 @@ done
 # For defaults, UDP listener 1514 may already be active; adjust if needed.
 
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
-# Safety timeout to avoid indefinite hangs: total = rampUp + duration + 30s buffer
-TOTAL_TIMEOUT=$((RAMP_UP + DURATION + 30))
+# Safety timeout to avoid indefinite hangs. JMeter runs multiple plans sequentially.
+# Estimate total = (rampUp + duration + 30s buffer) * PLANS + 60s report buffer
+PLANS=${PLANS:-3}
+TOTAL_TIMEOUT=$(((RAMP_UP + DURATION + 30) * PLANS + 60))
 if command -v timeout >/dev/null 2>&1; then
-  echo "==> Using timeout ${TOTAL_TIMEOUT}s to guard the perf run"
+  echo "==> Using timeout ${TOTAL_TIMEOUT}s to guard the perf run (plans=${PLANS})"
   timeout ${TOTAL_TIMEOUT}s $MVN -B -Pperf-test \
     -Dgw.host="$GW_HOST" \
     -Dgw.http.port="$GW_HTTP_PORT" \

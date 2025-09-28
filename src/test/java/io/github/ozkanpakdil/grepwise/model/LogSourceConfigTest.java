@@ -18,7 +18,7 @@ public class LogSourceConfigTest {
         assertEquals(LogSourceConfig.SourceType.FILE, config.getSourceType());
         assertEquals("*.log", config.getFilePattern());
         assertEquals(60, config.getScanIntervalSeconds());
-        assertEquals(514, config.getSyslogPort());
+        assertEquals(1514, config.getSyslogPort());
         assertEquals("UDP", config.getSyslogProtocol());
         assertEquals("RFC5424", config.getSyslogFormat());
         assertEquals("/api/logs", config.getHttpEndpoint());

@@ -141,7 +141,7 @@ public class SyslogServer {
      *
      * @param message The syslog message to parse
      * @param format  The format of the message (RFC3164 or RFC5424)
-     * @param source  The source of the message (e.g., "syslog-udp:514")
+     * @param source  The source of the message (e.g., "syslog-udp:1514")
      * @return A LogEntry representing the syslog message
      */
     private LogEntry parseSyslogMessage(String message, String format, String source) {

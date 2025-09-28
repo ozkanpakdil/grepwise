@@ -43,7 +43,7 @@ public class LogSourceConfig {
         this.sourceType = SourceType.FILE;
         this.filePattern = "*.log";
         this.scanIntervalSeconds = 60;
-        this.syslogPort = 514;
+        this.syslogPort = 1514;
         this.syslogProtocol = "UDP";
         this.syslogFormat = "RFC5424";
         this.httpEndpoint = "/api/logs";

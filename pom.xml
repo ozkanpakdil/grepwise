@@ -443,6 +443,11 @@
                 <enabled>false</enabled>
             </releases>
         </repository>
+        <repository>
+            <id>jmeter-plugins-repo</id>
+            <name>JMeter Plugins Repository</name>
+            <url>https://jmeter-plugins.org/repo/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -454,4 +459,44 @@
             </releases>
         </pluginRepository>
     </pluginRepositories>
+    <profiles>
+        <profile>
+            <id>perf-test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.lazerycode.jmeter</groupId>
+                        <artifactId>jmeter-maven-plugin</artifactId>
+                        <version>3.8.0</version>
+                        <executions>
+                            <execution>
+                                <id>configuration</id>
+                                <goals>
+                                    <goal>configure</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>jmeter-tests</id>
+                                <goals>
+                                    <goal>jmeter</goal>
+                                    <goal>results</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <testFilesIncluded>
+                                <jMeterTestFile>http-search.jmx</jMeterTestFile>
+                                <jMeterTestFile>syslog-udp.jmx</jMeterTestFile>
+                                <jMeterTestFile>combined-parallel-bsh.jmx</jMeterTestFile>
+                            </testFilesIncluded>
+                            <generateReports>true</generateReports>
+                            <resultsFileFormat>csv</resultsFileFormat>
+                            <appendResults>true</appendResults>
+                            <resultsOutputIsCSV>true</resultsOutputIsCSV>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

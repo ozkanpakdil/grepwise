@@ -157,6 +157,114 @@ PW_NO_SERVER=1 BASE_URL=http://localhost:3000 npm test
 - Dark/light theme support
 - Redaction of sensitive fields (configurable via config/redaction.json); in log details it can be revealed
 
+## Network Log Ingestion (Syslog TCP/UDP)
+
+GrepWise includes a built-in Syslog server that can ingest logs over the network using UDP or TCP, compatible with RFC3164 and RFC5424 formats.
+
+- Protocols: UDP and TCP
+- Default port: 1514 (unprivileged). If running as root or with CAP_NET_BIND_SERVICE, you may choose 514.
+- Formats: RFC3164 (BSD) and RFC5424 (IETF)
+
+How to enable a syslog listener via REST:
+
+1) Create a syslog source (example uses TCP 1514, RFC5424):
+
+POST /api/sources
+Content-Type: application/json
+
+{
+  "id": "syslog-tcp-1514",
+  "name": "Syslog TCP 1514",
+  "enabled": true,
+  "sourceType": "SYSLOG",
+  "syslogPort": 1514,
+  "syslogProtocol": "TCP",
+  "syslogFormat": "RFC5424"
+}
+
+2) Verify it’s listed:
+- GET /api/sources/type/SYSLOG
+
+Quick manual test
+- UDP: echo "<134>Oct 11 22:14:15 myhost myapp: hello via UDP" | nc -u -w1 localhost 1514
+- TCP: printf "<134>1 2024-10-10T10:10:10Z myhost myapp 1234 - - hello via TCP\n" | nc localhost 1514
+
+Forwarding from rsyslog (example):
+
+/etc/rsyslog.d/50-grepwise.conf
+*.* @@127.0.0.1:1514   # @@ for TCP, @ for UDP
+
+Then restart rsyslog: sudo systemctl restart rsyslog
+
+Forwarding from syslog-ng (example):
+
+destination d_grepwise { tcp("127.0.0.1" port(1514)); };
+log { source(s_src); destination(d_grepwise); };
+
+Java app logging notes
+- For log4j/logback, you can use a Syslog appender (commonly UDP). If you need TCP, route your app logs to the local OS syslog (rsyslog/syslog-ng) and forward to GrepWise over TCP as shown above.
+- GrepWise parses incoming messages into structured fields (host, app, severity) and stores raw message content.
+
+## Performance Testing (JMeter)
+
+We include JMeter-based performance tests to benchmark GrepWise after each release.
+
+What is covered:
+- HTTP search endpoints:
+  - GET /api/logs/search (with query and size)
+  - GET /api/logs/count
+- Network ingestion (UDP syslog on port 1514) while searching
+- Combined parallel scenario: UDP ingestion + search concurrent
+
+Planned/optional additions:
+- TCP syslog test when TCP listeners are enabled
+- Directory ingestion test (create a log directory via API and write files to measure ingestion-to-availability)
+
+How to run
+1) Start GrepWise (single JAR or via mvn spring-boot:run) and ensure it listens on:
+   - HTTP: http://localhost:8080
+   - Syslog UDP: 1514
+2) From project root run:
+   mvn -Pperf-test verify
+
+Configuration
+- Default properties are in src/test/jmeter/jmeter.properties. Override via -D, e.g.:
+  mvn -Pperf-test -Dgw.host=localhost -Dgw.http.port=8080 -Dgw.syslog.port=1514 -Dusers=20 -DdurationSeconds=120 verify
+
+Reports
+- HTML reports per plan are generated under target/jmeter/reports/&lt;testplan&gt;/index.html
+- JTL/CSV raw results are under target/jmeter/results
+- During non-GUI runs, the console now prints a live summary every ~5s (p95/avg/throughput) so you can see progress. Tests run for the configured duration (default 60s) and then exit automatically.
+- Compare runs across releases by storing the reports as build artifacts.
+
+Run locally with helper scripts
+- Quick start (build, start app, run tests, stop app):
+  1) Make executable once: chmod +x scripts/perf/run-perf-local.sh
+  2) Run: scripts/perf/run-perf-local.sh
+  3) Outputs: target/jmeter/reports/… (HTML), target/jmeter/results/… (CSV), target/jmeter/perf-summary.md
+- Against an already running instance:
+  1) Make executable once: chmod +x scripts/perf/run-perf-against.sh
+  2) Run: scripts/perf/run-perf-against.sh
+- Environment overrides (examples):
+  GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=20 DURATION=120 RAMP_UP=30 \
+  scripts/perf/run-perf-local.sh
+- The local scripts also invoke scripts/perf/summarize_and_compare.py when present to produce a human-readable summary and trend comparison.
+
+CI automation
+- A GitHub Actions workflow (.github/workflows/perf-bench.yml) builds the app, runs mvn -Pperf-test verify, and uploads the HTML dashboards and CSV results as build artifacts on every push to main, on releases, and on manual dispatch.
+- You can download artifacts named perf-results-<run_number> from the workflow run page. They include target/jmeter/reports and target/jmeter/results plus app.log.
+- Default CI load is modest (USERS=10, DURATION=60). Adjust via env in the workflow or override Maven properties.
+
+Scenarios list
+- Single-user smoke (users=1, duration=15): quick sanity
+- Read-heavy search (users=50, ramp=30s, duration=5m): latency and throughput for search endpoints
+- Ingest-heavy UDP (ingest users=50, search users=5): measures ingestion rate and indexing lag while lightly searching
+- Parallel balanced (ingest users=20, search users=20): overall system behavior under mixed load
+
+Notes
+- Ensure rate limiting settings allow the intended load. See RateLimitingFilter.
+- Some endpoints require auth; search endpoints are permitted by default per WebSecurityConfig.
+
 ## Development
 
 ### Backend Development
@@ -242,3 +350,23 @@ If you encounter issues with the frontend:
 1. Make sure you've installed all dependencies with `npm install`
 2. Check for any error messages in the console
 3. Try clearing your browser cache or using incognito mode
+
+
+## Performance trend, visuals, and alerts in CI
+
+- Every run of the Performance Benchmarks workflow produces:
+  - A human-readable summary with tables and colored indicators in the workflow run summary (p95 latency per scenario vs moving average).
+  - HTML dashboards under artifacts: target/jmeter/reports/…
+  - Raw CSV results under artifacts: target/jmeter/results/…
+  - A JSON and Markdown summary under target/jmeter/ (perf-summary.json / perf-summary.md).
+  - A cumulative history file at docs/perf/history.csv and a status badge at docs/perf/badge.svg (committed to main). Changes to docs/perf/** do not retrigger the perf workflow.
+
+- Alert policy (based on p95 latency vs the last 10-run moving average per scenario):
+  - <= 5% change: OK (green)
+  - > 5% and <= 10%: Yellow warning (investigate)
+  - > 10% and <= 20%: Red alert (highlighted, but build continues)
+  - > 20%: Blocking red alert (the job fails to prevent release)
+
+Notes
+- The history file accumulates results across runs on main. You can reset it if needed by editing docs/perf/history.csv.
+- The badge reflects the worst status across scenarios in the latest run (OK/WARN/ALERT).

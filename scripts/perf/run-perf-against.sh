@@ -52,9 +52,11 @@ else
     -DdurationSeconds="$DURATION" verify
 fi
 
-if [[ -f scripts/perf/summarize_and_compare.py ]]; then
-  echo "==> Generating summary and trend comparison"
-  python3 scripts/perf/summarize_and_compare.py || true
+echo "==> Generating summary and trend comparison (Java)"
+if [[ -f scripts/perf/SummarizeAndCompare.java ]]; then
+  java scripts/perf/SummarizeAndCompare.java || true
+else
+  echo "WARN: Java summarizer not found. Skipping summary generation." >&2
 fi
 
 REPORT_DIR="target/jmeter"

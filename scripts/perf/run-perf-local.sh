@@ -90,10 +90,16 @@ else
     -DdurationSeconds="$DURATION" verify
 fi
 
-# Build summary and compare with history if script exists
-if [[ -f scripts/perf/summarize_and_compare.py ]]; then
-  echo "==> Generating summary and trend comparison"
-  python3 scripts/perf/summarize_and_compare.py || true
+# Build summary and compare with history if script exists (skip in CI to avoid double-append)
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
+  echo "==> Generating summary and trend comparison (Java)"
+  if [[ -f scripts/perf/SummarizeAndCompare.java ]]; then
+    java scripts/perf/SummarizeAndCompare.java || true
+  else
+    echo "WARN: Java summarizer not found. Skipping summary generation." >&2
+  fi
+else
+  echo "==> Detected GitHub Actions environment; deferring summary generation to workflow step"
 fi
 
 REPORT_DIR="target/jmeter"

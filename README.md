@@ -207,6 +207,22 @@ Java app logging notes
 
 ## Performance Testing (JMeter)
 
+### Test the Java summarizer locally (without running JMeter)
+- You can validate the SummarizeAndCompare.java tool on your machine before pushing to CI.
+- Quick way:
+  1) Make the helper executable: `chmod +x scripts/perf/test-summarizer.sh`
+  2) Run it: `scripts/perf/test-summarizer.sh`
+     - If target/jmeter/results already contains CSVs from a prior run, it will use them.
+     - Otherwise it generates small synthetic CSVs that mimic JMeter output, then runs the summarizer.
+  3) Outputs:
+     - target/jmeter/perf-summary.md and perf-summary.json
+     - docs/perf/history.csv (appended)
+     - docs/perf/badge.svg (updated to reflect worst status)
+
+- To use real results instead of synthetic ones, first run either:
+  - `scripts/perf/run-perf-local.sh` (builds, starts app, runs JMeter, then runs the summarizer locally), or
+  - `scripts/perf/run-perf-against.sh` (runs JMeter against an already running instance, then runs the summarizer).
+
 We include JMeter-based performance tests to benchmark GrepWise after each release.
 
 What is covered:
@@ -248,7 +264,7 @@ Run locally with helper scripts
 - Environment overrides (examples):
   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=20 DURATION=120 RAMP_UP=30 \
   scripts/perf/run-perf-local.sh
-- The local scripts also invoke scripts/perf/summarize_and_compare.py when present to produce a human-readable summary and trend comparison.
+- The local scripts use the Java summarizer (java scripts/perf/SummarizeAndCompare.java) to produce a human-readable summary and trend comparison.
 
 CI automation
 - A GitHub Actions workflow (.github/workflows/perf-bench.yml) builds the app, runs mvn -Pperf-test verify, and uploads the HTML dashboards and CSV results as build artifacts on every push to main, on releases, and on manual dispatch.

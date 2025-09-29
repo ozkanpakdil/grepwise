@@ -220,8 +220,8 @@ Java app logging notes
      - docs/perf/badge.svg (updated to reflect worst status)
 
 - To use real results instead of synthetic ones, first run either:
-  - `scripts/perf/run-perf-local.sh` (builds, starts app, runs JMeter, then runs the summarizer locally), or
-  - `scripts/perf/run-perf-against.sh` (runs JMeter against an already running instance, then runs the summarizer).
+  - `scripts/perf/local.sh` (builds, starts app, runs JMeter, then runs the summarizer locally), or
+  - `scripts/perf/against.sh` (runs JMeter against an already running instance, then runs the summarizer).
 
 We include JMeter-based performance tests to benchmark GrepWise after each release.
 
@@ -255,15 +255,15 @@ Reports
 
 Run locally with helper scripts
 - Quick start (build, start app, run tests, stop app):
-  1) Make executable once: chmod +x scripts/perf/run-perf-local.sh
-  2) Run: scripts/perf/run-perf-local.sh
+  1) Make executable once: chmod +x scripts/perf/local.sh
+  2) Run: scripts/perf/local.sh
   3) Outputs: target/jmeter/reports/… (HTML), target/jmeter/results/… (CSV), target/jmeter/perf-summary.md
 - Against an already running instance:
-  1) Make executable once: chmod +x scripts/perf/run-perf-against.sh
-  2) Run: scripts/perf/run-perf-against.sh
+  1) Make executable once: chmod +x scripts/perf/against.sh
+  2) Run: scripts/perf/against.sh
 - Environment overrides (examples):
   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=20 DURATION=120 RAMP_UP=30 \
-  scripts/perf/run-perf-local.sh
+  scripts/perf/local.sh
 - The local scripts use the Java summarizer (java scripts/perf/SummarizeAndCompare.java) to produce a human-readable summary and trend comparison.
 
 CI automation

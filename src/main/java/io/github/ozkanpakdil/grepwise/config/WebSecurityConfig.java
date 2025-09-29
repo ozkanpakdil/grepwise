@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -22,6 +23,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -97,6 +99,7 @@ public class WebSecurityConfig {
      * Defines beans for RateLimitingFilter and two security chains (API and default).
      */
     @Bean
+    @ConditionalOnProperty(name = "rate.limiting.enabled", havingValue = "true", matchIfMissing = true)
     public RateLimitingFilter rateLimitingFilter(RateLimitingConfig rateLimitingConfig) {
         return new RateLimitingFilter(rateLimitingConfig);
     }
@@ -108,7 +111,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, RateLimitingFilter rateLimitingFilter) throws Exception {
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, ObjectProvider<RateLimitingFilter> rateLimitingFilterProvider) throws Exception {
         // Limit this chain to API paths only
         http.securityMatcher("/api/**");
 
@@ -131,11 +134,20 @@ public class WebSecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpStatus.UNAUTHORIZED.value()))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpStatus.FORBIDDEN.value()))
-                )
-                // Add rate limiting filter before authentication filter
-                .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(authorize -> authorize
+                );
+
+        // Add authentication filter before authorization
+        http.addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class);
+        // Conditionally add RateLimitingFilter if present (bean created only when rate.limiting.enabled=true)
+        RateLimitingFilter rateLimitingFilter = rateLimitingFilterProvider.getIfAvailable();
+        if (rateLimitingFilter != null) {
+            http.addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class);
+            logger.info("RateLimitingFilter is ENABLED (rate.limiting.enabled=true)");
+        } else {
+            logger.info("RateLimitingFilter is DISABLED (rate.limiting.enabled=false)");
+        }
+
+        http.authorizeHttpRequests(authorize -> authorize
                         // Add LDAP login endpoint if LDAP is enabled
                         .requestMatchers(ldapConfig != null && ldapConfig.isLdapEnabled() ?
                                 "/api/auth/ldap/login" : "/api/auth/non-existent-path").permitAll()
@@ -222,6 +234,7 @@ public class WebSecurityConfig {
      * This avoids duplicate registration that can cause recursive filter invocation and StackOverflowError.
      */
     @Bean
+    @ConditionalOnBean(RateLimitingFilter.class)
     public FilterRegistrationBean<RateLimitingFilter> disableRateLimitingFilterAutoRegistration(RateLimitingFilter filter) {
         FilterRegistrationBean<RateLimitingFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);

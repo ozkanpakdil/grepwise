@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Runs GrepWise locally and executes JMeter performance tests.
+# Starts GrepWise locally and executes JMeter performance tests.
 # Produces HTML dashboards, CSV results, and a summary. Stops the app on exit.
 #
 # Usage:
-#   chmod +x scripts/perf/run-perf-local.sh
-#   scripts/perf/run-perf-local.sh
+#   chmod +x scripts/perf/local.sh
+#   scripts/perf/local.sh
 #
 # Optional environment overrides:
 #   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=2 DURATION=10 RAMP_UP=3 \
-#   scripts/perf/run-perf-local.sh
+#   scripts/perf/local.sh
+#   - RAMP_UP: ramp-up time in seconds to start all USERS. Example: USERS=10 RAMP_UP=10 -> ~1 user starts per second.
 #
 # Notes:
-# - Requires Java and Maven. Frontend will be built by Maven.
+# - Requires Java and Maven. This script does NOT build the npm/frontend; it only starts the Spring Boot backend.
 # - JMeter plans and perf profile are already in pom.xml.
 
 set -euo pipefail
@@ -44,7 +45,6 @@ else
   exit 127
 fi
 
-JAR="target/grepwise-0.0.1-SNAPSHOT.jar"
 APP_LOG="app.log"
 APP_PID="app.pid"
 
@@ -57,16 +57,11 @@ function stop_app() {
 }
 trap stop_app EXIT
 
-echo "==> Building application (skip unit tests)"
-$MVN -B -DskipTests package
-
-if [[ ! -f "$JAR" ]]; then
-  echo "ERROR: Built jar not found at $JAR" >&2
-  exit 1
-fi
-
-echo "==> Launching GrepWise ($JAR)"
-nohup java -jar "$JAR" >"$APP_LOG" 2>&1 &
+# Start backend without packaging to avoid building the npm frontend
+# We intentionally use spring-boot:run so that the prepare-package phase (where frontend builds) is not invoked.
+echo "==> Starting GrepWise backend (skip unit tests; no frontend/npm build)"
+# Do NOT enable Spring Boot debug or TRACE logging during perf runs.
+nohup $MVN -B -DskipFrontend=true -DskipTests -Dspring-boot.run.jvmArguments="-Drate.limiting.enabled=false" spring-boot:run >"$APP_LOG" 2>&1 &
 echo $! > "$APP_PID"
 
 # Wait for health
@@ -76,39 +71,26 @@ for i in {1..90}; do
     echo "==> Application is healthy."
     break
   fi
-  sleep 2
+  sleep 5
   if [[ $i -eq 90 ]]; then
     echo "ERROR: Application did not become healthy in time. See $APP_LOG" >&2
     exit 1
   fi
 done
 
-# Optionally pre-create a UDP syslog source via REST if API requires it in your setup.
-# For defaults, UDP listener 1514 may already be active; adjust if needed.
-
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
-# Optional safety timeout to avoid indefinite hangs, disabled by default to prevent abrupt kills in IDE terminals.
-# Enable by setting PERF_TIMEOUT seconds (e.g., PERF_TIMEOUT=120).
-if [[ -n "${PERF_TIMEOUT:-}" ]] && command -v timeout >/dev/null 2>&1; then
-  echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"
-  timeout "${PERF_TIMEOUT}s" $MVN -B -Pperf-test \
-    -Djmeter.base.dir="$JMETER_BASE_DIR" \
-    -Dgw.host="$GW_HOST" \
-    -Dgw.http.port="$GW_HTTP_PORT" \
-    -Dgw.syslog.port="$GW_SYSLOG_PORT" \
-    -Dusers="$USERS" \
-    -DrampUp="$RAMP_UP" \
-    -DdurationSeconds="$DURATION" verify
-else
-  $MVN -B -Pperf-test \
-    -Djmeter.base.dir="$JMETER_BASE_DIR" \
-    -Dgw.host="$GW_HOST" \
-    -Dgw.http.port="$GW_HTTP_PORT" \
-    -Dgw.syslog.port="$GW_SYSLOG_PORT" \
-    -Dusers="$USERS" \
-    -DrampUp="$RAMP_UP" \
-    -DdurationSeconds="$DURATION" verify
-fi
+PERF_TIMEOUT=120
+echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"
+timeout "${PERF_TIMEOUT}s" $MVN -B -Pperf-test \
+  -Djmeter.skip=false \
+  -Djmeter.base.dir="$JMETER_BASE_DIR" \
+  -Dgw.host="$GW_HOST" \
+  -Dgw.http.port="$GW_HTTP_PORT" \
+  -Dgw.syslog.port="$GW_SYSLOG_PORT" \
+  -Dusers="$USERS" \
+  -DrampUp="$RAMP_UP" \
+  -DdurationSeconds="$DURATION" \
+  jmeter:jmeter jmeter:results
 
 # Build summary and compare with history if script exists (skip in CI to avoid double-append)
 if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
@@ -121,16 +103,6 @@ if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
 else
   echo "==> Detected GitHub Actions environment; deferring summary generation to workflow step"
 fi
-
-# Decide JMeter output base directory: use /tmp for local runs to avoid IDE file sync storms
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  JMETER_BASE_DIR="${JMETER_BASE_DIR:-$ROOT_DIR/target/jmeter}"
-else
-  JMETER_BASE_DIR="${JMETER_BASE_DIR:-/tmp/grepwise-perf-$(date +%s)}"
-fi
-
-# Re-run tests above already executed; the property needs to be passed earlier.
-# Note: We've already executed tests; from now on, just print locations based on JMETER_BASE_DIR.
 
 REPORT_DIR="$JMETER_BASE_DIR"
 echo "\n==> Done. Key outputs:"

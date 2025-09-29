@@ -3,12 +3,12 @@
 # Does not build or start the application.
 #
 # Usage:
-#   chmod +x scripts/perf/run-perf-against.sh
-#   scripts/perf/run-perf-against.sh
+#   chmod +x scripts/perf/against.sh
+#   scripts/perf/against.sh
 #
 # Optional environment overrides:
 #   GW_HOST=localhost GW_HTTP_PORT=8080 GW_SYSLOG_PORT=1514 USERS=2 DURATION=10 RAMP_UP=3 \
-#   scripts/perf/run-perf-against.sh
+#   scripts/perf/against.sh
 
 set -euo pipefail
 

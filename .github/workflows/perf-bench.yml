@@ -34,7 +34,7 @@ jobs:
           node-version: '20'
 
       - name: Make perf scripts executable
-        run: chmod +x scripts/perf/run-perf-local.sh scripts/perf/run-perf-against.sh
+        run: chmod +x scripts/perf/local.sh scripts/perf/against.sh
 
       - name: Run local perf test runner (build, launch, test, stop)
         env:
@@ -45,7 +45,7 @@ jobs:
           DURATION: '5'
           RAMP_UP: '1'
         run: |
-          scripts/perf/run-perf-local.sh
+          scripts/perf/local.sh
 
       - name: Build perf summary and compare to history (Java)
         id: summarize

@@ -13,6 +13,7 @@ jobs:
   perf:
     name: Run JMeter performance tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       actions: read
@@ -21,12 +22,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: graalvm/setup-graalvm@v1
         with:
-          distribution: temurin
-          java-version: '24'
-          cache: 'maven'
+          version: 'latest'
+          java-version: 25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          distribution: 'graalvm-community'
+          native-image-job-reports: 'true'
 
       - name: Setup Node (for frontend build during Maven)
         uses: actions/setup-node@v4

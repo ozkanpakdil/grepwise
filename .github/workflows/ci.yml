@@ -14,13 +14,14 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up JDK 24
-      uses: actions/setup-java@v4
+
+    - uses: graalvm/setup-graalvm@v1
       with:
-        java-version: '24'
-        distribution: 'temurin'
-        cache: maven
+        version: 'latest'
+        java-version: 25
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        distribution: 'graalvm-community'
+        native-image-job-reports: 'true'
     
     - name: Build and Test with Maven
       run: ./mvnw clean test -Dmaven.test.failure.ignore=true -Dmaven.compiler.failOnError=false

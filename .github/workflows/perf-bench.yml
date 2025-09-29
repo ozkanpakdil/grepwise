@@ -74,6 +74,7 @@ jobs:
           echo "\n### GitHub Pages (persistent)" >> $GITHUB_STEP_SUMMARY
           echo "- Latest: ${PAGES_BASE}/latest/" >> $GITHUB_STEP_SUMMARY
           echo "- This run: ${PAGES_BASE}/runs/${RUN}/" >> $GITHUB_STEP_SUMMARY
+          echo "\nNote: Configure GitHub Pages to 'Deploy from a branch' → branch: gh-pages, folder: / (root)." >> $GITHUB_STEP_SUMMARY
 
       - name: Publish perf outputs to docs/ (GitHub Pages)
         if: always()
@@ -83,17 +84,69 @@ jobs:
           LATEST_DIR=docs/perf/latest
           rm -rf "${RUN_DIR}" "${LATEST_DIR}"
           mkdir -p "${RUN_DIR}" "${LATEST_DIR}"
-          # Copy all generated outputs
+          # Copy all generated outputs into this run folder
           cp -r target/jmeter/* "${RUN_DIR}/" || true
-          # Make summary the index for easy viewing on Pages
+          # Copy summaries (keep Markdown and JSON)
           if [ -f target/jmeter/perf-summary.md ]; then
-            cp target/jmeter/perf-summary.md "${RUN_DIR}/index.md"
+            cp target/jmeter/perf-summary.md "${RUN_DIR}/" || true
           fi
           if [ -f target/jmeter/perf-summary.json ]; then
             cp target/jmeter/perf-summary.json "${RUN_DIR}/" || true
           fi
-          # Update latest pointer by copying
+          # Generate a simple HTML index for this run
+          cat > "${RUN_DIR}/index.html" << 'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>GrepWise Perf - This Run</title>
+          <h1>GrepWise Performance - This Run</h1>
+          <ul>
+            <li><a href="perf-summary.md">Markdown summary</a></li>
+            <li><a href="reports/">HTML dashboards</a> (if present)</li>
+            <li><a href="results/">Raw CSV results</a> (if present)</li>
+          </ul>
+          <p><a href="../../latest/">See latest</a></p>
+          HTML
+          
+          # Update latest pointer
+          rm -rf "${LATEST_DIR}"
+          mkdir -p "${LATEST_DIR}"
           cp -r "${RUN_DIR}"/* "${LATEST_DIR}/" || true
+          
+          # Generate an HTML index for the latest folder
+          cat > "${LATEST_DIR}/index.html" << 'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>GrepWise Perf - Latest</title>
+          <h1>GrepWise Performance - Latest</h1>
+          <ul>
+            <li><a href="perf-summary.md">Markdown summary</a></li>
+            <li><a href="reports/">HTML dashboards</a></li>
+            <li><a href="results/">Raw CSV results</a></li>
+          </ul>
+          <p><a href="../">Back to perf index</a></p>
+          HTML
+          
+          # Create top-level landing pages
+          mkdir -p docs/perf
+          cat > docs/index.html << 'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <meta http-equiv="refresh" content="0; url=perf/latest/">
+          <title>GrepWise Perf</title>
+          <p>Redirecting to <a href="perf/latest/">perf/latest/</a>…</p>
+          HTML
+          
+          cat > docs/perf/index.html << 'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>GrepWise Performance</title>
+          <h1>GrepWise Performance</h1>
+          <ul>
+            <li><a href="latest/">Latest results</a></li>
+            <li><a href="runs/">Browse runs</a> (open numeric subfolders)</li>
+          </ul>
+          HTML
+          
           # Ensure GitHub Pages doesn't run Jekyll and can serve nested paths
           touch docs/.nojekyll
 

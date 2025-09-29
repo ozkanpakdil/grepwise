@@ -1,11 +1,11 @@
 # GrepWise Performance Summary
-- Run: 14  Commit: `bf51e3e`  Branch: `main`  Time: 2025-09-29T18:33:37Z
+- Run: 15  Commit: `daa1651`  Branch: `main`  Time: 2025-09-29T19:10:46Z
 
 | Scenario | p95 (ms) | Δ vs avg | Avg (ms) | Throughput (req/s) | Errors (%) | Status |
 |---|---:|---:|---:|---:|---:|:--:|
-| Combined Parallel (BSH) | 12.0 | - | 4.7 | 212.95 | 0.00 | ✅ no baseline |
-| HTTP Search | 2.0 | - | 1.2 | 850.62 | 0.00 | ✅ no baseline |
-| Syslog UDP | 1.0 | - | 0.7 | 1466.75 | 0.00 | ✅ no baseline |
+| Combined Parallel (BSH) | 6.0 | - | 2.3 | 439.45 | 0.00 | ✅ no baseline |
+| HTTP Search | 2.0 | - | 1.2 | 863.32 | 0.00 | ✅ no baseline |
+| Syslog UDP | 1.0 | - | 0.6 | 1617.45 | 0.00 | ✅ no baseline |
 
 ### About scenarios
 
@@ -17,9 +17,9 @@
 
 | Endpoint | Avg (ms) | p95 (ms) | Count | Errors (%) |
 |---|---:|---:|---:|---:|
-| GET /api/logs/search GWPERF-PARALLEL | 5.4 | 12.0 | 101331 | 0.00 |
-| Search GWPERF token | 0.7 | 1.0 | 75907 | 0.00 |
-| UDP Syslog Send (BeanShell) | 0.1 | 1.0 | 23259 | 0.00 |
-| GET /api/logs/search | 1.2 | 2.0 | 787 | 0.00 |
-| GET /api/logs/count | 1.1 | 2.0 | 779 | 0.00 |
+| GET /api/logs/search GWPERF-PARALLEL | 2.4 | 6.0 | 223633 | 0.00 |
+| Search GWPERF token | 0.7 | 1.0 | 85549 | 0.00 |
+| UDP Syslog Send (BeanShell) | 0.1 | 1.0 | 23253 | 0.00 |
+| GET /api/logs/search | 1.2 | 2.0 | 802 | 0.00 |
+| GET /api/logs/count | 1.2 | 2.0 | 796 | 0.00 |
 

@@ -61,7 +61,7 @@ trap stop_app EXIT
 # We intentionally use spring-boot:run so that the prepare-package phase (where frontend builds) is not invoked.
 echo "==> Starting GrepWise backend (skip unit tests; no frontend/npm build)"
 # Do NOT enable Spring Boot debug or TRACE logging during perf runs.
-nohup $MVN -B -DskipFrontend=true -DskipTests -Dspring-boot.run.jvmArguments="-Drate.limiting.enabled=false" spring-boot:run >"$APP_LOG" 2>&1 &
+nohup $MVN -B -ntp -DskipFrontend=true -DskipTests -Dspring-boot.run.jvmArguments="-Drate.limiting.enabled=false" spring-boot:run >"$APP_LOG" 2>&1 &
 echo $! > "$APP_PID"
 
 # Wait for health
@@ -81,7 +81,7 @@ done
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
 PERF_TIMEOUT=120
 echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"
-timeout "${PERF_TIMEOUT}s" $MVN -B -Pperf-test \
+timeout "${PERF_TIMEOUT}s" $MVN -B -ntp -Pperf-test \
   -Djmeter.skip=false \
   -Djmeter.base.dir="$JMETER_BASE_DIR" \
   -Dgw.host="$GW_HOST" \
@@ -90,7 +90,7 @@ timeout "${PERF_TIMEOUT}s" $MVN -B -Pperf-test \
   -Dusers="$USERS" \
   -DrampUp="$RAMP_UP" \
   -DdurationSeconds="$DURATION" \
-  jmeter:jmeter jmeter:results
+  jmeter:configure jmeter:jmeter jmeter:results
 
 # Build summary and compare with history if script exists (skip in CI to avoid double-append)
 if [[ -z "${GITHUB_ACTIONS:-}" ]]; then

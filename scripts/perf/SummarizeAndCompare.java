@@ -90,7 +90,7 @@ public class SummarizeAndCompare {
         thresholds.put("alertPct", ALERT_PCT);
         thresholds.put("blockPct", BLOCK_PCT);
         json.put("thresholds", thresholds);
-        Map<String, Object> jsonScenarios = new LinkedHashMap<>();
+        Map<String, Map<String, Object>> jsonScenarios = new LinkedHashMap<>();
 
         boolean shouldBlock = false;
         for (var entry : scenarios.entrySet()) {
@@ -106,7 +106,11 @@ public class SummarizeAndCompare {
             String level = "green";
             String emoji = "✅";
             String note = "";
-            if (!Double.isNaN(baseline) && baseline > 0 && !Double.isNaN(curP95)) {
+
+            boolean hasData = !Double.isNaN(curP95);
+            if (!hasData) {
+                note = "no data";
+            } else if (!Double.isNaN(baseline) && baseline > 0) {
                 delta = ((curP95 - baseline) / baseline) * 100.0;
                 if (delta > BLOCK_PCT) {
                     level = "red"; emoji = "🛑"; note = "BLOCK (>20%)"; shouldBlock = true;
@@ -122,19 +126,25 @@ public class SummarizeAndCompare {
             worstLevel = worseOf(worstLevel, level);
 
             Map<String, Object> js = new LinkedHashMap<>();
-            js.put("avg_ms", agg.avg_ms);
-            js.put("p95_ms", agg.p95_ms);
-            js.put("throughput", agg.throughput);
-            js.put("err_rate", agg.err_rate);
-            js.put("baseline_p95_ms", baseline);
-            js.put("delta_pct_vs_baseline_p95", delta);
+            js.put("avg_ms", numOrNull(agg.avg_ms));
+            js.put("p95_ms", numOrNull(agg.p95_ms));
+            js.put("throughput", numOrNull(agg.throughput));
+            js.put("err_rate", numOrNull(agg.err_rate));
+            js.put("baseline_p95_ms", numOrNull(baseline));
+            js.put("delta_pct_vs_baseline_p95", numOrNull(delta));
             js.put("level", level);
             js.put("note", note);
             jsonScenarios.put(name, js);
 
             md.append(String.format(Locale.US,
-                    "| %s | %.1f | %.1f%% | %.1f | %.2f | %.2f | %s %s |\n",
-                    name, agg.p95_ms, delta, (Double.isNaN(baseline) ? Double.NaN : baseline), agg.throughput, agg.err_rate, emoji, note));
+                    "| %s | %s | %s | %s | %s | %s | %s %s |\n",
+                    name,
+                    fmtNum(agg.p95_ms, "%.1f"),
+                    fmtNum(delta, "%.1f%%"),
+                    fmtNum(agg.avg_ms, "%.1f"),
+                    fmtNum(agg.throughput, "%.2f"),
+                    fmtNum(agg.err_rate, "%.2f"),
+                    emoji, note));
         }
 
         String badgeColor = "#4c1";
@@ -175,7 +185,7 @@ public class SummarizeAndCompare {
         compact.put("overall", overall);
         Map<String, Object> sc = new LinkedHashMap<>();
         for (var e : jsonScenarios.entrySet()) {
-            Map<String, Object> v = (Map<String, Object>) e.getValue();
+            Map<String, Object> v = e.getValue();
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("p95_ms", v.get("p95_ms"));
             m.put("delta_pct", v.get("delta_pct_vs_baseline_p95"));
@@ -199,6 +209,14 @@ public class SummarizeAndCompare {
     static void ensureDirs() throws IOException {
         ensureDir(OUT_DIR);
         ensureDir(HISTORY_DIR);
+    }
+
+    static Object numOrNull(double d) {
+        return (Double.isNaN(d) || Double.isInfinite(d)) ? null : d;
+    }
+
+    static String fmtNum(double d, String fmt) {
+        return (Double.isNaN(d) || Double.isInfinite(d)) ? "-" : String.format(Locale.US, fmt, d);
     }
 
     static void ensureDir(Path p) throws IOException {

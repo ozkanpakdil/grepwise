@@ -75,11 +75,11 @@ if [[ -f "$OUT_DIR/perf-summary.md" ]]; then
 else
   echo "WARN: Summary files not found in $OUT_DIR. Did the summarizer run?" >&2
 fi
-if [[ -f docs/perf/history.csv ]]; then
-  echo "- History:          docs/perf/history.csv (appended)"
+if [[ -f "$OUT_DIR/history.csv" ]]; then
+  echo "- History:          $OUT_DIR/history.csv (appended)"
 fi
-if [[ -f docs/perf/badge.svg ]]; then
-  echo "- Badge:            docs/perf/badge.svg"
+if [[ -f "$OUT_DIR/badge.svg" ]]; then
+  echo "- Badge:            $OUT_DIR/badge.svg"
 fi
 
 # Show a small preview (first table lines)

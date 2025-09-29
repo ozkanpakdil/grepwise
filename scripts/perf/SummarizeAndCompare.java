@@ -28,11 +28,13 @@ public class SummarizeAndCompare {
     // Config paths
     static final Path RESULTS_DIR = Paths.get("target/jmeter/results");
     static final Path OUT_DIR = Paths.get("target/jmeter");
-    static final Path HISTORY_DIR = Paths.get("docs/perf");
+    // Persist history and badge under build output; the workflow will publish these to gh-pages.
+    static final Path HISTORY_DIR = OUT_DIR;
     static final Path HISTORY_FILE = HISTORY_DIR.resolve("history.csv");
     static final Path SUMMARY_JSON = OUT_DIR.resolve("perf-summary.json");
     static final Path SUMMARY_MD = OUT_DIR.resolve("perf-summary.md");
-    static final Path BADGE_SVG = HISTORY_DIR.resolve("badge.svg");
+    static final Path SUMMARY_HTML = OUT_DIR.resolve("perf-summary.html");
+    static final Path BADGE_SVG = OUT_DIR.resolve("badge.svg");
 
     // Env
     static final String RUN_NUMBER = System.getenv().getOrDefault("GITHUB_RUN_NUMBER", "");
@@ -88,6 +90,15 @@ public class SummarizeAndCompare {
         md.append(String.format("- Run: %s  Commit: `%s`  Branch: `%s`  Time: %s\n\n", RUN_NUMBER, SHA, BRANCH, NOW_ISO));
         md.append("| Scenario | p95 (ms) | Δ vs avg | Avg (ms) | Throughput (req/s) | Errors (%) | Status |\n");
         md.append("|---|---:|---:|---:|---:|---:|:--:|\n");
+
+        // Prepare HTML summary as well
+        StringBuilder html = new StringBuilder();
+        html.append("<!doctype html>\n<meta charset=\"utf-8\">\n<title>GrepWise Performance Summary</title>\n");
+        html.append("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;line-height:1.5;padding:20px} table{border-collapse:collapse;margin:1em 0;width:100%} th,td{border:1px solid #ddd;padding:6px 8px} th{background:#f6f8fa;text-align:left} code{background:#f6f8fa;padding:2px 4px;border-radius:4px}</style>\n");
+        html.append("<h1>GrepWise Performance Summary</h1>\n");
+        html.append(String.format(Locale.US, "<p>Run: %s &nbsp;&nbsp; Commit: <code>%s</code> &nbsp;&nbsp; Branch: <code>%s</code> &nbsp;&nbsp; Time: %s</p>", RUN_NUMBER, SHA, BRANCH, NOW_ISO));
+        html.append("<h2>Scenarios</h2>\n");
+        html.append("<table><thead><tr><th>Scenario</th><th>p95 (ms)</th><th>Δ vs avg</th><th>Avg (ms)</th><th>Throughput (req/s)</th><th>Errors (%)</th><th>Status</th></tr></thead><tbody>\n");
 
         String worstLevel = "green";
         Map<String, Object> json = new LinkedHashMap<>();
@@ -157,7 +168,21 @@ public class SummarizeAndCompare {
                     fmtNum(agg.throughput, "%.2f"),
                     fmtNum(agg.err_rate, "%.2f"),
                     emoji, note));
+
+            // Also add HTML row
+            html.append(String.format(Locale.US,
+                    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s %s</td></tr>\n",
+                    escapeHtml(name),
+                    escapeHtml(fmtNum(agg.p95_ms, "%.1f")),
+                    escapeHtml(fmtNum(delta, "%.1f%%")),
+                    escapeHtml(fmtNum(agg.avg_ms, "%.1f")),
+                    escapeHtml(fmtNum(agg.throughput, "%.2f")),
+                    escapeHtml(fmtNum(agg.err_rate, "%.2f")),
+                    emoji, escapeHtml(note)));
         }
+
+        // Close scenarios table in HTML
+        html.append("</tbody></table>\n");
 
         // Endpoints tested table (aggregated by label across all CSVs)
         Map<String, Agg> endpointsAgg = new LinkedHashMap<>();
@@ -173,11 +198,13 @@ public class SummarizeAndCompare {
         md.append("- HTTP Search: exercises the REST search endpoints over HTTP.\n");
         md.append("- Syslog UDP: sends log events into the UDP syslog ingestion path.\n");
         md.append("- Combined Parallel (BSH): mixed workload that runs multiple samplers in parallel using a BeanShell controller/sampler.\n\n");
+        html.append("<h2>About scenarios</h2><ul><li>HTTP Search: exercises the REST search endpoints over HTTP.</li><li>Syslog UDP: sends log events into the UDP syslog ingestion path.</li><li>Combined Parallel (BSH): mixed workload that runs multiple samplers in parallel using a BeanShell controller/sampler.</li></ul>\n");
 
         if (!endpointList.isEmpty()) {
             md.append("## Endpoints tested (by JMeter label)\n\n");
             md.append("| Endpoint | Avg (ms) | p95 (ms) | Count | Errors (%) |\n");
             md.append("|---|---:|---:|---:|---:|\n");
+            html.append("<h2>Endpoints tested (by JMeter label)</h2><table><thead><tr><th>Endpoint</th><th>Avg (ms)</th><th>p95 (ms)</th><th>Count</th><th>Errors (%)</th></tr></thead><tbody>\n");
         }
         Map<String, Map<String, Object>> jsonEndpoints = new LinkedHashMap<>();
         for (var e : endpointList) {
@@ -189,12 +216,21 @@ public class SummarizeAndCompare {
                     fmtNum(a.p95_ms, "%.1f"),
                     a.count,
                     fmtNum(a.err_rate, "%.2f")));
+            html.append(String.format(Locale.US, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td></tr>\n",
+                    escapeHtml(label),
+                    escapeHtml(fmtNum(a.avg_ms, "%.1f")),
+                    escapeHtml(fmtNum(a.p95_ms, "%.1f")),
+                    a.count,
+                    escapeHtml(fmtNum(a.err_rate, "%.2f"))));
             Map<String,Object> je = new LinkedHashMap<>();
             je.put("avg_ms", numOrNull(a.avg_ms));
             je.put("p95_ms", numOrNull(a.p95_ms));
             je.put("count", a.count);
             je.put("err_rate", numOrNull(a.err_rate));
             jsonEndpoints.put(label, je);
+        }
+        if (!endpointList.isEmpty()) {
+            html.append("</tbody></table>\n");
         }
 
         String badgeColor = "#4c1";
@@ -213,6 +249,7 @@ public class SummarizeAndCompare {
         // Write summary files
         writeString(SUMMARY_JSON, toJson(json));
         writeString(SUMMARY_MD, md.append('\n').toString());
+        writeString(SUMMARY_HTML, html.toString());
 
         // Append to history
         List<String> toAppend = new ArrayList<>();
@@ -464,5 +501,10 @@ public class SummarizeAndCompare {
 
     static String escape(String s) {
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
+    }
+
+    static String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 }

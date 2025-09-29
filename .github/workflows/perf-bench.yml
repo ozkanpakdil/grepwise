@@ -100,12 +100,51 @@ jobs:
           <title>GrepWise Perf - This Run</title>
           <h1>GrepWise Performance - This Run</h1>
           <ul>
-            <li><a href="perf-summary.md">Markdown summary</a></li>
+            <li><a href="perf-summary.html">HTML summary</a></li>
+            <li><a href="perf-summary.md">Markdown summary (raw)</a></li>
             <li><a href="reports/">HTML dashboards</a> (if present)</li>
             <li><a href="results/">Raw CSV results</a> (if present)</li>
           </ul>
+          <div id="reports-list"></div>
+          <div id="results-list"></div>
+          <script>
+          </script>
           <p><a href="../../latest/">See latest</a></p>
           HTML
+
+          # Create index pages under reports/ and results/ for this run
+          if [ -d "${RUN_DIR}/reports" ]; then
+            {
+              echo "<!doctype html>";
+              echo "<meta charset=\"utf-8\">";
+              echo "<title>Reports Index</title>";
+              echo "<h1>JMeter HTML Dashboards</h1>";
+              echo "<ul>";
+              for d in "${RUN_DIR}/reports"/*; do
+                [ -d "$d" ] || continue;
+                base=$(basename "$d");
+                echo "<li><a href=\"$base/index.html\">$base</a></li>";
+              done;
+              echo "</ul>";
+              echo "<p><a href=\"../index.html\">Back</a></p>";
+            } > "${RUN_DIR}/reports/index.html"
+          fi
+          if [ -d "${RUN_DIR}/results" ]; then
+            {
+              echo "<!doctype html>";
+              echo "<meta charset=\"utf-8\">";
+              echo "<title>CSV Results</title>";
+              echo "<h1>Raw CSV Results</h1>";
+              echo "<ul>";
+              for f in "${RUN_DIR}/results"/*.csv; do
+                [ -f "$f" ] || continue;
+                base=$(basename "$f");
+                echo "<li><a href=\"$base\">$base</a></li>";
+              done;
+              echo "</ul>";
+              echo "<p><a href=\"../index.html\">Back</a></p>";
+            } > "${RUN_DIR}/results/index.html"
+          fi
           
           # Update latest pointer
           rm -rf "${LATEST_DIR}"
@@ -119,7 +158,8 @@ jobs:
           <title>GrepWise Perf - Latest</title>
           <h1>GrepWise Performance - Latest</h1>
           <ul>
-            <li><a href="perf-summary.md">Markdown summary</a></li>
+            <li><a href="perf-summary.html">HTML summary</a></li>
+            <li><a href="perf-summary.md">Markdown summary (raw)</a></li>
             <li><a href="reports/">HTML dashboards</a></li>
             <li><a href="results/">Raw CSV results</a></li>
           </ul>
@@ -150,14 +190,14 @@ jobs:
           # Ensure GitHub Pages doesn't run Jekyll and can serve nested paths
           touch docs/.nojekyll
 
-      - name: Commit perf history, badge & pages content
-        if: ${{ always() && github.ref == 'refs/heads/main' }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add docs/perf/history.csv docs/perf/badge.svg docs/perf/runs docs/perf/latest docs/.nojekyll || true
-          git commit -m "chore(perf): update perf history & publish pages [skip ci]" || echo "No history changes"
-          git push || true
+          # Copy history and badge into docs/perf for publishing
+          if [ -f target/jmeter/history.csv ]; then
+            cp target/jmeter/history.csv docs/perf/history.csv || true
+          fi
+          if [ -f target/jmeter/badge.svg ]; then
+            cp target/jmeter/badge.svg docs/perf/badge.svg || true
+          fi
+
 
       - name: Deploy docs/ to gh-pages (persistent website)
         if: always()
@@ -189,8 +229,6 @@ jobs:
           name: perf-results-${{ github.run_number }}
           path: |
             target/jmeter/**
-            docs/perf/history.csv
-            docs/perf/badge.svg
             app.log
 
       - name: Cleanup (stop app)

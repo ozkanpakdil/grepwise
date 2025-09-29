@@ -64,11 +64,21 @@ public class SummarizeAndCompare {
         }
 
         Map<String, Agg> scenarios = new LinkedHashMap<>();
+        // Collect per-endpoint samples across all CSVs
+        Map<String, List<Sample>> endpointSamples = new LinkedHashMap<>();
         for (Path p : csvFiles) {
-            String name = stripExtension(p.getFileName().toString());
+            String raw = stripExtension(p.getFileName().toString());
+            String name = friendlyScenarioName(raw);
             List<Sample> samples = readJMeterCsv(p);
+            // Merge endpoint samples
+            for (Sample s : samples) {
+                endpointSamples.computeIfAbsent(s.label, k -> new ArrayList<>()).add(s);
+            }
             Agg agg = aggregate(samples);
-            scenarios.put(name, agg);
+            // Only keep non-empty scenarios
+            if (!Double.isNaN(agg.p95_ms)) {
+                scenarios.put(name, agg);
+            }
         }
 
         List<HistRow> history = readHistory();
@@ -130,6 +140,8 @@ public class SummarizeAndCompare {
             js.put("p95_ms", numOrNull(agg.p95_ms));
             js.put("throughput", numOrNull(agg.throughput));
             js.put("err_rate", numOrNull(agg.err_rate));
+            js.put("count", agg.count);
+            js.put("errors", agg.errors);
             js.put("baseline_p95_ms", numOrNull(baseline));
             js.put("delta_pct_vs_baseline_p95", numOrNull(delta));
             js.put("level", level);
@@ -147,6 +159,38 @@ public class SummarizeAndCompare {
                     emoji, note));
         }
 
+        // Endpoints tested table (aggregated by label across all CSVs)
+        Map<String, Agg> endpointsAgg = new LinkedHashMap<>();
+        for (var e : endpointSamples.entrySet()) {
+            endpointsAgg.put(e.getKey(), aggregate(e.getValue()));
+        }
+        // Sort endpoints by count desc
+        List<Map.Entry<String, Agg>> endpointList = new ArrayList<>(endpointsAgg.entrySet());
+        endpointList.sort((a,b) -> Integer.compare(b.getValue().count, a.getValue().count));
+
+        if (!endpointList.isEmpty()) {
+            md.append("\n## Endpoints tested (by JMeter label)\n\n");
+            md.append("| Endpoint | Avg (ms) | p95 (ms) | Count | Errors (%) |\n");
+            md.append("|---|---:|---:|---:|---:|\n");
+        }
+        Map<String, Map<String, Object>> jsonEndpoints = new LinkedHashMap<>();
+        for (var e : endpointList) {
+            String label = e.getKey();
+            Agg a = e.getValue();
+            md.append(String.format(Locale.US, "| %s | %s | %s | %d | %s |\n",
+                    label,
+                    fmtNum(a.avg_ms, "%.1f"),
+                    fmtNum(a.p95_ms, "%.1f"),
+                    a.count,
+                    fmtNum(a.err_rate, "%.2f")));
+            Map<String,Object> je = new LinkedHashMap<>();
+            je.put("avg_ms", numOrNull(a.avg_ms));
+            je.put("p95_ms", numOrNull(a.p95_ms));
+            je.put("count", a.count);
+            je.put("err_rate", numOrNull(a.err_rate));
+            jsonEndpoints.put(label, je);
+        }
+
         String badgeColor = "#4c1";
         String badgeText = "OK";
         if ("yellow".equals(worstLevel)) { badgeColor = "#dfb317"; badgeText = "WARN"; }
@@ -158,6 +202,7 @@ public class SummarizeAndCompare {
         overall.put("badge", badgeText);
         json.put("scenarios", jsonScenarios);
         json.put("overall", overall);
+        json.put("endpoints", jsonEndpoints);
 
         // Write summary files
         writeString(SUMMARY_JSON, toJson(json));
@@ -226,6 +271,15 @@ public class SummarizeAndCompare {
     static String stripExtension(String n) {
         int i = n.lastIndexOf('.');
         return i >= 0 ? n.substring(0, i) : n;
+    }
+
+    static String friendlyScenarioName(String raw) {
+        String r = raw.toLowerCase(Locale.ROOT);
+        if (r.contains("http-search")) return "HTTP Search";
+        if (r.contains("syslog-udp")) return "Syslog UDP";
+        if (r.contains("combined-parallel-bsh") || r.contains("combined-parallel")) return "Combined Parallel (BSH)";
+        // Fallback: return original raw name
+        return raw;
     }
 
     static class Sample { double elapsed; boolean success; String label; }

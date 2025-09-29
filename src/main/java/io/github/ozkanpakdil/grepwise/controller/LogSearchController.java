@@ -152,6 +152,53 @@ public class LogSearchController {
     }
 
     /**
+     * Count logs matching the given query and optional time range.
+     * Returns the total number of matching log entries.
+     */
+    @GetMapping("/count")
+    public ResponseEntity<Integer> countLogs(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "false") boolean isRegex,
+            @RequestParam(required = false) String timeRange,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime) {
+
+        // Calculate time range if a predefined range is specified
+        if (timeRange != null && !"custom".equals(timeRange)) {
+            long now = System.currentTimeMillis();
+            long hours = 0;
+            switch (timeRange) {
+                case "1h":
+                    hours = 1;
+                    break;
+                case "3h":
+                    hours = 3;
+                    break;
+                case "12h":
+                    hours = 12;
+                    break;
+                case "24h":
+                    hours = 24;
+                    break;
+                default:
+                    // Invalid time range, ignore
+                    break;
+            }
+            if (hours > 0) {
+                endTime = now;
+                startTime = now - (hours * 60 * 60 * 1000);
+            }
+        }
+
+        try {
+            List<LogEntry> logs = luceneService.search(query, isRegex, startTime, endTime);
+            return ResponseEntity.ok(logs.size());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
      * Execute SPL (Splunk Processing Language) query.
      *
      * @param splQuery The SPL query string (e.g., "search error | stats count by level")

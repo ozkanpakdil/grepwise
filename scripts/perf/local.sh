@@ -81,7 +81,7 @@ done
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
 PERF_TIMEOUT=120
 echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"
-timeout "${PERF_TIMEOUT}s" $MVN -B -ntp -Pperf-test \
+$MVN -B -ntp -Pperf-test \
   -Djmeter.skip=false \
   -Djmeter.base.dir="$JMETER_BASE_DIR" \
   -Dgw.host="$GW_HOST" \

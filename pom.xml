@@ -499,16 +499,6 @@
                             <reportDirectory>${jmeter.base.dir}/reports</reportDirectory>
                             <generateReports>true</generateReports>
                             <resultsFileFormat>csv</resultsFileFormat>
-                            <propertiesUser>
-                                <users>${users}</users>
-                                <rampUp>${rampUp}</rampUp>
-                                <durationSeconds>${durationSeconds}</durationSeconds>
-                                <gw.host>${gw.host}</gw.host>
-                                <gw.http.port>${gw.http.port}</gw.http.port>
-                                <gw.syslog.port>${gw.syslog.port}</gw.syslog.port>
-                                <search.query>${search.query}</search.query>
-                                <search.size>${search.size}</search.size>
-                            </propertiesUser>
                         </configuration>
                     </plugin>
                 </plugins>

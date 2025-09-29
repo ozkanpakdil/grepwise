@@ -90,7 +90,7 @@ timeout "${PERF_TIMEOUT}s" $MVN -B -ntp -Pperf-test \
   -Dusers="$USERS" \
   -DrampUp="$RAMP_UP" \
   -DdurationSeconds="$DURATION" \
-  jmeter:configure jmeter:jmeter jmeter:results
+  jmeter:configure@configuration jmeter:jmeter@jmeter-tests jmeter:results@jmeter-tests
 
 # Build summary and compare with history if script exists (skip in CI to avoid double-append)
 if [[ -z "${GITHUB_ACTIONS:-}" ]]; then

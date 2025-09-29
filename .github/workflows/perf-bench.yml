@@ -94,21 +94,40 @@ jobs:
           fi
           # Update latest pointer by copying
           cp -r "${RUN_DIR}"/* "${LATEST_DIR}/" || true
-      
+          # Ensure GitHub Pages doesn't run Jekyll and can serve nested paths
+          touch docs/.nojekyll
+
       - name: Commit perf history, badge & pages content
         if: ${{ always() && github.ref == 'refs/heads/main' }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add docs/perf/history.csv docs/perf/badge.svg docs/perf/runs docs/perf/latest || true
+          git add docs/perf/history.csv docs/perf/badge.svg docs/perf/runs docs/perf/latest docs/.nojekyll || true
           git commit -m "chore(perf): update perf history & publish pages [skip ci]" || echo "No history changes"
           git push || true
+
+      - name: Deploy docs/ to gh-pages (persistent website)
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs
+          force_orphan: true
 
       - name: Enforce block threshold (>20% regression)
         if: ${{ steps.summarize.outputs.code == '2' }}
         run: |
           echo "Performance regression exceeds 20% in p95 latency for at least one scenario. Failing the job." >&2
           exit 1
+
+      - name: GraalVM native-image smoke build (optional)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "Attempting native-image build for smoke testing..."
+          ./mvnw -q -B -Pnative -DskipTests package || mvn -q -B -Pnative -DskipTests package || true
+          echo "Native build finished (success or tolerated failure)."
 
       - name: Upload artifacts (JMeter reports & logs)
         if: always()

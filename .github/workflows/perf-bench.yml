@@ -28,7 +28,7 @@ jobs:
           java-version: 25
           github-token: ${{ secrets.GITHUB_TOKEN }}
           distribution: 'graalvm-community'
-          native-image-job-reports: 'true'
+          native-image-job-reports: 'false'
 
       - name: Setup Node (for frontend build during Maven)
         uses: actions/setup-node@v4
@@ -59,6 +59,10 @@ jobs:
           java scripts/perf/SummarizeAndCompare.java
           CODE=$?
           echo "code=$CODE" >> $GITHUB_OUTPUT
+          REPO=${{ github.repository }}
+          OWNER=${{ github.repository_owner }}
+          RUN=${{ github.run_number }}
+          PAGES_BASE="https://${OWNER}.github.io/${REPO#*/}/perf"
           if [ -f target/jmeter/perf-summary.md ]; then
             cat target/jmeter/perf-summary.md >> $GITHUB_STEP_SUMMARY
           else
@@ -67,14 +71,37 @@ jobs:
           echo "\n### Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "- HTML dashboards: target/jmeter/reports/…" >> $GITHUB_STEP_SUMMARY
           echo "- Raw CSV results: target/jmeter/results/…" >> $GITHUB_STEP_SUMMARY
+          echo "\n### GitHub Pages (persistent)" >> $GITHUB_STEP_SUMMARY
+          echo "- Latest: ${PAGES_BASE}/latest/" >> $GITHUB_STEP_SUMMARY
+          echo "- This run: ${PAGES_BASE}/runs/${RUN}/" >> $GITHUB_STEP_SUMMARY
 
-      - name: Commit perf history & badge
+      - name: Publish perf outputs to docs/ (GitHub Pages)
+        if: always()
+        run: |
+          RUN=${{ github.run_number }}
+          RUN_DIR=docs/perf/runs/${RUN}
+          LATEST_DIR=docs/perf/latest
+          rm -rf "${RUN_DIR}" "${LATEST_DIR}"
+          mkdir -p "${RUN_DIR}" "${LATEST_DIR}"
+          # Copy all generated outputs
+          cp -r target/jmeter/* "${RUN_DIR}/" || true
+          # Make summary the index for easy viewing on Pages
+          if [ -f target/jmeter/perf-summary.md ]; then
+            cp target/jmeter/perf-summary.md "${RUN_DIR}/index.md"
+          fi
+          if [ -f target/jmeter/perf-summary.json ]; then
+            cp target/jmeter/perf-summary.json "${RUN_DIR}/" || true
+          fi
+          # Update latest pointer by copying
+          cp -r "${RUN_DIR}"/* "${LATEST_DIR}/" || true
+      
+      - name: Commit perf history, badge & pages content
         if: ${{ always() && github.ref == 'refs/heads/main' }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add docs/perf/history.csv docs/perf/badge.svg || true
-          git commit -m "chore(perf): update perf history [skip ci]" || echo "No history changes"
+          git add docs/perf/history.csv docs/perf/badge.svg docs/perf/runs docs/perf/latest || true
+          git commit -m "chore(perf): update perf history & publish pages [skip ci]" || echo "No history changes"
           git push || true
 
       - name: Enforce block threshold (>20% regression)

@@ -168,8 +168,14 @@ public class SummarizeAndCompare {
         List<Map.Entry<String, Agg>> endpointList = new ArrayList<>(endpointsAgg.entrySet());
         endpointList.sort((a,b) -> Integer.compare(b.getValue().count, a.getValue().count));
 
+        // Helpful descriptions for scenarios
+        md.append("\n### About scenarios\n\n");
+        md.append("- HTTP Search: exercises the REST search endpoints over HTTP.\n");
+        md.append("- Syslog UDP: sends log events into the UDP syslog ingestion path.\n");
+        md.append("- Combined Parallel (BSH): mixed workload that runs multiple samplers in parallel using a BeanShell controller/sampler.\n\n");
+
         if (!endpointList.isEmpty()) {
-            md.append("\n## Endpoints tested (by JMeter label)\n\n");
+            md.append("## Endpoints tested (by JMeter label)\n\n");
             md.append("| Endpoint | Avg (ms) | p95 (ms) | Count | Errors (%) |\n");
             md.append("|---|---:|---:|---:|---:|\n");
         }

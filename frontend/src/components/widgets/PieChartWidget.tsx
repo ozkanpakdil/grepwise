@@ -1,10 +1,9 @@
-import React from 'react';
-
-interface Widget { id: string; title: string }
 interface DataRow { [k: string]: number }
 interface Data { results: DataRow[]; timeSlots?: any[]; total?: number }
 
-export default function PieChartWidget({ data, widget }: { data: Data; widget: Widget }) {
+type Props = { data: Data; widget: unknown };
+
+export default function PieChartWidget({ data }: Props) {
   const isSmall = typeof window !== 'undefined' && window.innerWidth < 640;
 
   const entries = Object.entries(data.results?.[0] || {});

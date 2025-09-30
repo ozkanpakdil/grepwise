@@ -1,10 +1,9 @@
-import React from 'react';
-
 interface TimeSlot { time: number; count: number }
 interface Data { results?: any[]; timeSlots: TimeSlot[]; total?: number }
-interface Widget { id: string; title: string }
 
-export default function BarChartWidget({ data, widget }: { data: Data; widget: Widget }) {
+type Props = { data: Data; widget: unknown };
+
+export default function BarChartWidget({ data }: Props) {
   const isSmall = typeof window !== 'undefined' && window.innerWidth < 640;
   const gapClass = isSmall ? 'gap-0.5' : 'gap-1';
   const labelClass = isSmall ? 'text-[10px]' : 'text-xs';

@@ -1,10 +1,9 @@
-import React from 'react';
-
 interface TimeSlot { time: number; count: number }
 interface Data { timeSlots: TimeSlot[] }
-interface Widget { id: string; title: string }
 
-export default function LineChartWidget({ data, widget }: { data: Data; widget: Widget }) {
+type Props = { data: Data; widget: unknown };
+
+export default function LineChartWidget({ data }: Props) {
   const isSmall = typeof window !== 'undefined' && window.innerWidth < 640;
   const textClass = isSmall ? 'text-[10px]' : 'text-xs';
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, BarChart3, Eye, PieChart, Plus, Share2, Table, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { notifySuccess, useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Dashboard, dashboardApi, DashboardRequest, WidgetRequest } from '@/api/dashboard';
 import { formatDate } from '@/lib/utils';
 

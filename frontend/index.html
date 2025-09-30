@@ -12,6 +12,17 @@
     <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
     <meta content="GrepWise" name="apple-mobile-web-app-title"/>
     <title>GrepWise</title>
+  <script>
+    // In development, ensure any previously registered service workers are unregistered
+    if ('serviceWorker' in navigator) {
+      // Vite exposes import.meta.env.DEV
+      if (window.location.hostname === 'localhost') {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((reg) => reg.unregister());
+        }).catch(() => {});
+      }
+    }
+  </script>
 </head>
 <body>
 <div id="root"></div>

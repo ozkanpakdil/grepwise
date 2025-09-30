@@ -16,13 +16,29 @@ export function cn(...inputs: ClassValue[]) {
  * @returns The formatted date string
  */
 export function formatDate(
-  date: Date | number,
+  dateInput: Date | number | string | null | undefined,
   options: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   }
 ) {
+  // Normalize input to a valid Date, return empty string if invalid to avoid runtime crashes in UI/tests
+  let date: Date | null = null;
+
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else if (typeof dateInput === 'number') {
+    date = new Date(dateInput);
+  } else if (typeof dateInput === 'string') {
+    // Allow ISO or other parseable date strings
+    date = new Date(dateInput);
+  }
+
+  if (!date || isNaN(date.getTime())) {
+    return '';
+  }
+
   return new Intl.DateTimeFormat('en-US', {
     ...options,
   }).format(date);

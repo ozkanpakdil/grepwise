@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { notifyError } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatTimestamp } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -122,6 +122,8 @@ export default function MonitoringPage() {
   const [systemMetrics, setSystemMetrics] = useState<MetricValue[]>([]);
   const [httpMetrics, setHttpMetrics] = useState<MetricValue[]>([]);
 
+  const { toast } = useToast();
+
   // Function to fetch all metrics
   const fetchMetrics = async () => {
     setLoading(true);
@@ -144,7 +146,7 @@ export default function MonitoringPage() {
       setLastRefreshed(new Date());
     } catch (error) {
       console.error('Error fetching metrics:', error);
-      notifyError(error, 'Error', 'Failed to fetch metrics. Please try again.');
+      toast({ title: 'Error', description: 'Failed to fetch metrics. Please try again.', variant: 'destructive' as any });
     } finally {
       setLoading(false);
     }

@@ -16,7 +16,7 @@ import {
   X as XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { notifyError, notifySuccess, useToast } from '@/components/ui/use-toast';
+import { notifySuccess, useToast } from '@/components/ui/use-toast';
 import { Dashboard, dashboardApi } from '@/api/dashboard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -102,7 +102,7 @@ const DashboardView: React.FC = () => {
       const data = await dashboardApi.getDashboard(id, 'current-user');
       setDashboard(data);
     } catch (error) {
-      notifyError(error, 'Error', 'Failed to load dashboard');
+      toast({ title: 'Error', description: 'Failed to load dashboard', variant: 'destructive' as any });
       navigate('/dashboards');
     } finally {
       setLoading(false);
@@ -225,7 +225,7 @@ const DashboardView: React.FC = () => {
 
       notifySuccess('Dashboard exported as PDF');
     } catch (error) {
-      notifyError(error, 'Error', 'Failed to export dashboard as PDF');
+      toast({ title: 'Error', description: 'Failed to export dashboard as PDF', variant: 'destructive' as any });
       console.error('PDF export error:', error);
     } finally {
       setExporting(false);
@@ -265,7 +265,7 @@ const DashboardView: React.FC = () => {
 
       notifySuccess('Dashboard exported as image');
     } catch (error) {
-      notifyError(error, 'Error', 'Failed to export dashboard as image');
+      toast({ title: 'Error', description: 'Failed to export dashboard as image', variant: 'destructive' as any });
       console.error('Image export error:', error);
     } finally {
       setExporting(false);

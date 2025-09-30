@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { notifyError, notifySuccess } from '@/components/ui/use-toast';
+import { notifySuccess, useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -16,20 +16,23 @@ export default function AlarmMonitoringPage() {
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { toast } = useToast();
+
   // Load alarms, events, and statistics on component mount
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [statsData, eventsData] = await Promise.all([
+        const [statsData, _alarms, eventsData] = await Promise.all([
           alarmApi.getStatistics(),
+          alarmApi.getAllAlarms(),
           alarmApi.getAlarmEvents(),
         ]);
 
         setStatistics(statsData);
         setAlarmEvents(eventsData);
       } catch (error) {
-        notifyError(error, 'Error', 'Failed to load alarm data');
+        toast({ title: 'Error', description: 'Failed to load alarm data', variant: 'destructive' as any });
       } finally {
         setLoading(false);
       }
@@ -71,9 +74,9 @@ export default function AlarmMonitoringPage() {
       // Update the local state with the response from the API
       setAlarmEvents((prev) => prev.map((event) => (event.id === eventId ? updatedEvent : event)));
 
-      notifySuccess('The alarm has been acknowledged successfully', 'Alarm acknowledged');
+      toast({ title: 'Alarm acknowledged', description: 'The alarm has been acknowledged successfully' });
     } catch (error) {
-      notifyError(error, 'Error', 'Failed to acknowledge alarm');
+      toast({ title: 'Error', description: 'Failed to acknowledge alarm', variant: 'destructive' as any });
     }
   };
 
@@ -86,9 +89,9 @@ export default function AlarmMonitoringPage() {
       // Update the local state with the response from the API
       setAlarmEvents((prev) => prev.map((event) => (event.id === eventId ? updatedEvent : event)));
 
-      notifySuccess('The alarm has been resolved successfully', 'Alarm resolved');
+      toast({ title: 'Alarm resolved', description: 'The alarm has been resolved successfully' });
     } catch (error) {
-      notifyError(error, 'Error', 'Failed to resolve alarm');
+      toast({ title: 'Error', description: 'Failed to resolve alarm', variant: 'destructive' as any });
     }
   };
 

@@ -36,15 +36,14 @@ jobs:
     
     - name: Build and Test with Maven
       run: mvn -ntp clean verify
-      continue-on-error: true
-      
+
     - name: Publish Test Report
       uses: mikepenz/action-junit-report@v4
       if: always()
       with:
         report_paths: '**/target/surefire-reports/TEST-*.xml'
-        fail_on_failure: false
-        require_tests: false
+        fail_on_failure: true
+        require_tests: true
         check_name: Backend Test Results
 
   frontend-tests:
@@ -136,20 +135,11 @@ jobs:
         with:
           name: grepwise-jar
           path: dist
-      - name: Download Linux native artifact
+      - name: Download native artifacts (Linux & Windows)
         uses: actions/download-artifact@v4
         with:
-          name: grepwise-native-Linux
-          path: dist
-      - name: Download macOS native artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: grepwise-native-macOS
-          path: dist
-      - name: Download Windows native artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: grepwise-native-Windows
+          pattern: grepwise-native-*
+          merge-multiple: true
           path: dist
       - name: List release assets
         run: ls -la dist

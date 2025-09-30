@@ -143,12 +143,22 @@ jobs:
           path: dist
       - name: List release assets
         run: ls -la dist
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/**
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          target_commitish: ${{ github.sha }}
+      - name: Determine release tag
+        id: vars
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "TAG=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create GitHub Release with assets (single call)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating release for tag: ${{ steps.vars.outputs.TAG }}"
+          gh release create "${{ steps.vars.outputs.TAG }}" dist/* \
+            --target "${{ github.sha }}" \
+            --title "GrepWise ${{ steps.vars.outputs.TAG }}" \
+            --generate-notes \
+            --latest

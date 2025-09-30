@@ -86,7 +86,6 @@ jobs:
           name: grepwise-jar
           path: |
             target/*-SNAPSHOT.jar
-            target/*-SNAPSHOT-plain.jar
           retention-days: 7
 
   native-build:
@@ -108,9 +107,8 @@ jobs:
       - name: Build native
         run: mvn -ntp -Pnative -DskipTests package
       - name: Show target contents
-        if: always()
         run: |
-          ls -la target || dir target
+          ls target
       - name: Upload Native Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -118,10 +116,6 @@ jobs:
           path: |
             target/grepwise
             target/grepwise.exe
-            target/*-SNAPSHOT
-            target/*-SNAPSHOT.exe
-          if-no-files-found: warn
-          retention-days: 7
 
   release:
     name: Release

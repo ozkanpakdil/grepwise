@@ -383,7 +383,7 @@ public class SyslogServer {
                     String message = new String(packet.getData(), 0, packet.getLength());
                     String source = "syslog-udp:" + config.getSyslogPort();
 
-                    logger.debug("Received UDP syslog message: {}", message);
+                    logger.trace("Received UDP syslog message: {}", message);
                     processMessage(message, source);
 
                     // Reset the packet for the next receive
@@ -472,7 +472,7 @@ public class SyslogServer {
         @Override
         public void run() {
             String clientAddress = clientSocket.getInetAddress().getHostAddress();
-            logger.debug("TCP syslog client connected: {}", clientAddress);
+            logger.trace("TCP syslog client connected: {}", clientAddress);
 
             try (java.io.BufferedReader reader = new java.io.BufferedReader(
                     new java.io.InputStreamReader(clientSocket.getInputStream()))) {
@@ -481,7 +481,7 @@ public class SyslogServer {
                 String line;
 
                 while ((line = reader.readLine()) != null) {
-                    logger.debug("Received TCP syslog message: {}", line);
+                    logger.trace("Received TCP syslog message: {}", line);
                     // Create a log entry from the message and add it to the buffer
                     LogEntry logEntry = parseSyslogMessage(line, config.getSyslogFormat(), source);
                     logBufferService.addToBuffer(logEntry);
@@ -495,7 +495,7 @@ public class SyslogServer {
                     logger.error("Error closing TCP client socket", e);
                 }
 
-                logger.debug("TCP syslog client disconnected: {}", clientAddress);
+                logger.trace("TCP syslog client disconnected: {}", clientAddress);
             }
         }
     }

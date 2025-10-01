@@ -165,6 +165,14 @@ GrepWise includes a built-in Syslog server that can ingest logs over the network
 - Default port: 1514 (unprivileged). If running as root or with CAP_NET_BIND_SERVICE, you may choose 514.
 - Formats: RFC3164 (BSD) and RFC5424 (IETF)
 
+Quick start (create and start a listener via script):
+- Ensure backend is running on http://localhost:8080
+- Run: `scripts/enable-syslog.sh` (defaults to TCP 1514 RFC5424)
+  - UDP instead: `scripts/enable-syslog.sh -p UDP`
+  - Different port: `scripts/enable-syslog.sh -P 5514`
+- Send sample logs: `scripts/send-logs.sh` (or `scripts/send-logs.sh -p UDP` to match your listener)
+- Troubleshooting: if send-logs shows "Connection refused", the listener was not created/started; rerun enable-syslog.sh.
+
 How to enable a syslog listener via REST:
 
 1) Create a syslog source (example uses TCP 1514, RFC5424):
@@ -257,6 +265,7 @@ Run locally with helper scripts
 - Quick start (build, start app, run tests, stop app):
   1) Make executable once: chmod +x scripts/perf/local.sh
   2) Run: scripts/perf/local.sh
+     - Note: local.sh will automatically enable a UDP syslog listener on GW_SYSLOG_PORT (default 1514) via scripts/enable-syslog.sh so that syslog-udp.jmx can send packets. Set GW_ENABLE_SYSLOG=0 to skip.
   3) Outputs: target/jmeter/reports/… (HTML), target/jmeter/results/… (CSV), target/jmeter/perf-summary.md
 - Against an already running instance:
   1) Make executable once: chmod +x scripts/perf/against.sh

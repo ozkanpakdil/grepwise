@@ -78,6 +78,19 @@ for i in {1..90}; do
   fi
 done
 
+# Ensure a UDP syslog listener is active (by default) so that syslog-udp.jmx can deliver packets
+GW_ENABLE_SYSLOG="${GW_ENABLE_SYSLOG:-1}"
+if [[ "$GW_ENABLE_SYSLOG" == "1" ]]; then
+  if [[ -x scripts/enable-syslog.sh ]]; then
+    echo "==> Ensuring UDP syslog listener is enabled on port $GW_SYSLOG_PORT"
+    scripts/enable-syslog.sh -p UDP -P "$GW_SYSLOG_PORT" -H "http://$GW_HOST:$GW_HTTP_PORT" || echo "WARN: enable-syslog failed; continuing"
+  else
+    echo "WARN: scripts/enable-syslog.sh not found or not executable; skipping auto-enable of UDP listener" >&2
+  fi
+else
+  echo "==> Skipping auto-enable of syslog listener (GW_ENABLE_SYSLOG=$GW_ENABLE_SYSLOG)"
+fi
+
 echo "==> Running JMeter perf tests (users=$USERS duration=${DURATION}s rampUp=${RAMP_UP}s)"
 PERF_TIMEOUT=120
 echo "==> Using timeout ${PERF_TIMEOUT}s to guard the perf run"

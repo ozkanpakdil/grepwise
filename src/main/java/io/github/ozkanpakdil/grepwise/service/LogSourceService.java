@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,11 +24,78 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class LogSourceService {
+
+    // --- Auto-start Syslog default listener settings (configurable via application properties/env) ---
+    @Value("${syslog.autostart:true}")
+    private boolean syslogAutostart;
+
+    @Value("${syslog.default.id:syslog-default}")
+    private String syslogDefaultId;
+
+    @Value("${syslog.default.name:Syslog Default}")
+    private String syslogDefaultName;
+
+    @Value("${syslog.default.port:1514}")
+    private int syslogDefaultPort;
+
+    @Value("${syslog.default.protocol:TCP}")
+    private String syslogDefaultProtocol;
+
+    @Value("${syslog.default.format:RFC5424}")
+    private String syslogDefaultFormat;
     private static final Logger logger = LoggerFactory.getLogger(LogSourceService.class);
 
     private final LogScannerService logScannerService;
     private final SyslogServer syslogServer;
     private final HttpLogController httpLogController;
+
+    @PostConstruct
+    private void initDefaultSyslogListener() {
+        try {
+            if (!syslogAutostart) {
+                logger.info("Syslog autostart is disabled via property syslog.autostart=false");
+                return;
+            }
+
+            // If a source with the configured ID already exists, do not override user settings
+            LogSourceConfig existing = getSourceById(syslogDefaultId);
+            if (existing == null) {
+                LogSourceConfig cfg = new LogSourceConfig();
+                cfg.setId(syslogDefaultId);
+                cfg.setName(syslogDefaultName != null && !syslogDefaultName.isBlank()
+                        ? syslogDefaultName
+                        : ("TCP".equalsIgnoreCase(syslogDefaultProtocol) ? ("Syslog TCP " + syslogDefaultPort)
+                        : ("Syslog UDP " + syslogDefaultPort)));
+                cfg.setEnabled(true);
+                cfg.setSourceType(LogSourceConfig.SourceType.SYSLOG);
+                cfg.setSyslogPort(syslogDefaultPort);
+                cfg.setSyslogProtocol(syslogDefaultProtocol);
+                cfg.setSyslogFormat(syslogDefaultFormat);
+
+                try {
+                    createSource(cfg);
+                    logger.info("Created default syslog source '{}' ({} {} {})", cfg.getId(), cfg.getSyslogProtocol(), cfg.getSyslogPort(), cfg.getSyslogFormat());
+                } catch (Exception e) {
+                    logger.warn("Default syslog source creation failed (may already exist). Continuing.", e);
+                }
+            } else {
+                logger.info("Default syslog source '{}' already present; will not overwrite.", syslogDefaultId);
+            }
+
+            // Start (or ensure started) if enabled
+            LogSourceConfig toStart = getSourceById(syslogDefaultId);
+            if (toStart != null && toStart.isEnabled()) {
+                boolean started = startSource(toStart);
+                if (started) {
+                    logger.info("Default syslog listener is active on {} {}", toStart.getSyslogProtocol(), toStart.getSyslogPort());
+                } else {
+                    logger.warn("Failed to start default syslog listener on {} {}", toStart.getSyslogProtocol(), toStart.getSyslogPort());
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error during default syslog autostart initialization", e);
+        }
+    }
     private final CloudWatchLogService cloudWatchLogService;
     private final LogDirectoryConfigRepository legacyConfigRepository;
     private final LogIngestionCoordinatorService coordinatorService;

@@ -1,7 +1,7 @@
 # GrepWise Installation and Local Run Guide
 
 This guide explains how to install and run GrepWise using either:
-- Prebuilt native executables (recommended) from GitHub Releases for Linux, macOS, and Windows
+- Prebuilt native executables (recommended) from [GitHub Releases](https://github.com/ozkanpakdil/grepwise/releases) for Linux, and Windows
 - The portable Spring Boot JAR (requires a JDK)
 
 You can also build from source if you prefer.
@@ -12,24 +12,17 @@ You can also build from source if you prefer.
 When a new version is tagged (vX.Y.Z), the CI publishes a GitHub Release with:
 - Native executables:
   - Linux: `grepwise` (executable)
-  - macOS: `grepwise` (executable)
   - Windows: `grepwise.exe`
 - Spring Boot JAR: `grepwise-<version>.jar`
 
 Steps:
-1. Go to the Releases page of the repository.
+1. Go to the [Releases page](https://github.com/ozkanpakdil/grepwise/releases) of the repository.
 2. Download the asset for your operating system (or the JAR if you prefer).
 
 
 ### Linux
 1. Download `grepwise` from the release assets.
 2. Make it executable and run:
-   - `chmod +x ./grepwise`
-   - `./grepwise`
-
-### macOS
-1. Download `grepwise` from the release assets.
-2. First run may require allowing the binary in System Settings (Gatekeeper). Then:
    - `chmod +x ./grepwise`
    - `./grepwise`
 
@@ -45,7 +38,7 @@ If you see a security prompt, open System Settings → Privacy & Security and al
 ## 2) Run with JAR (requires JDK)
 
 If you prefer the portable JAR:
-1. Ensure you have a recent JDK (21+ recommended; 25 is used in CI).
+1. Ensure you have a recent JDK (24+ recommended; 25 is used in CI).
    - Verify with: `java -version`
 2. Download `grepwise-<version>.jar` from Releases.
 3. Run:
@@ -81,11 +74,11 @@ Steps:
    - `git clone https://github.com/<owner>/grepwise.git`
    - `cd grepwise`
 2. Build the Spring Boot JAR:
-   - `./mvnw -DskipTests package`
+   - `mvn -DskipTests package`
    - The JAR will be in `target/grepwise-<version>.jar`
-3. Build a native image (Linux/macOS):
+3. Build a native image (Linux):
    - Install GraalVM (Community or Enterprise) and native‑image
-   - `./mvnw -Pnative -DskipTests package`
+   - `mvn -Pnative -DskipTests package`
    - Output binary will be in `target/grepwise` (Windows: `target/grepwise.exe`)
 
 Windows local native build notes:
@@ -105,7 +98,6 @@ Logs will be printed to the console by default; check the repository README for 
 ## 6) Troubleshooting
 
 - Port already in use: Change with `--server.port=<port>` or set `SERVER_PORT` env var.
-- macOS “unidentified developer” warning: Open System Settings → Privacy & Security → Allow Anyway.
 - Windows missing MSVC when building native: Install Visual Studio Build Tools with C++ workload.
 - GraalVM native build errors: Ensure you’re using a GraalVM version compatible with your JDK (CI uses latest GraalVM with Java 25) and that `native-image` is installed.
 

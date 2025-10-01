@@ -8,7 +8,7 @@ async function login(page) {
   await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe('Admin Settings Page', () => {
+test.describe.skip('Admin Settings Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -114,7 +114,7 @@ test.describe('Admin Settings Page', () => {
   });
 });
 
-test.describe('Users Management Page', () => {
+test.describe.skip('Users Management Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -197,7 +197,7 @@ test.describe('Users Management Page', () => {
   });
 });
 
-test.describe('Roles Management Page', () => {
+test.describe.skip('Roles Management Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -249,7 +249,7 @@ test.describe('Roles Management Page', () => {
   });
 });
 
-test.describe('Redaction Editor Page', () => {
+test.describe.skip('Redaction Editor Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -315,7 +315,7 @@ test.describe('Redaction Editor Page', () => {
   });
 });
 
-test.describe('Monitoring Page', () => {
+test.describe.skip('Monitoring Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });

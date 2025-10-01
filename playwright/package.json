@@ -11,6 +11,6 @@
     "test:headed": "playwright test --headed",
     "codegen": "playwright codegen",
     "install-browsers": "playwright install",
-    "install-browsers:ci": "playwright install --with-deps"
+    "install-browsers:ci": "playwright install --with-deps chromium firefox webkit"
   }
 }

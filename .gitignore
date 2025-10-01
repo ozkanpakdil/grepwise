@@ -70,3 +70,8 @@ logs/app.log
 /frontend/node/npm.cmd
 /frontend/node/npx
 /frontend/node/npx.cmd
+
+## Playwright test results
+/playwright/test-results/
+/playwright/playwright-report/
+/playwright/.cache/

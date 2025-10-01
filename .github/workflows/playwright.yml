@@ -1,9 +1,11 @@
-name: Playwright E2E
+name: Playwright E2E Tests
 
-#on:
-#  push:
-#    branches: [ main ]
-#  pull_request:
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   e2e:
@@ -59,12 +61,60 @@ jobs:
           BASE_URL: http://localhost:3000
         run: npm test
 
-      - name: Upload Playwright report (on failure)
-        if: failure()
+      - name: Upload Playwright report (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright/playwright-report
+          name: playwright-report-${{ github.run_number }}
+          path: playwright/playwright-report/
+          retention-days: 30
+
+      - name: Setup Hugo
+        if: always() && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest'
+          extended: true
+
+      - name: Setup Hugo theme
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          cd docs
+          mkdir -p themes
+          git clone https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
+
+      - name: Build Hugo site
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          cd docs
+          hugo --minify --theme PaperMod
+
+      - name: Copy test reports to Hugo site
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p docs/public/playwright/latest/
+          cp -r playwright/playwright-report/* docs/public/playwright/latest/
+          
+          # Create archive directory with timestamp
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          mkdir -p docs/public/playwright/archive/$TIMESTAMP/
+          cp -r playwright/playwright-report/* docs/public/playwright/archive/$TIMESTAMP/
+          
+          # Update latest symlink (if supported)
+          cd docs/public/playwright/archive/
+          ln -sf $TIMESTAMP latest || true
+
+      - name: Deploy to GitHub Pages
+        if: always() && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/public
+          publish_branch: gh-pages
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Deploy test reports - ${{ github.sha }}'
 
       - name: Stop backend
         if: always()

@@ -11,6 +11,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -51,6 +55,23 @@ jobs:
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start frontend (Next.js)
+        working-directory: frontend
+        run: |
+          nohup npm start > frontend.log 2>&1 &
+          echo $! > frontend.pid
+
+      - name: Wait for frontend to be ready
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000 >/dev/null 2>&1; then
+              echo "Frontend is up"; exit 0; fi; sleep 2; done
+          echo "Frontend did not start in time"; tail -n 200 frontend/frontend.log; exit 1
 
       - name: Install Playwright deps and browsers
         working-directory: playwright
@@ -173,8 +194,9 @@ jobs:
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: 'Deploy test reports - ${{ github.sha }}'
 
-      - name: Stop backend
+      - name: Stop servers
         if: always()
         run: |
           if [ -f backend.pid ]; then kill $(cat backend.pid) || true; fi
-          echo 'Stopped backend'
+          if [ -f frontend/frontend.pid ]; then kill $(cat frontend/frontend.pid) || true; fi
+          echo 'Stopped backend and frontend'

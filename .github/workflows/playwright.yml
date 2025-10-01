@@ -37,41 +37,20 @@ jobs:
             frontend/package-lock.json
             playwright/package-lock.json
 
-      - name: Backend dependencies (Maven cache)
-        run: mvn -q -DskipTests package
+      - name: Build packaged JAR with frontend
+        run: mvn -q clean package -DskipTests
 
-      - name: Start backend (Spring Boot)
+      - name: Start application (JAR with embedded frontend)
         run: |
-          nohup mvn -DskipTests spring-boot:run > backend.log 2>&1 &
-          echo $! > backend.pid
+          nohup java -jar target/*.jar > app.log 2>&1 &
+          echo $! > app.pid
 
-      - name: Wait for backend to be ready
+      - name: Wait for application to be ready
         run: |
           for i in {1..60}; do
             if curl -fsS http://localhost:8080/actuator/health >/dev/null 2>&1; then
-              echo "Backend is up"; exit 0; fi; sleep 2; done
-          echo "Backend did not start in time"; tail -n 200 backend.log; exit 1
-
-      - name: Install frontend deps
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      - name: Start frontend (Next.js)
-        working-directory: frontend
-        run: |
-          nohup npm start > frontend.log 2>&1 &
-          echo $! > frontend.pid
-
-      - name: Wait for frontend to be ready
-        run: |
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3000 >/dev/null 2>&1; then
-              echo "Frontend is up"; exit 0; fi; sleep 2; done
-          echo "Frontend did not start in time"; tail -n 200 frontend/frontend.log; exit 1
+              echo "Application is up"; exit 0; fi; sleep 2; done
+          echo "Application did not start in time"; tail -n 200 app.log; exit 1
 
       - name: Install Playwright deps and browsers
         working-directory: playwright
@@ -82,7 +61,7 @@ jobs:
       - name: Run Playwright tests
         working-directory: playwright
         env:
-          BASE_URL: http://localhost:3000
+          BASE_URL: http://localhost:8080
         run: npm test
 
       - name: Upload Playwright report (always)
@@ -194,9 +173,8 @@ jobs:
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: 'Deploy test reports - ${{ github.sha }}'
 
-      - name: Stop servers
+      - name: Stop application
         if: always()
         run: |
-          if [ -f backend.pid ]; then kill $(cat backend.pid) || true; fi
-          if [ -f frontend/frontend.pid ]; then kill $(cat frontend/frontend.pid) || true; fi
-          echo 'Stopped backend and frontend'
+          if [ -f app.pid ]; then kill $(cat app.pid) || true; fi
+          echo 'Stopped application'

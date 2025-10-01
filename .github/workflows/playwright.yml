@@ -107,16 +107,23 @@ jobs:
           <body>
               <div class="container">
                   <h1>🧪 Grepwise Test Reports</h1>
-                  <p>Automated end-to-end test results from Playwright</p>
-                  
+                  <p>All test results for the Grepwise project</p>
+
+                  <h2>Playwright E2E Tests</h2>
                   <a href="./latest/" class="report-link">
-                      <strong>📊 Latest Test Report</strong><br>
-                      <span class="timestamp">Most recent test execution</span>
+                      <strong>📊 Latest Playwright Report</strong><br>
+                      <span class="timestamp">Most recent E2E test execution</span>
                   </a>
-                  
+
                   <a href="./archive/" class="report-link">
-                      <strong>📚 Historical Reports</strong><br>
-                      <span class="timestamp">Previous test runs archive</span>
+                      <strong>📚 Playwright Archive</strong><br>
+                      <span class="timestamp">Previous E2E test runs</span>
+                  </a>
+
+                  <h2>Backend & Frontend Tests</h2>
+                  <a href="https://github.com/ozkanpakdil/grepwise/actions/workflows/ci.yml" class="report-link">
+                      <strong>🔧 JUnit & Unit Test Results</strong><br>
+                      <span class="timestamp">View in GitHub Actions CI workflow</span>
                   </a>
                   
                   <hr style="margin: 2rem 0;">

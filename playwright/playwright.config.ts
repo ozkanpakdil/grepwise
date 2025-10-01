@@ -8,7 +8,7 @@ export default defineConfig({
     timeout: 30_000,
     expect: {timeout: 5_000},
     retries: process.env.CI ? 2 : 0,
-    reporter: process.env.CI ? [['github'], ['html', { open: 'never', outputFolder: 'playwright-report' }]] : [['html', {open: 'never', outputFolder: 'playwright-report'}], ['list']],
+    reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]] : [['html', {open: 'never', outputFolder: 'playwright-report'}], ['list']],
     use: {
         baseURL,
         trace: 'retain-on-failure',

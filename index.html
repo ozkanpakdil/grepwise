@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grepwise Test Reports</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #333; }
+        .report-link { display: block; padding: 1rem; margin: 1rem 0; background: #f8f9fa; border-radius: 8px; text-decoration: none; color: #333; }
+        .report-link:hover { background: #e9ecef; }
+        .timestamp { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Grepwise Test Reports</h1>
+        <p>All test results for the Grepwise project</p>
+
+        <h2>Playwright E2E Tests</h2>
+        <a href="./latest/" class="report-link">
+            <strong>📊 Latest Playwright Report</strong><br>
+            <span class="timestamp">Most recent E2E test execution</span>
+        </a>
+
+        <a href="./archive/" class="report-link">
+            <strong>📚 Playwright Archive</strong><br>
+            <span class="timestamp">Previous E2E test runs</span>
+        </a>
+
+        <h2>Backend & Frontend Tests</h2>
+        <a href="https://github.com/ozkanpakdil/grepwise/actions/workflows/ci.yml" class="report-link">
+            <strong>🔧 JUnit & Unit Test Results</strong><br>
+            <span class="timestamp">View in GitHub Actions CI workflow</span>
+        </a>
+        
+        <hr style="margin: 2rem 0;">
+        <p><small>Generated automatically by <a href="https://github.com/ozkanpakdil/grepwise/actions">GitHub Actions</a></small></p>
+    </div>
+</body>
+</html>

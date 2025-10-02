@@ -8,7 +8,7 @@ async function login(page) {
   await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe.skip('Responsive Design', () => {
+test.describe('Responsive Design', () => {
   test('mobile layout adjusts properly on small screens', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });

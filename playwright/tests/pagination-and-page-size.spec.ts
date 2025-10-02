@@ -8,7 +8,7 @@ async function login(page) {
   await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe.skip('Pagination and page size (conditional if results exist)', () => {
+test.describe('Pagination and page size (conditional if results exist)', () => {
   test('adjust page size and paginate', async ({ page }) => {
     await login(page);
     await page.goto('/search');

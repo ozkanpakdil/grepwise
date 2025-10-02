@@ -8,7 +8,7 @@ async function login(page) {
   await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe.skip('Dashboards Page', () => {
+test.describe('Dashboards Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });

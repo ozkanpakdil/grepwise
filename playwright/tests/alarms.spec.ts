@@ -8,7 +8,7 @@ async function login(page) {
   await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe.skip('Alarms Page', () => {
+test.describe('Alarms Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -142,7 +142,7 @@ test.describe.skip('Alarms Page', () => {
   });
 });
 
-test.describe.skip('Alarm Monitoring Page', () => {
+test.describe('Alarm Monitoring Page', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
   });

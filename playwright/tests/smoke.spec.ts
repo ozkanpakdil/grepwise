@@ -59,16 +59,88 @@ test.describe('Critical Functionality Tests', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('UDP and TCP syslog ports accept data', async () => {
-    // Test UDP port 1514
-    const udpWorks = await sendUdpSyslog('test-udp-message');
-    console.log(`UDP port 1514: ${udpWorks ? 'OK' : 'FAIL'}`);
+  test('UDP and TCP syslog data appears in search UI', async ({ page }) => {
+    // Generate unique identifier for this test
+    const testId = `playwright-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const udpMessage = `UDP-TEST-${testId}`;
+    const tcpMessage = `TCP-TEST-${testId}`;
 
-    // Test TCP port 1514
-    const tcpWorks = await testTcpPort(1514);
-    console.log(`TCP port 1514: ${tcpWorks ? 'OK' : 'FAIL'}`);
+    // Send UDP syslog message
+    const udpSent = await sendUdpSyslog(udpMessage);
+    console.log(`UDP message sent: ${udpSent ? 'OK' : 'FAIL'}`);
+    expect(udpSent).toBeTruthy();
 
-    // At least UDP must work (primary syslog protocol)
-    expect(udpWorks).toBeTruthy();
+    // Send TCP syslog message
+    const tcpSent = await new Promise<boolean>((resolve) => {
+      const client = new net.Socket();
+      const timestamp = new Date().toISOString();
+      const syslogMessage = `<134>1 ${timestamp} test-host playwright-test - - - ${tcpMessage}\n`;
+
+      client.connect(1514, 'localhost', () => {
+        client.write(syslogMessage, (err) => {
+          client.end();
+          resolve(!err);
+        });
+      });
+
+      client.on('error', () => {
+        client.destroy();
+        resolve(false);
+      });
+
+      setTimeout(() => {
+        client.destroy();
+        resolve(false);
+      }, 3000);
+    });
+    console.log(`TCP message sent: ${tcpSent ? 'OK' : 'FAIL'}`);
+
+    // Wait for data to be indexed (give it a few seconds)
+    await page.waitForTimeout(5000);
+
+    // Login to the application
+    await page.goto('/login');
+    await page.getByTestId('username').fill('admin');
+    await page.getByTestId('password').fill('admin');
+    await page.getByTestId('sign-in').click();
+    await expect(page.getByTestId('logout')).toBeVisible({ timeout: 20_000 });
+
+    // Navigate to search page
+    await page.goto('/search');
+    await page.locator('.monaco-editor').first().waitFor({ timeout: 20_000 });
+
+    // Search for UDP message
+    await page.locator('.monaco-editor').first().click();
+    await page.keyboard.type(udpMessage);
+    await page.getByTestId('run-search').click();
+
+    // Wait for results
+    await expect(page.getByTestId('histogram-section')).toBeVisible({ timeout: 20_000 });
+
+    // Verify UDP message appears in results
+    const resultsSection = page.getByTestId('results-section');
+    await expect(resultsSection).toBeVisible({ timeout: 10_000 });
+
+    // Check if our message is in the results
+    const pageContent = await page.content();
+    const udpFound = pageContent.includes(udpMessage);
+    console.log(`UDP message found in UI: ${udpFound ? 'YES' : 'NO'}`);
+    expect(udpFound).toBeTruthy();
+
+    // Clear search and search for TCP message if it was sent
+    if (tcpSent) {
+      await page.locator('.monaco-editor').first().click();
+      await page.keyboard.press('Control+A');
+      await page.keyboard.type(tcpMessage);
+      await page.getByTestId('run-search').click();
+
+      await expect(page.getByTestId('histogram-section')).toBeVisible({ timeout: 20_000 });
+      await expect(resultsSection).toBeVisible({ timeout: 10_000 });
+
+      const tcpPageContent = await page.content();
+      const tcpFound = tcpPageContent.includes(tcpMessage);
+      console.log(`TCP message found in UI: ${tcpFound ? 'YES' : 'NO'}`);
+      expect(tcpFound).toBeTruthy();
+    }
   });
 });

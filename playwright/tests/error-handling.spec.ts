@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe.skip('Error Handling', () => {
+test.describe('Error Handling', () => {
   test('404 page displays for non-existent routes', async ({ page }) => {
     await page.goto('/non-existent-page');
     

@@ -2,6 +2,9 @@
 
 An open-source alternative to Splunk for log analysis and monitoring.
 
+[![grepwise](http://img.youtube.com/vi/q6UwgsDqxsc/0.jpg)](http://www.youtube.com/watch?v=q6UwgsDqxsc "How to download and use grepwise")
+
+
 ## Prerequisites
 
 Before you can run this project, you need to have the following installed:
@@ -395,3 +398,4 @@ If you encounter issues with the frontend:
 Notes
 - The history file accumulates results across runs on main. You can reset it if needed by editing docs/perf/history.csv.
 - The badge reflects the worst status across scenarios in the latest run (OK/WARN/ALERT).
+

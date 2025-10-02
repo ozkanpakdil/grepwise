@@ -6,7 +6,9 @@
     "@playwright/test": "^1.47.2"
   },
   "scripts": {
+    "pretest": "node check-server.js",
     "test": "playwright test",
+    "posttest": "node track-performance.js",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "codegen": "playwright codegen",

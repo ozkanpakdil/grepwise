@@ -1,0 +1,2042 @@
+{
+  "config": {
+    "configFile": "/home/ozkan/projects/grepwise/playwright/playwright.config.ts",
+    "rootDir": "/home/ozkan/projects/grepwise/playwright/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/ozkan/projects/grepwise/playwright/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/ozkan/projects/grepwise/playwright/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.0",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "admin-pages.spec.ts",
+      "file": "admin-pages.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Settings Page",
+          "file": "admin-pages.spec.ts",
+          "line": 11,
+          "column": 15,
+          "specs": [
+            {
+              "title": "settings page loads for admin users",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.199Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-c750569dac88c1aa65a8",
+              "file": "admin-pages.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "settings tabs are navigable when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.200Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-9c0de77558d629dea022",
+              "file": "admin-pages.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "settings can be modified and saved",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.201Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-ea26138138b51304df64",
+              "file": "admin-pages.spec.ts",
+              "line": 70,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Users Management Page",
+          "file": "admin-pages.spec.ts",
+          "line": 117,
+          "column": 15,
+          "specs": [
+            {
+              "title": "users page loads and shows user management interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 117,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.201Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-b2dc8d273d34bafb13f5",
+              "file": "admin-pages.spec.ts",
+              "line": 122,
+              "column": 7
+            },
+            {
+              "title": "can access user creation form",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 117,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.201Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-3cb2372bbbc6c83a79b0",
+              "file": "admin-pages.spec.ts",
+              "line": 145,
+              "column": 7
+            },
+            {
+              "title": "user list shows existing users when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 117,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-c997892bab413a2dea54",
+              "file": "admin-pages.spec.ts",
+              "line": 173,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Roles Management Page",
+          "file": "admin-pages.spec.ts",
+          "line": 200,
+          "column": 15,
+          "specs": [
+            {
+              "title": "roles page loads and shows role management interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 200,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-bb204546128b0cb8f3e4",
+              "file": "admin-pages.spec.ts",
+              "line": 205,
+              "column": 7
+            },
+            {
+              "title": "role permissions can be configured",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 200,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-e6e0c5a97e4613bb305b",
+              "file": "admin-pages.spec.ts",
+              "line": 228,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Redaction Editor Page",
+          "file": "admin-pages.spec.ts",
+          "line": 252,
+          "column": 15,
+          "specs": [
+            {
+              "title": "redaction editor loads for admin users",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 252,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-b23011cb380846fba711",
+              "file": "admin-pages.spec.ts",
+              "line": 257,
+              "column": 7
+            },
+            {
+              "title": "redaction rules can be created and edited",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 252,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-de78faacc222d2490630",
+              "file": "admin-pages.spec.ts",
+              "line": 281,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Monitoring Page",
+          "file": "admin-pages.spec.ts",
+          "line": 318,
+          "column": 15,
+          "specs": [
+            {
+              "title": "monitoring page loads and shows system metrics",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 318,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-18179ddf5bad2e26ea74",
+              "file": "admin-pages.spec.ts",
+              "line": 323,
+              "column": 7
+            },
+            {
+              "title": "monitoring charts and metrics display data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/admin-pages.spec.ts",
+                        "line": 318,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.202Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "eb8dc4b206445fd3e86e-aff269405ec1a0994689",
+              "file": "admin-pages.spec.ts",
+              "line": 348,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "alarms.spec.ts",
+      "file": "alarms.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Alarms Page",
+          "file": "alarms.spec.ts",
+          "line": 11,
+          "column": 15,
+          "specs": [
+            {
+              "title": "alarms page loads and shows alarm configuration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-47a5f152e9e1c6d26d6d",
+              "file": "alarms.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "can create new alarm when functionality available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-d53cfad26e96167e215f",
+              "file": "alarms.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "alarm list displays existing alarms when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-3a736b7d6ccfabbcd293",
+              "file": "alarms.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "alarm configuration options are accessible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-6d88dca28d9ccb825bca",
+              "file": "alarms.spec.ts",
+              "line": 106,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Alarm Monitoring Page",
+          "file": "alarms.spec.ts",
+          "line": 145,
+          "column": 15,
+          "specs": [
+            {
+              "title": "alarm monitoring page loads and shows monitoring interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 145,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-e1b1cad350875115a53b",
+              "file": "alarms.spec.ts",
+              "line": 150,
+              "column": 7
+            },
+            {
+              "title": "real-time monitoring updates work when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 145,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-4d5b2a9a98cb7f01a93d",
+              "file": "alarms.spec.ts",
+              "line": 173,
+              "column": 7
+            },
+            {
+              "title": "alarm monitoring controls are functional",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/alarms.spec.ts",
+                        "line": 145,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2c8d8a5f118a1f7767c8-9eb921a409de62530d63",
+              "file": "alarms.spec.ts",
+              "line": 194,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboards.spec.ts",
+      "file": "dashboards.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboards Page",
+          "file": "dashboards.spec.ts",
+          "line": 11,
+          "column": 15,
+          "specs": [
+            {
+              "title": "dashboards page loads and shows dashboard list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/dashboards.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86a5e4e303644cf814e4-c918e60a53ca87e00dd4",
+              "file": "dashboards.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "can navigate to dashboard creation if available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/dashboards.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86a5e4e303644cf814e4-56ebdbe51167a3ec3769",
+              "file": "dashboards.spec.ts",
+              "line": 38,
+              "column": 7
+            },
+            {
+              "title": "individual dashboard view loads when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/dashboards.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86a5e4e303644cf814e4-80b860ac6fbf78c501f2",
+              "file": "dashboards.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "dashboard editing controls work when available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/dashboards.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86a5e4e303644cf814e4-3b7aaf39586b5ef02a8b",
+              "file": "dashboards.spec.ts",
+              "line": 99,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "error-handling.spec.ts",
+      "file": "error-handling.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Error Handling",
+          "file": "error-handling.spec.ts",
+          "line": 3,
+          "column": 15,
+          "specs": [
+            {
+              "title": "404 page displays for non-existent routes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-de56426eda03ab72e2c1",
+              "file": "error-handling.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "404 page has navigation back to app",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-762a05b8d3fd3ba3d29f",
+              "file": "error-handling.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "unauthorized access redirects properly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-f910b506a56758bb3077",
+              "file": "error-handling.spec.ts",
+              "line": 52,
+              "column": 7
+            },
+            {
+              "title": "non-admin users cannot access admin routes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-c92d69807ea4507a76ce",
+              "file": "error-handling.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "network errors are handled gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-1580ed7b417486083891",
+              "file": "error-handling.spec.ts",
+              "line": 78,
+              "column": 7
+            },
+            {
+              "title": "form validation errors display properly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-a97c552ad95c9cc56a83",
+              "file": "error-handling.spec.ts",
+              "line": 116,
+              "column": 7
+            },
+            {
+              "title": "application recovers from JavaScript errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.203Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-82ba0565f4474a8ac117",
+              "file": "error-handling.spec.ts",
+              "line": 147,
+              "column": 7
+            },
+            {
+              "title": "loading states are shown for slow operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/error-handling.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-0aba8cf987cc800ee7de",
+              "file": "error-handling.spec.ts",
+              "line": 174,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "pagination-and-page-size.spec.ts",
+      "file": "pagination-and-page-size.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Pagination and page size (conditional if results exist)",
+          "file": "pagination-and-page-size.spec.ts",
+          "line": 11,
+          "column": 15,
+          "specs": [
+            {
+              "title": "adjust page size and paginate",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/pagination-and-page-size.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a5e14d4db08ab1d0675c-e136ed2dbd244ca7ba8d",
+              "file": "pagination-and-page-size.spec.ts",
+              "line": 12,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "responsive-design.spec.ts",
+      "file": "responsive-design.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Responsive Design",
+          "file": "responsive-design.spec.ts",
+          "line": 11,
+          "column": 15,
+          "specs": [
+            {
+              "title": "mobile layout adjusts properly on small screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-8743fb6d25bd929ea002",
+              "file": "responsive-design.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "tablet layout works correctly on medium screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-1e8a35db2c68dc55c834",
+              "file": "responsive-design.spec.ts",
+              "line": 65,
+              "column": 7
+            },
+            {
+              "title": "dashboard widgets adapt to different screen sizes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-f7213a0eb555b7fe4332",
+              "file": "responsive-design.spec.ts",
+              "line": 91,
+              "column": 7
+            },
+            {
+              "title": "navigation is accessible across different screen sizes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-793121d3629747e81e66",
+              "file": "responsive-design.spec.ts",
+              "line": 125,
+              "column": 7
+            },
+            {
+              "title": "search interface remains functional on small screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-06233b7a2cec51ab27cc",
+              "file": "responsive-design.spec.ts",
+              "line": 157,
+              "column": 7
+            },
+            {
+              "title": "form inputs are appropriately sized for touch interfaces",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-e19a846db4706c3e0c43",
+              "file": "responsive-design.spec.ts",
+              "line": 187,
+              "column": 7
+            },
+            {
+              "title": "content scrolls properly on mobile devices",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-ccb3e69726a71b47acd8",
+              "file": "responsive-design.spec.ts",
+              "line": 213,
+              "column": 7
+            },
+            {
+              "title": "horizontal scrolling is avoided on mobile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/ozkan/projects/grepwise/playwright/tests/responsive-design.spec.ts",
+                        "line": 11,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:00.204Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a027f4963a965b420d0c-dc3dfce09e394fb59821",
+              "file": "responsive-design.spec.ts",
+              "line": 232,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "smoke.spec.ts",
+      "file": "smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Critical Functionality Tests",
+          "file": "smoke.spec.ts",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "authentication works - login, logout, invalid credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4972,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:01.371Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ozkan/projects/grepwise/playwright/test-results/smoke-Critical-Functionali-1040f--logout-invalid-credentials-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/ozkan/projects/grepwise/playwright/test-results/smoke-Critical-Functionali-1040f--logout-invalid-credentials-chromium/video.webm"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4219922fea2e2bd3c691-2a1885d24857a4c94447",
+              "file": "smoke.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "UDP and TCP syslog ports accept data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 12,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "UDP port 1514: OK\n"
+                        },
+                        {
+                          "text": "TCP port 1514: OK\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-03T09:21:06.494Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4219922fea2e2bd3c691-4dfce77855dc0cede682",
+              "file": "smoke.spec.ts",
+              "line": 62,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-03T09:21:00.114Z",
+    "duration": 6446.525,
+    "expected": 2,
+    "skipped": 40,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

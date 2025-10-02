@@ -75,20 +75,22 @@ jobs:
             playwright/playwright.log
           retention-days: 30
 
-      - name: Upload Playwright report (always)
+      - name: Upload Playwright report and media (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ github.run_number }}
-          path: playwright/playwright-report/
+          path: |
+            playwright/playwright-report/
+            playwright/test-results/
           retention-days: 30
 
       - name: Prepare test reports for GitHub Pages
         if: always() && github.ref == 'refs/heads/main'
         run: |
           mkdir -p gh-pages-content
-          
-          # Create simple index.html
+
+          # Create simple index.html with all test reports
           cat > gh-pages-content/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
@@ -110,44 +112,55 @@ jobs:
                   <p>All test results for the Grepwise project</p>
 
                   <h2>Playwright E2E Tests</h2>
-                  <a href="./latest/" class="report-link">
+                  <a href="./e2e/latest/" class="report-link">
                       <strong>📊 Latest Playwright Report</strong><br>
                       <span class="timestamp">Most recent E2E test execution</span>
                   </a>
 
-                  <a href="./archive/" class="report-link">
+                  <a href="./e2e/archive/" class="report-link">
                       <strong>📚 Playwright Archive</strong><br>
                       <span class="timestamp">Previous E2E test runs</span>
                   </a>
 
-                  <h2>Backend & Frontend Tests</h2>
+                  <h2>Performance Tests (JMeter)</h2>
+                  <a href="./perf/latest/" class="report-link">
+                      <strong>⚡ Latest Performance Results</strong><br>
+                      <span class="timestamp">Most recent JMeter benchmark</span>
+                  </a>
+
+                  <a href="./perf/runs/" class="report-link">
+                      <strong>📈 Performance History</strong><br>
+                      <span class="timestamp">Historical performance data</span>
+                  </a>
+
+                  <h2>Backend & Frontend Unit Tests</h2>
                   <a href="https://github.com/ozkanpakdil/grepwise/actions/workflows/ci.yml" class="report-link">
                       <strong>🔧 JUnit & Unit Test Results</strong><br>
                       <span class="timestamp">View in GitHub Actions CI workflow</span>
                   </a>
-                  
+
                   <hr style="margin: 2rem 0;">
                   <p><small>Generated automatically by <a href="https://github.com/ozkanpakdil/grepwise/actions">GitHub Actions</a></small></p>
               </div>
           </body>
           </html>
           EOF
-          
-          # Copy latest report
-          mkdir -p gh-pages-content/latest/
-          cp -r playwright/playwright-report/* gh-pages-content/latest/
-          
-          # Create archive directory with timestamp
+
+          # Copy E2E latest report
+          mkdir -p gh-pages-content/e2e/latest/
+          cp -r playwright/playwright-report/* gh-pages-content/e2e/latest/ || true
+
+          # Create E2E archive directory with timestamp
           TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-          mkdir -p gh-pages-content/archive/$TIMESTAMP/
-          cp -r playwright/playwright-report/* gh-pages-content/archive/$TIMESTAMP/
-          
-          # Create archive index
-          cat > gh-pages-content/archive/index.html << 'EOF'
+          mkdir -p gh-pages-content/e2e/archive/$TIMESTAMP/
+          cp -r playwright/playwright-report/* gh-pages-content/e2e/archive/$TIMESTAMP/ || true
+
+          # Create E2E archive index
+          cat > gh-pages-content/e2e/archive/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
-              <title>Test Reports Archive - Grepwise</title>
+              <title>E2E Test Reports Archive - Grepwise</title>
               <meta charset="utf-8">
               <style>
                   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 2rem; }
@@ -159,25 +172,37 @@ jobs:
           </head>
           <body>
               <div class="container">
-                  <h1>📚 Test Reports Archive</h1>
-                  <p><a href="../">← Back to main reports</a></p>
+                  <h1>📚 E2E Test Reports Archive</h1>
+                  <p><a href="../../">← Back to main reports</a></p>
           EOF
-          
-          # List archive directories
-          for dir in gh-pages-content/archive/*/; do
+
+          # List E2E archive directories
+          for dir in gh-pages-content/e2e/archive/*/; do
               if [ -d "$dir" ] && [[ "$(basename "$dir")" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_ ]]; then
                   dirname=$(basename "$dir")
-                  echo "                  <div class=\"report-item\">" >> gh-pages-content/archive/index.html
-                  echo "                      <a href=\"./$dirname/\"><strong>📊 $dirname</strong></a>" >> gh-pages-content/archive/index.html
-                  echo "                  </div>" >> gh-pages-content/archive/index.html
+                  echo "                  <div class=\"report-item\">" >> gh-pages-content/e2e/archive/index.html
+                  echo "                      <a href=\"./$dirname/\"><strong>📊 $dirname</strong></a>" >> gh-pages-content/e2e/archive/index.html
+                  echo "                  </div>" >> gh-pages-content/e2e/archive/index.html
               fi
           done
-          
-          cat >> gh-pages-content/archive/index.html << 'EOF'
+
+          cat >> gh-pages-content/e2e/archive/index.html << 'EOF'
               </div>
           </body>
           </html>
           EOF
+
+      - name: Download existing gh-pages content if exists
+        if: always() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git checkout gh-pages -- perf/ 2>/dev/null || echo "No existing perf/ directory found"
+          if [ -d perf ]; then
+            mkdir -p gh-pages-content/
+            mv perf gh-pages-content/
+          fi
+          git checkout main
 
       - name: Deploy to GitHub Pages
         if: always() && github.ref == 'refs/heads/main'
@@ -186,10 +211,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages-content
           publish_branch: gh-pages
-          force_orphan: true
+          keep_files: false
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Deploy test reports - ${{ github.sha }}'
+          commit_message: 'Deploy E2E test reports - ${{ github.sha }}'
 
       - name: Stop application
         if: always()

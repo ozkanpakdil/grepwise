@@ -1,0 +1,465 @@
+{
+  "runs": [
+    {
+      "timestamp": "2025-10-03T09:17:32.616Z",
+      "runNumber": 1759483052617,
+      "gitSha": "local",
+      "totalDuration": 0,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "total": 0
+      }
+    },
+    {
+      "timestamp": "2025-10-03T09:18:33.262Z",
+      "runNumber": 1759483113263,
+      "gitSha": "local",
+      "totalDuration": 5710,
+      "tests": [
+        {
+          "name": "settings page loads for admin users",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "settings tabs are navigable when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "settings can be modified and saved",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "users page loads and shows user management interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can access user creation form",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "user list shows existing users when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "roles page loads and shows role management interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "role permissions can be configured",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "redaction editor loads for admin users",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "redaction rules can be created and edited",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "monitoring page loads and shows system metrics",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "monitoring charts and metrics display data",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarms page loads and shows alarm configuration",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can create new alarm when functionality available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm list displays existing alarms when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm configuration options are accessible",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm monitoring page loads and shows monitoring interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "real-time monitoring updates work when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm monitoring controls are functional",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboards page loads and shows dashboard list",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can navigate to dashboard creation if available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "individual dashboard view loads when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboard editing controls work when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "404 page displays for non-existent routes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "404 page has navigation back to app",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "unauthorized access redirects properly",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "non-admin users cannot access admin routes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "network errors are handled gracefully",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "form validation errors display properly",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "application recovers from JavaScript errors",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "loading states are shown for slow operations",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "adjust page size and paginate",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "mobile layout adjusts properly on small screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "tablet layout works correctly on medium screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboard widgets adapt to different screen sizes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "navigation is accessible across different screen sizes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "search interface remains functional on small screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "form inputs are appropriately sized for touch interfaces",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "content scrolls properly on mobile devices",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "horizontal scrolling is avoided on mobile",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "authentication works - login, logout, invalid credentials",
+          "duration": 5696,
+          "status": "passed"
+        },
+        {
+          "name": "UDP and TCP syslog ports accept data",
+          "duration": 14,
+          "status": "passed"
+        }
+      ],
+      "summary": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 40,
+        "total": 42
+      }
+    },
+    {
+      "timestamp": "2025-10-03T09:21:06.619Z",
+      "runNumber": 1759483266619,
+      "gitSha": "local",
+      "totalDuration": 4984,
+      "tests": [
+        {
+          "name": "settings page loads for admin users",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "settings tabs are navigable when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "settings can be modified and saved",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "users page loads and shows user management interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can access user creation form",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "user list shows existing users when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "roles page loads and shows role management interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "role permissions can be configured",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "redaction editor loads for admin users",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "redaction rules can be created and edited",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "monitoring page loads and shows system metrics",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "monitoring charts and metrics display data",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarms page loads and shows alarm configuration",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can create new alarm when functionality available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm list displays existing alarms when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm configuration options are accessible",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm monitoring page loads and shows monitoring interface",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "real-time monitoring updates work when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "alarm monitoring controls are functional",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboards page loads and shows dashboard list",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "can navigate to dashboard creation if available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "individual dashboard view loads when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboard editing controls work when available",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "404 page displays for non-existent routes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "404 page has navigation back to app",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "unauthorized access redirects properly",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "non-admin users cannot access admin routes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "network errors are handled gracefully",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "form validation errors display properly",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "application recovers from JavaScript errors",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "loading states are shown for slow operations",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "adjust page size and paginate",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "mobile layout adjusts properly on small screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "tablet layout works correctly on medium screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "dashboard widgets adapt to different screen sizes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "navigation is accessible across different screen sizes",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "search interface remains functional on small screens",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "form inputs are appropriately sized for touch interfaces",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "content scrolls properly on mobile devices",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "horizontal scrolling is avoided on mobile",
+          "duration": 0,
+          "status": "skipped"
+        },
+        {
+          "name": "authentication works - login, logout, invalid credentials",
+          "duration": 4972,
+          "status": "passed"
+        },
+        {
+          "name": "UDP and TCP syslog ports accept data",
+          "duration": 12,
+          "status": "passed"
+        }
+      ],
+      "summary": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 40,
+        "total": 42
+      }
+    }
+  ]
+}

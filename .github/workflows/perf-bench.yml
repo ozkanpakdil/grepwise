@@ -199,6 +199,19 @@ jobs:
           fi
 
 
+      - name: Download existing gh-pages content if exists
+        if: always()
+        continue-on-error: true
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git checkout gh-pages -- e2e/ index.html 2>/dev/null || echo "No existing e2e/ directory found"
+          if [ -d e2e ] || [ -f index.html ]; then
+            mkdir -p docs/
+            [ -d e2e ] && mv e2e docs/
+            [ -f index.html ] && mv index.html docs/
+          fi
+          git checkout main
+
       - name: Deploy docs/ to gh-pages (persistent website)
         if: always()
         uses: peaceiris/actions-gh-pages@v3
@@ -206,7 +219,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: docs
-          force_orphan: true
+          keep_files: false
 
       - name: Enforce block threshold (>20% regression)
         if: ${{ steps.summarize.outputs.code == '2' }}

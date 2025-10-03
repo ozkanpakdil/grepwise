@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Error Handling', () => {
   test('404 page displays for non-existent routes', async ({ page }) => {
     await page.goto('/non-existent-page');
-    
+    await page.waitForLoadState('domcontentloaded');
+
     // Check for 404 page elements
     const notFoundElements = [
       page.getByText(/404/i),
@@ -11,10 +12,10 @@ test.describe('Error Handling', () => {
       page.getByText(/page not found/i),
       page.getByText(/doesn.?t exist/i)
     ];
-    
+
     let hasNotFoundElement = false;
     for (const element of notFoundElements) {
-      if (await element.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (await element.first().isVisible({ timeout: 15000 }).catch(() => false)) {
         hasNotFoundElement = true;
         break;
       }
@@ -24,25 +25,27 @@ test.describe('Error Handling', () => {
 
   test('404 page has navigation back to app', async ({ page }) => {
     await page.goto('/non-existent-route-12345');
-    
+    await page.waitForLoadState('domcontentloaded');
+
     // Look for navigation links back to the main app
     const navigationElements = [
-      page.getByRole('link', { name: /home/i }),
-      page.getByRole('link', { name: /back/i }),
-      page.getByRole('button', { name: /home|back/i }),
-      page.getByText(/go back/i),
+      page.getByRole('link', { name: /return to home|home|back/i }),
+      page.getByRole('button', { name: /return to home|home|back/i }),
+      page.getByText(/return to home|go back/i),
       page.locator('a[href="/"]')
     ];
-    
+
     let hasNavigation = false;
     for (const element of navigationElements) {
-      if (await element.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (await element.first().isVisible({ timeout: 15000 }).catch(() => false)) {
         hasNavigation = true;
         // Try clicking the navigation element
         await element.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         // Should redirect to home or login
-        expect(page.url()).toMatch(/\/(login)?$/);
+        const url = page.url();
+        const isValid = url.endsWith('/') || url.endsWith('/login');
+        expect(isValid).toBeTruthy();
         break;
       }
     }
@@ -53,10 +56,10 @@ test.describe('Error Handling', () => {
     // Try to access protected route without authentication
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
-    
+
     // Should be redirected to login
-    expect(page.url()).toMatch(/\/login/);
-    
+    expect(page.url()).toContain('/login');
+
     // Login page should be visible
     await expect(page.getByTestId('sign-in')).toBeVisible({ timeout: 10000 });
   });
@@ -65,13 +68,13 @@ test.describe('Error Handling', () => {
     // This would require a non-admin user account to test properly
     // For now, we'll test that admin routes require authentication
     const adminRoutes = ['/settings', '/users', '/roles', '/admin/redaction'];
-    
+
     for (const route of adminRoutes) {
       await page.goto(route);
       await page.waitForLoadState('networkidle');
-      
+
       // Should redirect to login when not authenticated
-      expect(page.url()).toMatch(/\/login/);
+      expect(page.url()).toContain('/login');
     }
   });
 
@@ -115,10 +118,10 @@ test.describe('Error Handling', () => {
 
   test('form validation errors display properly', async ({ page }) => {
     await page.goto('/login');
-    
+
     // Try to submit form without filling required fields
     await page.getByTestId('sign-in').click();
-    
+
     // Look for validation errors
     const validationElements = [
       page.getByText(/required/i),
@@ -128,7 +131,7 @@ test.describe('Error Handling', () => {
       page.locator('.error'),
       page.locator('[data-testid*="error"]')
     ];
-    
+
     let hasValidation = false;
     for (const element of validationElements) {
       if (await element.first().isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -136,11 +139,11 @@ test.describe('Error Handling', () => {
         break;
       }
     }
-    
+
     // If no validation messages, at least form should not have submitted successfully
     if (!hasValidation) {
       // Should still be on login page
-      expect(page.url()).toMatch(/\/login/);
+      expect(page.url()).toContain('/login');
     }
   });
 

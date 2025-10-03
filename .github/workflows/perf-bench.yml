@@ -52,14 +52,58 @@ jobs:
           fi
           ART_ID=$(gh api -q '.artifacts[] | select(.name=="grepwise-jar") | .id' \
             repos/$REPO/actions/runs/$RUN_ID/artifacts)
-          if [ -z "$ART_ID" ]; then
-            echo "Artifact grepwise-jar not found in CI run $RUN_ID" >&2
-            exit 1
-          fi
           mkdir -p dist
-          gh api -H "Accept: application/vnd.github+json" \
-            repos/$REPO/actions/artifacts/$ART_ID/zip -o dist/jar.zip
-          unzip -o dist/jar.zip -d dist
+          if [ -n "$ART_ID" ]; then
+            echo "Found CI artifact $ART_ID; downloading..."
+            gh api -H "Accept: application/zip" \
+              repos/$REPO/actions/artifacts/$ART_ID/zip > dist/jar.zip
+            unzip -o dist/jar.zip -d dist || true
+          else
+            echo "CI artifact not found; will try GitHub Packages fallback." >&2
+          fi
+          # Fallback: if no jar in dist, fetch from GitHub Packages SNAPSHOT
+          if ! ls dist/*-SNAPSHOT.jar >/dev/null 2>&1; then
+            echo "Falling back to GitHub Packages (Maven SNAPSHOT)"
+            VERSION=$(mvn -q -Dexec.cleanupDaemonThreads=false help:evaluate -Dexpression=project.version -DforceStdout)
+            echo "Attempting to download io.github.ozkanpakdil:grepwise:$VERSION from GitHub Packages"
+            mkdir -p "$HOME/.m2"
+            cat > "$HOME/.m2/settings.xml" <<'XML'
+            <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+              <servers>
+                <server>
+                  <id>github</id>
+                  <username>${env.GITHUB_ACTOR}</username>
+                  <password>${env.GITHUB_TOKEN}</password>
+                </server>
+              </servers>
+              <profiles>
+                <profile>
+                  <id>github</id>
+                  <repositories>
+                    <repository>
+                      <id>github</id>
+                      <url>https://maven.pkg.github.com/${{ github.repository }}</url>
+                    </repository>
+                  </repositories>
+                </profile>
+              </profiles>
+              <activeProfiles>
+                <activeProfile>github</activeProfile>
+              </activeProfiles>
+            </settings>
+            XML
+            mvn -s "$HOME/.m2/settings.xml" -q -ntp dependency:get -Dartifact=io.github.ozkanpakdil:grepwise:"$VERSION"
+            JAR_PATH="$HOME/.m2/repository/io/github/ozkanpakdil/grepwise/$VERSION/grepwise-$VERSION.jar"
+            if [ -f "$JAR_PATH" ]; then
+              cp "$JAR_PATH" dist/
+              echo "Downloaded SNAPSHOT from GitHub Packages to dist/"
+            else
+              echo "ERROR: Could not locate JAR after fallback download." >&2
+              exit 1
+            fi
+          fi
           echo "Downloaded files:" && ls -la dist
 
       - name: Start application (downloaded JAR)

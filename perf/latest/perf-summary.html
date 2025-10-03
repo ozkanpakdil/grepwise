@@ -3,17 +3,17 @@
 <title>GrepWise Performance Summary</title>
 <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;line-height:1.5;padding:20px} table{border-collapse:collapse;margin:1em 0;width:100%} th,td{border:1px solid #ddd;padding:6px 8px} th{background:#f6f8fa;text-align:left} code{background:#f6f8fa;padding:2px 4px;border-radius:4px}</style>
 <h1>GrepWise Performance Summary</h1>
-<p>Run: 34 &nbsp;&nbsp; Commit: <code>40454b1</code> &nbsp;&nbsp; Branch: <code>main</code> &nbsp;&nbsp; Time: 2025-10-03T11:20:29Z</p><h2>Scenarios</h2>
+<p>Run: 35 &nbsp;&nbsp; Commit: <code>f8c07f1</code> &nbsp;&nbsp; Branch: <code>main</code> &nbsp;&nbsp; Time: 2025-10-03T14:29:20Z</p><h2>Scenarios</h2>
 <table><thead><tr><th>Scenario</th><th>p95 (ms)</th><th>Δ vs avg</th><th>Avg (ms)</th><th>Throughput (req/s)</th><th>Errors (%)</th><th>Status</th></tr></thead><tbody>
-<tr><td>Combined Parallel (BSH)</td><td>6.0</td><td>-</td><td>2.4</td><td>421.58</td><td>0.00</td><td>✅ no baseline</td></tr>
-<tr><td>HTTP Search</td><td>2.0</td><td>-</td><td>1.4</td><td>694.87</td><td>0.00</td><td>✅ no baseline</td></tr>
-<tr><td>Syslog UDP</td><td>1.0</td><td>-</td><td>0.6</td><td>1576.54</td><td>0.00</td><td>✅ no baseline</td></tr>
+<tr><td>Combined Parallel (BSH)</td><td>6.0</td><td>-</td><td>2.3</td><td>430.30</td><td>0.00</td><td>✅ no baseline</td></tr>
+<tr><td>HTTP Search</td><td>2.0</td><td>-</td><td>1.2</td><td>805.30</td><td>0.00</td><td>✅ no baseline</td></tr>
+<tr><td>Syslog UDP</td><td>1.0</td><td>-</td><td>0.6</td><td>1623.25</td><td>0.00</td><td>✅ no baseline</td></tr>
 </tbody></table>
 <h2>About scenarios</h2><ul><li>HTTP Search: exercises the REST search endpoints over HTTP.</li><li>Syslog UDP: sends log events into the UDP syslog ingestion path.</li><li>Combined Parallel (BSH): mixed workload that runs multiple samplers in parallel using a BeanShell controller/sampler.</li></ul>
 <h2>Endpoints tested (by JMeter label)</h2><table><thead><tr><th>Endpoint</th><th>Avg (ms)</th><th>p95 (ms)</th><th>Count</th><th>Errors (%)</th></tr></thead><tbody>
-<tr><td>GET /api/logs/search GWPERF-PARALLEL</td><td>2.5</td><td>6.0</td><td>214012</td><td>0.00</td></tr>
-<tr><td>Search GWPERF token</td><td>0.7</td><td>1.0</td><td>83231</td><td>0.00</td></tr>
-<tr><td>UDP Syslog Send (BeanShell)</td><td>0.1</td><td>1.0</td><td>23142</td><td>0.00</td></tr>
-<tr><td>GET /api/logs/search</td><td>1.5</td><td>2.0</td><td>797</td><td>0.00</td></tr>
-<tr><td>GET /api/logs/count</td><td>1.4</td><td>2.0</td><td>788</td><td>0.00</td></tr>
+<tr><td>GET /api/logs/search GWPERF-PARALLEL</td><td>2.5</td><td>6.0</td><td>218593</td><td>0.00</td></tr>
+<tr><td>Search GWPERF token</td><td>0.7</td><td>1.0</td><td>85689</td><td>0.00</td></tr>
+<tr><td>UDP Syslog Send (BeanShell)</td><td>0.1</td><td>1.0</td><td>23333</td><td>0.00</td></tr>
+<tr><td>GET /api/logs/search</td><td>1.3</td><td>2.0</td><td>793</td><td>0.00</td></tr>
+<tr><td>GET /api/logs/count</td><td>1.2</td><td>2.0</td><td>787</td><td>0.00</td></tr>
 </tbody></table>

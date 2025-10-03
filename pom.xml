@@ -506,11 +506,12 @@
         </profile>
     </profiles>
     <distributionManagement>
-         <repository>
-             <id>github</id>
-             <name>GitHub Packages</name>
-             <url>https://maven.pkg.github.com/OWNER/REPOSITORY</url> 
-         </repository>
+    <repository>
+        <id>github</id>
+        <name>GitHub Packages</name>
+        <url>https://maven.pkg.github.com/ozkanpakdil/grepwise</url>
+   </repository>
     </distributionManagement>
 </project>
+
 

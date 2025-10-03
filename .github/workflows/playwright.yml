@@ -1,15 +1,15 @@
 name: Playwright E2E Tests
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["GrepWise CI"]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     timeout-minutes: 30
     permissions:
       contents: write
@@ -20,11 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - uses: graalvm/setup-graalvm@v1
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          version: 'latest'
+          java-version: 25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          distribution: 'graalvm-community'
+          native-image-job-reports: 'false'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -42,10 +44,14 @@ jobs:
         run: |
           set -euo pipefail
           REPO="${{ github.repository }}"
-          SHA="${{ github.sha }}"
-          # Find the workflow run for CI on this commit
-          RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
-            repos/$REPO/actions/runs | head -n1)
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            RUN_ID="${{ github.event.workflow_run.id }}"
+          else
+            SHA="${{ github.sha }}"
+            RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
+              repos/$REPO/actions/runs | head -n1)
+          fi
           if [ -z "$RUN_ID" ]; then
             echo "No successful CI run found for $SHA. Exiting." >&2
             exit 1

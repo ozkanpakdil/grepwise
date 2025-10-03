@@ -1,18 +1,16 @@
 name: Performance Benchmarks
 
 on:
+  workflow_run:
+    workflows: ["GrepWise CI"]
+    types: [completed]
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'docs/perf/**'
-  release:
-    types: [ published ]
 
 jobs:
   perf:
     name: Run JMeter performance tests
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     timeout-minutes: 30
     permissions:
       contents: write
@@ -22,11 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - uses: graalvm/setup-graalvm@v1
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          version: 'latest'
+          java-version: 25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          distribution: 'graalvm-community'
+          native-image-job-reports: 'false'
 
       - name: Make perf scripts executable
         run: chmod +x scripts/perf/against.sh
@@ -38,9 +38,14 @@ jobs:
         run: |
           set -euo pipefail
           REPO="${{ github.repository }}"
-          SHA="${{ github.sha }}"
-          RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
-            repos/$REPO/actions/runs | head -n1)
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            RUN_ID="${{ github.event.workflow_run.id }}"
+          else
+            SHA="${{ github.sha }}"
+            RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
+              repos/$REPO/actions/runs | head -n1)
+          fi
           if [ -z "$RUN_ID" ]; then
             echo "No successful CI run found for $SHA. Exiting." >&2
             exit 1

@@ -133,6 +133,23 @@ jobs:
             target/*-SNAPSHOT.jar
           retention-days: 7
 
+      - name: Publish SNAPSHOT to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(mvn -q -Dexec.cleanupDaemonThreads=false help:evaluate -Dexpression=project.version -DforceStdout)
+          echo "Project version: $VERSION"
+          if [[ "$VERSION" == *-SNAPSHOT ]]; then
+            echo "Deploying SNAPSHOT to GitHub Packages..."
+            mvn -ntp -DskipTests \
+              -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }} \
+              deploy
+          else
+            echo "Not a SNAPSHOT version; skipping deploy to GitHub Packages."
+          fi
+
   native-build:
     name: Native Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

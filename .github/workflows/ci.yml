@@ -3,6 +3,7 @@ name: GrepWise CI
 permissions:
   contents: write
   checks: write
+  packages: write
 
 on:
   push:

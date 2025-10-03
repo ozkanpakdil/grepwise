@@ -134,9 +134,14 @@ jobs:
                   </a>
 
                   <h2>Backend & Frontend Unit Tests</h2>
-                  <a href="https://github.com/ozkanpakdil/grepwise/actions/workflows/ci.yml" class="report-link">
-                      <strong>🔧 JUnit & Unit Test Results</strong><br>
-                      <span class="timestamp">View in GitHub Actions CI workflow</span>
+                  <a href="./frontend/coverage/" class="report-link">
+                      <strong>📊 Frontend Coverage Report</strong><br>
+                      <span class="timestamp">Jest test coverage for frontend</span>
+                  </a>
+
+                  <a href="./backend/junit/surefire-report.html" class="report-link">
+                      <strong>🔧 Backend JUnit Results</strong><br>
+                      <span class="timestamp">Latest backend test results</span>
                   </a>
 
                   <hr style="margin: 2rem 0;">
@@ -197,10 +202,14 @@ jobs:
         continue-on-error: true
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages -- perf/ 2>/dev/null || echo "No existing perf/ directory found"
+          git checkout gh-pages -- perf/ frontend/coverage/ 2>/dev/null || echo "No existing perf/ or frontend/coverage/ directories found"
           if [ -d perf ]; then
             mkdir -p gh-pages-content/
             mv perf gh-pages-content/
+          fi
+          if [ -d frontend/coverage ]; then
+            mkdir -p gh-pages-content/frontend/
+            mv frontend/coverage gh-pages-content/frontend/
           fi
           git checkout main
 

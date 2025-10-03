@@ -39,8 +39,17 @@ jobs:
 
       - name: Download grepwise SNAPSHOT jar
         run: |
-          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -O https://maven.pkg.github.com/ozkanpakdil/grepwise/io/github/ozkanpakdil/grepwise/0.0.1-SNAPSHOT/grepwise-0.0.1-SNAPSHOT.jar
+          
+          curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+          -O https://maven.pkg.github.com/ozkanpakdil/grepwise/io/github/ozkanpakdil/grepwise/0.0.1-SNAPSHOT/maven-metadata.xml
+          
+          # Parse actual jar name
+          jar_name=$(xmllint --xpath "string(//snapshotVersion[extension='jar']/value)" maven-metadata.xml)
+          full_url="https://maven.pkg.github.com/ozkanpakdil/grepwise/io/github/ozkanpakdil/grepwise/0.0.1-SNAPSHOT/grepwise-$jar_name.jar"
+          
+          # Download actual jar
+          curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -O "$full_url"
+          ls -ltrh *-SNAPSHOT.jar
 
       - name: Start application (downloaded JAR)
         run: |

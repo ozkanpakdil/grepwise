@@ -33,8 +33,9 @@ jobs:
 
       - name: Download grepwise SNAPSHOT jar
         run: |
-          curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -O https://maven.pkg.github.com/ozkanpakdil/grepwise/io/github/ozkanpakdil/grepwise/0.0.1-SNAPSHOT/grepwise-0.0.1-SNAPSHOT.jar
+          ls -ltrh *-SNAPSHOT.jar
 
       - name: Start application (downloaded JAR)
         run: |

@@ -20,13 +20,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: graalvm/setup-graalvm@v1
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          version: 'latest'
-          java-version: 25
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          distribution: 'graalvm-community'
-          native-image-job-reports: 'true'
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,12 +35,37 @@ jobs:
             frontend/package-lock.json
             playwright/package-lock.json
 
-      - name: Build packaged JAR with frontend
-        run: mvn -q clean package -DskipTests
-
-      - name: Start application (JAR with embedded frontend)
+      - name: Download JAR artifact from CI for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          nohup java -jar target/*.jar > app.log 2>&1 &
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
+          # Find the workflow run for CI on this commit
+          RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
+            repos/$REPO/actions/runs | head -n1)
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful CI run found for $SHA. Exiting." >&2
+            exit 1
+          fi
+          ART_ID=$(gh api -q '.artifacts[] | select(.name=="grepwise-jar") | .id' \
+            repos/$REPO/actions/runs/$RUN_ID/artifacts)
+          if [ -z "$ART_ID" ]; then
+            echo "Artifact grepwise-jar not found in CI run $RUN_ID" >&2
+            exit 1
+          fi
+          mkdir -p dist
+          gh api -H "Accept: application/vnd.github+json" \
+            repos/$REPO/actions/artifacts/$ART_ID/zip -o dist/jar.zip
+          unzip -o dist/jar.zip -d dist
+          echo "Downloaded files:" && ls -la dist
+
+      - name: Start application (downloaded JAR)
+        run: |
+          JAR=$(ls dist/*-SNAPSHOT.jar | head -n1)
+          nohup java -jar "$JAR" > app.log 2>&1 &
           echo $! > app.pid
 
       - name: Wait for application to be ready
@@ -202,7 +225,7 @@ jobs:
         continue-on-error: true
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages -- perf/ frontend/coverage/ 2>/dev/null || echo "No existing perf/ or frontend/coverage/ directories found"
+          git checkout gh-pages -- perf/ frontend/coverage/ backend/junit/ index.html 2>/dev/null || echo "No existing perf/ frontend/coverage/ or backend/junit directories found"
           if [ -d perf ]; then
             mkdir -p gh-pages-content/
             mv perf gh-pages-content/
@@ -210,6 +233,13 @@ jobs:
           if [ -d frontend/coverage ]; then
             mkdir -p gh-pages-content/frontend/
             mv frontend/coverage gh-pages-content/frontend/
+          fi
+          if [ -d backend/junit ]; then
+            mkdir -p gh-pages-content/backend/
+            mv backend/junit gh-pages-content/backend/
+          fi
+          if [ -f index.html ]; then
+            mv index.html gh-pages-content/
           fi
           git checkout main
 

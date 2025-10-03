@@ -22,23 +22,55 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: graalvm/setup-graalvm@v1
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          version: 'latest'
-          java-version: 25
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          distribution: 'graalvm-community'
-          native-image-job-reports: 'false'
-
-      - name: Setup Node (for frontend build during Maven)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Make perf scripts executable
-        run: chmod +x scripts/perf/local.sh scripts/perf/against.sh
+        run: chmod +x scripts/perf/against.sh
 
-      - name: Run local perf test runner (build, launch, test, stop)
+      - name: Download JAR artifact from CI for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
+          RUN_ID=$(gh api -q '.workflow_runs[] | select(.head_sha=="'"$SHA"'" and .name=="GrepWise CI" and .conclusion=="success") | .id' \
+            repos/$REPO/actions/runs | head -n1)
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful CI run found for $SHA. Exiting." >&2
+            exit 1
+          fi
+          ART_ID=$(gh api -q '.artifacts[] | select(.name=="grepwise-jar") | .id' \
+            repos/$REPO/actions/runs/$RUN_ID/artifacts)
+          if [ -z "$ART_ID" ]; then
+            echo "Artifact grepwise-jar not found in CI run $RUN_ID" >&2
+            exit 1
+          fi
+          mkdir -p dist
+          gh api -H "Accept: application/vnd.github+json" \
+            repos/$REPO/actions/artifacts/$ART_ID/zip -o dist/jar.zip
+          unzip -o dist/jar.zip -d dist
+          echo "Downloaded files:" && ls -la dist
+
+      - name: Start application (downloaded JAR)
+        run: |
+          JAR=$(ls dist/*-SNAPSHOT.jar | head -n1)
+          nohup java -jar "$JAR" > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Wait for application to be ready
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/actuator/health >/dev/null 2>&1; then
+              echo "Application is up"; exit 0; fi; sleep 2; done
+          echo "Application did not start in time"; tail -n 200 app.log; exit 1
+
+      - name: Run JMeter tests only (app already running)
         env:
           GW_HOST: localhost
           GW_HTTP_PORT: '8080'
@@ -47,7 +79,16 @@ jobs:
           DURATION: '60'
           RAMP_UP: '5'
         run: |
-          scripts/perf/local.sh
+          mvn -B -ntp -Pperf-test \
+            -Djmeter.skip=false \
+            -Djmeter.base.dir="target/jmeter" \
+            -Dgw.host="$GW_HOST" \
+            -Dgw.http.port="$GW_HTTP_PORT" \
+            -Dgw.syslog.port="$GW_SYSLOG_PORT" \
+            -Dusers="$USERS" \
+            -DrampUp="$RAMP_UP" \
+            -DdurationSeconds="$DURATION" \
+            jmeter:configure@configuration jmeter:jmeter@jmeter-tests jmeter:results@jmeter-tests
 
       - name: Build perf summary and compare to history (Java)
         id: summarize
@@ -76,12 +117,13 @@ jobs:
           echo "- This run: ${PAGES_BASE}/runs/${RUN}/" >> $GITHUB_STEP_SUMMARY
           echo "\nNote: Configure GitHub Pages to 'Deploy from a branch' → branch: gh-pages, folder: / (root)." >> $GITHUB_STEP_SUMMARY
 
-      - name: Publish perf outputs to docs/ (GitHub Pages)
+      - name: Prepare perf reports for GitHub Pages (root)
         if: always()
         run: |
           RUN=${{ github.run_number }}
-          RUN_DIR=docs/perf/runs/${RUN}
-          LATEST_DIR=docs/perf/latest
+          BASE=gh-pages-content
+          RUN_DIR=${BASE}/perf/runs/${RUN}
+          LATEST_DIR=${BASE}/perf/latest
           rm -rf "${RUN_DIR}" "${LATEST_DIR}"
           mkdir -p "${RUN_DIR}" "${LATEST_DIR}"
           # Copy all generated outputs into this run folder
@@ -150,75 +192,29 @@ jobs:
           rm -rf "${LATEST_DIR}"
           mkdir -p "${LATEST_DIR}"
           cp -r "${RUN_DIR}"/* "${LATEST_DIR}/" || true
-          
-          # Generate an HTML index for the latest folder
-          cat > "${LATEST_DIR}/index.html" << 'HTML'
-          <!doctype html>
-          <meta charset="utf-8">
-          <title>GrepWise Perf - Latest</title>
-          <h1>GrepWise Performance - Latest</h1>
-          <ul>
-            <li><a href="perf-summary.html">HTML summary</a></li>
-            <li><a href="perf-summary.md">Markdown summary (raw)</a></li>
-            <li><a href="reports/">HTML dashboards</a></li>
-            <li><a href="results/">Raw CSV results</a></li>
-          </ul>
-          <p><a href="../">Back to perf index</a></p>
-          HTML
-          
-          # Create top-level landing pages
-          mkdir -p docs/perf
-          cat > docs/index.html << 'HTML'
-          <!doctype html>
-          <meta charset="utf-8">
-          <meta http-equiv="refresh" content="0; url=perf/latest/">
-          <title>GrepWise Perf</title>
-          <p>Redirecting to <a href="perf/latest/">perf/latest/</a>…</p>
-          HTML
-          
-          cat > docs/perf/index.html << 'HTML'
-          <!doctype html>
-          <meta charset="utf-8">
-          <title>GrepWise Performance</title>
-          <h1>GrepWise Performance</h1>
-          <ul>
-            <li><a href="latest/">Latest results</a></li>
-            <li><a href="runs/">Browse runs</a> (open numeric subfolders)</li>
-          </ul>
-          HTML
-          
-          # Ensure GitHub Pages doesn't run Jekyll and can serve nested paths
-          touch docs/.nojekyll
 
-          # Copy history and badge into docs/perf for publishing
-          if [ -f target/jmeter/history.csv ]; then
-            cp target/jmeter/history.csv docs/perf/history.csv || true
-          fi
-          if [ -f target/jmeter/badge.svg ]; then
-            cp target/jmeter/badge.svg docs/perf/badge.svg || true
-          fi
-
-
-      - name: Download existing gh-pages content if exists
+      - name: Download existing gh-pages content to merge
         if: always()
         continue-on-error: true
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages -- e2e/ index.html 2>/dev/null || echo "No existing e2e/ directory found"
-          if [ -d e2e ] || [ -f index.html ]; then
-            mkdir -p docs/
-            [ -d e2e ] && mv e2e docs/
-            [ -f index.html ] && mv index.html docs/
+          git checkout gh-pages -- e2e/ frontend/coverage/ backend/junit/ index.html 2>/dev/null || echo "No existing e2e/ frontend/coverage/ backend/junit or index.html found"
+          if [ -d e2e ] || [ -d frontend/coverage ] || [ -d backend/junit ] || [ -f index.html ]; then
+            mkdir -p gh-pages-content/
+            [ -d e2e ] && mv e2e gh-pages-content/
+            [ -d frontend/coverage ] && mkdir -p gh-pages-content/frontend && mv frontend/coverage gh-pages-content/frontend/
+            [ -d backend/junit ] && mkdir -p gh-pages-content/backend && mv backend/junit gh-pages-content/backend/
+            [ -f index.html ] && mv index.html gh-pages-content/
           fi
           git checkout main
 
-      - name: Deploy docs/ to gh-pages (persistent website)
+      - name: Deploy perf to gh-pages (root)
         if: always()
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: docs
+          publish_dir: gh-pages-content
           keep_files: false
 
       - name: Enforce block threshold (>20% regression)

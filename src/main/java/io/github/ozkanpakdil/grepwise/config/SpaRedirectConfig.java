@@ -19,12 +19,13 @@ public class SpaRedirectConfig implements WebMvcConfigurer {
         // Root
         registry.addViewController("/").setViewName("forward:/index.html");
 
-        // Any path that doesn't start with back-end prefixes and has no dot
-        registry.addViewController("/{path:^(?!api|actuator|swagger-ui|v3|graphql|grpc|webjars|assets|static).*$}")
+        // Any path that doesn't start with back-end prefixes and has no file extension (no dot)
+        // This ensures we don't forward static files or index.html itself
+        registry.addViewController("/{path:^(?!api|actuator|swagger-ui|v3|graphql|grpc|webjars|assets|static)[^.]*$}")
                 .setViewName("forward:/index.html");
 
-        // Also handle multi-segment paths by matching any remainder after the first segment
-        registry.addViewController("/{path:^(?!api|actuator|swagger-ui|v3|graphql|grpc|webjars|assets|static).*$}/**")
+        // Also handle multi-segment paths without file extensions
+        registry.addViewController("/{path:^(?!api|actuator|swagger-ui|v3|graphql|grpc|webjars|assets|static)[^.]*$}/**")
                 .setViewName("forward:/index.html");
     }
 }

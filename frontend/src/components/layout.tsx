@@ -57,7 +57,7 @@ export default function Layout() {
             <Link to="/?home=1" className="flex items-center gap-2">
               <span className="font-bold text-xl">GrepWise</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-6 text-sm">
+            <nav className="hidden md:flex items-center gap-6 text-sm" role="navigation">
               <Link
                 to="/search"
                 className={`flex items-center gap-2 ${
@@ -175,7 +175,7 @@ export default function Layout() {
             </Button>
           </div>
 
-          <nav className="p-4">
+          <nav className="p-4" role="navigation">
             <ul className="space-y-4">
               <li>
                 <Link

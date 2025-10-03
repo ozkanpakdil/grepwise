@@ -75,3 +75,5 @@ logs/app.log
 /playwright/test-results/
 /playwright/playwright-report/
 /playwright/.cache/
+/frontend/app.log
+/playwright/test-output.log

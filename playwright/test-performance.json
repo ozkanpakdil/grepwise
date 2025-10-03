@@ -460,6 +460,230 @@
         "skipped": 40,
         "total": 42
       }
+    },
+    {
+      "timestamp": "2025-10-03T15:13:36.009Z",
+      "runNumber": 1759504416009,
+      "gitSha": "local",
+      "totalDuration": 114811,
+      "tests": [
+        {
+          "name": "settings page loads for admin users",
+          "duration": 4246,
+          "status": "passed"
+        },
+        {
+          "name": "settings tabs are navigable when available",
+          "duration": 2749,
+          "status": "passed"
+        },
+        {
+          "name": "settings can be modified and saved",
+          "duration": 5420,
+          "status": "passed"
+        },
+        {
+          "name": "users page loads and shows user management interface",
+          "duration": 2365,
+          "status": "passed"
+        },
+        {
+          "name": "can access user creation form",
+          "duration": 2466,
+          "status": "passed"
+        },
+        {
+          "name": "user list shows existing users when available",
+          "duration": 2485,
+          "status": "passed"
+        },
+        {
+          "name": "roles page loads and shows role management interface",
+          "duration": 2814,
+          "status": "passed"
+        },
+        {
+          "name": "role permissions can be configured",
+          "duration": 1559,
+          "status": "passed"
+        },
+        {
+          "name": "redaction editor loads for admin users",
+          "duration": 1672,
+          "status": "passed"
+        },
+        {
+          "name": "redaction rules can be created and edited",
+          "duration": 1095,
+          "status": "passed"
+        },
+        {
+          "name": "monitoring page loads and shows system metrics",
+          "duration": 1331,
+          "status": "passed"
+        },
+        {
+          "name": "monitoring charts and metrics display data",
+          "duration": 4822,
+          "status": "passed"
+        },
+        {
+          "name": "alarms page loads and shows alarm configuration",
+          "duration": 4268,
+          "status": "passed"
+        },
+        {
+          "name": "can create new alarm when functionality available",
+          "duration": 3433,
+          "status": "passed"
+        },
+        {
+          "name": "alarm list displays existing alarms when available",
+          "duration": 2387,
+          "status": "passed"
+        },
+        {
+          "name": "alarm configuration options are accessible",
+          "duration": 3560,
+          "status": "passed"
+        },
+        {
+          "name": "alarm monitoring page loads and shows monitoring interface",
+          "duration": 2124,
+          "status": "passed"
+        },
+        {
+          "name": "real-time monitoring updates work when available",
+          "duration": 2683,
+          "status": "passed"
+        },
+        {
+          "name": "alarm monitoring controls are functional",
+          "duration": 2736,
+          "status": "passed"
+        },
+        {
+          "name": "dashboards page loads and shows dashboard list",
+          "duration": 4140,
+          "status": "passed"
+        },
+        {
+          "name": "can navigate to dashboard creation if available",
+          "duration": 2782,
+          "status": "passed"
+        },
+        {
+          "name": "individual dashboard view loads when available",
+          "duration": 2112,
+          "status": "passed"
+        },
+        {
+          "name": "dashboard editing controls work when available",
+          "duration": 2264,
+          "status": "passed"
+        },
+        {
+          "name": "404 page displays for non-existent routes",
+          "duration": 2793,
+          "status": "passed"
+        },
+        {
+          "name": "404 page has navigation back to app",
+          "duration": 1328,
+          "status": "passed"
+        },
+        {
+          "name": "unauthorized access redirects properly",
+          "duration": 1453,
+          "status": "passed"
+        },
+        {
+          "name": "non-admin users cannot access admin routes",
+          "duration": 3180,
+          "status": "passed"
+        },
+        {
+          "name": "network errors are handled gracefully",
+          "duration": 1564,
+          "status": "passed"
+        },
+        {
+          "name": "form validation errors display properly",
+          "duration": 1571,
+          "status": "passed"
+        },
+        {
+          "name": "application recovers from JavaScript errors",
+          "duration": 7466,
+          "status": "passed"
+        },
+        {
+          "name": "loading states are shown for slow operations",
+          "duration": 1683,
+          "status": "passed"
+        },
+        {
+          "name": "adjust page size and paginate",
+          "duration": 4530,
+          "status": "skipped"
+        },
+        {
+          "name": "mobile layout adjusts properly on small screens",
+          "duration": 4297,
+          "status": "passed"
+        },
+        {
+          "name": "tablet layout works correctly on medium screens",
+          "duration": 3430,
+          "status": "passed"
+        },
+        {
+          "name": "dashboard widgets adapt to different screen sizes",
+          "duration": 4902,
+          "status": "passed"
+        },
+        {
+          "name": "navigation is accessible across different screen sizes",
+          "duration": 1949,
+          "status": "passed"
+        },
+        {
+          "name": "search interface remains functional on small screens",
+          "duration": 1612,
+          "status": "passed"
+        },
+        {
+          "name": "form inputs are appropriately sized for touch interfaces",
+          "duration": 431,
+          "status": "passed"
+        },
+        {
+          "name": "content scrolls properly on mobile devices",
+          "duration": 1079,
+          "status": "passed"
+        },
+        {
+          "name": "horizontal scrolling is avoided on mobile",
+          "duration": 1293,
+          "status": "passed"
+        },
+        {
+          "name": "authentication works - login, logout, invalid credentials",
+          "duration": 4576,
+          "status": "passed"
+        },
+        {
+          "name": "TCP syslog data appears in search UI",
+          "duration": 161,
+          "status": "skipped"
+        }
+      ],
+      "summary": {
+        "passed": 40,
+        "failed": 0,
+        "skipped": 2,
+        "total": 42
+      }
     }
   ]
 }

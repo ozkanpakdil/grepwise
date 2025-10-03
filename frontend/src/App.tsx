@@ -63,10 +63,10 @@ function App() {
           <Route path="/users" element={isAuthenticated ? (isAdmin ? <UsersPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
           <Route path="/roles" element={isAuthenticated ? (isAdmin ? <RolesPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
           <Route path="/admin/redaction" element={isAuthenticated ? (isAdmin ? <RedactionEditorPage /> : <Navigate to="/search" replace />) : <Navigate to="/login" replace />} />
-        </Route>
 
-        {/* 404 route */}
-        <Route path="*" element={<NotFoundPage />} />
+          {/* 404 route - inside Layout to show navigation */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Routes>
 
       {/* Toast notifications */}

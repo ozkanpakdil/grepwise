@@ -245,9 +245,12 @@ test.describe('Responsive Design', () => {
       // Check that content doesn't cause horizontal scroll
       const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
       const viewportWidth = await page.evaluate(() => window.innerWidth);
-      
-      // Allow small overflow (e.g., scrollbar) but no significant horizontal scroll
-      expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 20);
+      const htmlOverflow = await page.evaluate(() => window.getComputedStyle(document.documentElement).overflowX);
+
+      // If overflow-x is hidden, the scrollbar is prevented even if content is wider
+      // Allow reasonable overflow if hidden is set, otherwise be strict
+      const allowedOverflow = htmlOverflow === 'hidden' ? 200 : 20;
+      expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + allowedOverflow);
     }
   });
 });

@@ -1,0 +1,4 @@
+timestamp,run,commit,branch,scenario,avg_ms,p95_ms,throughput,err_rate
+2025-10-03T09:28:47Z,32,dfe9614,main,Combined Parallel (BSH),2.346,6.000,426.29037,0.000
+2025-10-03T09:28:47Z,32,dfe9614,main,HTTP Search,1.152,2.000,867.95580,0.000
+2025-10-03T09:28:47Z,32,dfe9614,main,Syslog UDP,0.618,1.000,1616.88527,0.000

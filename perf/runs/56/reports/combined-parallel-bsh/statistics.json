@@ -1,0 +1,50 @@
+{
+  "GET /api/logs/search GWPERF-PARALLEL" : {
+    "transaction" : "GET /api/logs/search GWPERF-PARALLEL",
+    "sampleCount" : 466010,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 1.1442587068946966,
+    "medianResTime" : 1.0,
+    "minResTime" : 0.0,
+    "maxResTime" : 31.0,
+    "pct1ResTime" : 2.0,
+    "pct2ResTime" : 2.0,
+    "pct3ResTime" : 4.0,
+    "throughput" : 7776.034974720085,
+    "receivedKBytesPerSec" : 3285.9087517885746,
+    "sentKBytesPerSec" : 1161.8489757150128
+  },
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 481887,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 1.1088470948583393,
+    "medianResTime" : 1.0,
+    "minResTime" : 0.0,
+    "maxResTime" : 31.0,
+    "pct1ResTime" : 2.0,
+    "pct2ResTime" : 2.0,
+    "pct3ResTime" : 4.0,
+    "throughput" : 8029.844031193761,
+    "receivedKBytesPerSec" : 3281.364153601571,
+    "sentKBytesPerSec" : 1160.242072679214
+  },
+  "UDP Syslog Send (BeanShell)" : {
+    "transaction" : "UDP Syslog Send (BeanShell)",
+    "sampleCount" : 15877,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 0.0694715626377781,
+    "medianResTime" : 0.0,
+    "minResTime" : 0.0,
+    "maxResTime" : 5.0,
+    "pct1ResTime" : 0.0,
+    "pct2ResTime" : 1.0,
+    "pct3ResTime" : 1.0,
+    "throughput" : 264.68724993331557,
+    "receivedKBytesPerSec" : 0.0,
+    "sentKBytesPerSec" : 0.0
+  }
+}

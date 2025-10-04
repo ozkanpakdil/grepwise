@@ -87,7 +87,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          set +e
+          set -xe
           CODE=0
           java scripts/perf/SummarizeAndCompare.java
           CODE=$?
@@ -96,11 +96,28 @@ jobs:
           OWNER=${{ github.repository_owner }}
           RUN=${{ github.run_number }}
           PAGES_BASE="https://${OWNER}.github.io/${REPO#*/}/perf"
-          if [ -f target/jmeter/perf-summary.md ]; then
-            cat target/jmeter/perf-summary.md >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## Performance Test Summary" >> $GITHUB_STEP_SUMMARY
+          cat target/jmeter/perf-summary.md >> $GITHUB_STEP_SUMMARY
+          
+          # Create deployment directory
+          mkdir -p gh-pages-content
+          
+          # Try to get existing content from gh-pages branch
+          git fetch origin gh-pages:gh-pages || true
+          if git checkout gh-pages -- index.html e2e/ 2>/dev/null; then
+            mv index.html e2e/ gh-pages-content/ 2>/dev/null || true
           fi
+          
+          # Copy performance test results
+          mkdir -p gh-pages-content/perf/latest/
+          cp -r target/jmeter/* gh-pages-content/perf/latest/
+          
+          # Archive this run
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          mkdir -p gh-pages-content/perf/runs/$TIMESTAMP/
+          cp -r target/jmeter/* gh-pages-content/perf/runs/$TIMESTAMP/
+          
+          echo "## Performance Test Summary" >> $GITHUB_STEP_SUMMARY
+          
           echo "\n### Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "- HTML dashboards: target/jmeter/reports/…" >> $GITHUB_STEP_SUMMARY
           echo "- Raw CSV results: target/jmeter/results/…" >> $GITHUB_STEP_SUMMARY
@@ -198,7 +215,6 @@ jobs:
             [ -d backend/junit ] && mkdir -p gh-pages-content/backend && mv backend/junit gh-pages-content/backend/
             [ -f index.html ] && mv index.html gh-pages-content/
           fi
-          git checkout main
 
       - name: Deploy perf to gh-pages (root)
         if: always()
@@ -207,21 +223,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages-content
-          keep_files: false
+          keep_files: true
 
       - name: Enforce block threshold (>20% regression)
         if: ${{ steps.summarize.outputs.code == '2' }}
         run: |
           echo "Performance regression exceeds 20% in p95 latency for at least one scenario. Failing the job." >&2
           exit 1
-
-      - name: GraalVM native-image smoke build (optional)
-        if: always()
-        continue-on-error: true
-        run: |
-          echo "Attempting native-image build for smoke testing..."
-          ./mvnw -q -B -Pnative -DskipTests package || mvn -q -B -Pnative -DskipTests package || true
-          echo "Native build finished (success or tolerated failure)."
 
       - name: Upload artifacts (JMeter reports & logs)
         if: always()

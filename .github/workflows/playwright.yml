@@ -2,7 +2,7 @@ name: Playwright E2E Tests
 
 on:
   workflow_run:
-    workflows: ["GrepWise CI"]
+    workflows: ["GrepWise CI", "Performance Benchmarks"]
     types: [completed]
   workflow_dispatch:
 
@@ -240,7 +240,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages-content
           publish_branch: gh-pages
-          keep_files: false
+          keep_files: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: 'Deploy E2E test reports - ${{ github.sha }}'

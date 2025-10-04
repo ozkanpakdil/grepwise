@@ -133,7 +133,7 @@ $(document).ready(function() {
         widgets: ['zebra']
     });
 
-    var data = {"OkPercent": 3.6543594831455364, "KoPercent": 96.34564051685446};
+    var data = {"OkPercent": 3.680406979508392, "KoPercent": 96.31959302049161};
     var dataset = [
         {
             "label" : "FAIL",
@@ -173,7 +173,7 @@ $(document).ready(function() {
     });
 
     // Creates APDEX table
-    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.03654359483145537, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.0014689320863732066, 500, 1500, "Search GWPERF token"], "isController": false}, {"data": [1.0, 500, 1500, "UDP Syslog Send (BeanShell)"], "isController": false}]}, function(index, item){
+    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.03680406979508392, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.00147864103031707, 500, 1500, "Search GWPERF token"], "isController": false}, {"data": [1.0, 500, 1500, "UDP Syslog Send (BeanShell)"], "isController": false}]}, function(index, item){
         switch(index){
             case 0:
                 item = item.toFixed(3);
@@ -187,7 +187,7 @@ $(document).ready(function() {
     }, [[0, 0]], 3);
 
     // Create statistics table
-    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 211665, 203930, 96.34564051685446, 0.25603666170599626, 0, 57, 0.0, 1.0, 1.0, 1.0, 3531.1634580094087, 1564.915127592089, 475.79994645866003], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Search GWPERF token", 204230, 203930, 99.85310679136268, 0.262718503647845, 0, 57, 0.0, 1.0, 1.0, 1.0, 3407.752248419015, 1565.2023590149506, 475.8872768788273], "isController": false}, {"data": ["UDP Syslog Send (BeanShell)", 7435, 0, 0.0, 0.0724949562878275, 0, 5, 0.0, 0.0, 1.0, 1.0, 124.0779680250993, 0.0, 0.0], "isController": false}]}, function(index, item){
+    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 210330, 202589, 96.31959302049161, 0.25705795654447733, 0, 56, 0.0, 1.0, 1.0, 1.0, 3508.950467960161, 1554.6545737423048, 472.6836695406733], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Search GWPERF token", 202889, 202589, 99.85213589696829, 0.2641789352798841, 0, 56, 0.0, 1.0, 1.0, 1.0, 3386.280564132521, 1555.3292131300593, 472.8887897177251], "isController": false}, {"data": ["UDP Syslog Send (BeanShell)", 7441, 0, 0.0, 0.06289477220803641, 0, 4, 0.0, 0.0, 1.0, 1.0, 124.15737836214376, 0.0, 0.0], "isController": false}]}, function(index, item){
         switch(index){
             // Errors pct
             case 3:
@@ -217,7 +217,7 @@ $(document).ready(function() {
     }, [[0, 0]], 0, summaryTableHeader);
 
     // Create error table
-    createTable($("#errorsTable"), {"supportsControllersDiscrimination": false, "titles": ["Type of error", "Number of errors", "% in errors", "% in all samples"], "items": [{"data": ["429", 203930, 100.0, 96.34564051685446], "isController": false}]}, function(index, item){
+    createTable($("#errorsTable"), {"supportsControllersDiscrimination": false, "titles": ["Type of error", "Number of errors", "% in errors", "% in all samples"], "items": [{"data": ["429", 202589, 100.0, 96.31959302049161], "isController": false}]}, function(index, item){
         switch(index){
             case 2:
             case 3:
@@ -228,7 +228,7 @@ $(document).ready(function() {
     }, [[1, 1]]);
 
         // Create top5 errors by sampler
-    createTable($("#top5ErrorsBySamplerTable"), {"supportsControllersDiscrimination": false, "overall": {"data": ["Total", 211665, 203930, "429", 203930, "", "", "", "", "", "", "", ""], "isController": false}, "titles": ["Sample", "#Samples", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors"], "items": [{"data": ["Search GWPERF token", 204230, 203930, "429", 203930, "", "", "", "", "", "", "", ""], "isController": false}, {"data": [], "isController": false}]}, function(index, item){
+    createTable($("#top5ErrorsBySamplerTable"), {"supportsControllersDiscrimination": false, "overall": {"data": ["Total", 210330, 202589, "429", 202589, "", "", "", "", "", "", "", ""], "isController": false}, "titles": ["Sample", "#Samples", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors"], "items": [{"data": ["Search GWPERF token", 202889, 202589, "429", 202589, "", "", "", "", "", "", "", ""], "isController": false}, {"data": [], "isController": false}]}, function(index, item){
         return item;
     }, [[0, 0]], 0);
 

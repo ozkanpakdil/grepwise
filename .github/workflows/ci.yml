@@ -51,12 +51,16 @@ jobs:
       if: always()
       run: mvn -ntp surefire-report:report-only
 
+    - name: Prepare JUnit Report for GitHub Pages
+      if: always()
+      run: cp target/reports/surefire.html target/reports/index.html
+
     - name: Upload JUnit HTML Report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: junit-html-report
-        path: target/site/surefire-report.html
+        path: target/reports/
         retention-days: 30
 
     - name: Deploy JUnit Report to GitHub Pages
@@ -64,7 +68,7 @@ jobs:
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: target/site
+        publish_dir: target/reports
         destination_dir: backend/junit
         keep_files: true
         user_name: 'github-actions[bot]'

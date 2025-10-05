@@ -110,17 +110,89 @@ jobs:
           <head>
               <title>Grepwise Test Reports</title>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 2rem; }
-                  .container { max-width: 800px; margin: 0 auto; }
-                  h1 { color: #333; }
-                  .report-link { display: block; padding: 1rem; margin: 1rem 0; background: #f8f9fa; border-radius: 8px; text-decoration: none; color: #333; }
-                  .report-link:hover { background: #e9ecef; }
-                  .timestamp { color: #666; font-size: 0.9em; }
+                  :root {
+                      --bg-color: #ffffff;
+                      --text-color: #333333;
+                      --heading-color: #333333;
+                      --link-bg: #f8f9fa;
+                      --link-bg-hover: #e9ecef;
+                      --link-text: #333333;
+                      --timestamp-color: #666666;
+                      --hr-color: #dee2e6;
+                      --small-link-color: #0066cc;
+                      --toggle-bg: #e9ecef;
+                      --toggle-color: #333333;
+                  }
+
+                  [data-theme="dark"] {
+                      --bg-color: #1a1a1a;
+                      --text-color: #e0e0e0;
+                      --heading-color: #ffffff;
+                      --link-bg: #2d2d2d;
+                      --link-bg-hover: #3d3d3d;
+                      --link-text: #e0e0e0;
+                      --timestamp-color: #a0a0a0;
+                      --hr-color: #404040;
+                      --small-link-color: #66b3ff;
+                      --toggle-bg: #3d3d3d;
+                      --toggle-color: #e0e0e0;
+                  }
+
+                  * {
+                      transition: background-color 0.3s ease, color 0.3s ease;
+                  }
+
+                  body { 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+                      margin: 2rem; 
+                      background-color: var(--bg-color);
+                      color: var(--text-color);
+                  }
+                  .container { max-width: 800px; margin: 0 auto; position: relative; }
+                  .theme-toggle {
+                      position: absolute;
+                      top: 0;
+                      right: 0;
+                      background: var(--toggle-bg);
+                      color: var(--toggle-color);
+                      border: none;
+                      padding: 0.5rem 1rem;
+                      border-radius: 8px;
+                      cursor: pointer;
+                      font-size: 1rem;
+                      display: flex;
+                      align-items: center;
+                      gap: 0.5rem;
+                  }
+                  .theme-toggle:hover {
+                      opacity: 0.8;
+                  }
+                  h1 { color: var(--heading-color); }
+                  h2 { color: var(--heading-color); }
+                  p { color: var(--text-color); }
+                  .report-link { 
+                      display: block; 
+                      padding: 1rem; 
+                      margin: 1rem 0; 
+                      background: var(--link-bg); 
+                      border-radius: 8px; 
+                      text-decoration: none; 
+                      color: var(--link-text); 
+                  }
+                  .report-link:hover { background: var(--link-bg-hover); }
+                  .timestamp { color: var(--timestamp-color); font-size: 0.9em; }
+                  hr { border: none; border-top: 1px solid var(--hr-color); margin: 2rem 0; }
+                  small a { color: var(--small-link-color); }
               </style>
           </head>
           <body>
               <div class="container">
+                  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                      <span class="theme-icon">🌙</span>
+                      <span class="theme-text">Dark</span>
+                  </button>
                   <h1>🧪 Grepwise Test Reports</h1>
                   <p>All test results for the Grepwise project</p>
 
@@ -160,6 +232,51 @@ jobs:
                   <hr style="margin: 2rem 0;">
                   <p><small>Generated automatically by <a href="https://github.com/ozkanpakdil/grepwise/actions">GitHub Actions</a></small></p>
               </div>
+              <script>
+                  // Theme management
+                  function getSystemTheme() {
+                      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+
+                  function getTheme() {
+                      const savedTheme = localStorage.getItem('theme');
+                      return savedTheme || getSystemTheme();
+                  }
+
+                  function setTheme(theme) {
+                      document.documentElement.setAttribute('data-theme', theme);
+                      localStorage.setItem('theme', theme);
+                      updateToggleButton(theme);
+                  }
+
+                  function updateToggleButton(theme) {
+                      const icon = document.querySelector('.theme-icon');
+                      const text = document.querySelector('.theme-text');
+                      if (theme === 'dark') {
+                          icon.textContent = '☀️';
+                          text.textContent = 'Light';
+                      } else {
+                          icon.textContent = '🌙';
+                          text.textContent = 'Dark';
+                      }
+                  }
+
+                  function toggleTheme() {
+                      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                      setTheme(newTheme);
+                  }
+
+                  // Initialize theme on page load
+                  setTheme(getTheme());
+
+                  // Listen for system theme changes
+                  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                      if (!localStorage.getItem('theme')) {
+                          setTheme(e.matches ? 'dark' : 'light');
+                      }
+                  });
+              </script>
           </body>
           </html>
           EOF
@@ -180,16 +297,75 @@ jobs:
           <head>
               <title>E2E Test Reports Archive - Grepwise</title>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 2rem; }
-                  .container { max-width: 800px; margin: 0 auto; }
-                  .report-item { padding: 1rem; margin: 0.5rem 0; background: #f8f9fa; border-radius: 8px; }
-                  a { color: #0066cc; text-decoration: none; }
+                  :root {
+                      --bg-color: #ffffff;
+                      --text-color: #333333;
+                      --heading-color: #333333;
+                      --item-bg: #f8f9fa;
+                      --link-color: #0066cc;
+                      --toggle-bg: #e9ecef;
+                      --toggle-color: #333333;
+                  }
+
+                  [data-theme="dark"] {
+                      --bg-color: #1a1a1a;
+                      --text-color: #e0e0e0;
+                      --heading-color: #ffffff;
+                      --item-bg: #2d2d2d;
+                      --link-color: #66b3ff;
+                      --toggle-bg: #3d3d3d;
+                      --toggle-color: #e0e0e0;
+                  }
+
+                  * {
+                      transition: background-color 0.3s ease, color 0.3s ease;
+                  }
+
+                  body { 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+                      margin: 2rem; 
+                      background-color: var(--bg-color);
+                      color: var(--text-color);
+                  }
+                  .container { max-width: 800px; margin: 0 auto; position: relative; }
+                  .theme-toggle {
+                      position: absolute;
+                      top: 0;
+                      right: 0;
+                      background: var(--toggle-bg);
+                      color: var(--toggle-color);
+                      border: none;
+                      padding: 0.5rem 1rem;
+                      border-radius: 8px;
+                      cursor: pointer;
+                      font-size: 1rem;
+                      display: flex;
+                      align-items: center;
+                      gap: 0.5rem;
+                  }
+                  .theme-toggle:hover {
+                      opacity: 0.8;
+                  }
+                  h1 { color: var(--heading-color); }
+                  p { color: var(--text-color); }
+                  .report-item { 
+                      padding: 1rem; 
+                      margin: 0.5rem 0; 
+                      background: var(--item-bg); 
+                      border-radius: 8px; 
+                  }
+                  a { color: var(--link-color); text-decoration: none; }
                   a:hover { text-decoration: underline; }
               </style>
           </head>
           <body>
               <div class="container">
+                  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                      <span class="theme-icon">🌙</span>
+                      <span class="theme-text">Dark</span>
+                  </button>
                   <h1>📚 E2E Test Reports Archive</h1>
                   <p><a href="../../">← Back to main reports</a></p>
           EOF
@@ -206,6 +382,51 @@ jobs:
 
           cat >> gh-pages-content/e2e/archive/index.html << 'EOF'
               </div>
+              <script>
+                  // Theme management
+                  function getSystemTheme() {
+                      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+
+                  function getTheme() {
+                      const savedTheme = localStorage.getItem('theme');
+                      return savedTheme || getSystemTheme();
+                  }
+
+                  function setTheme(theme) {
+                      document.documentElement.setAttribute('data-theme', theme);
+                      localStorage.setItem('theme', theme);
+                      updateToggleButton(theme);
+                  }
+
+                  function updateToggleButton(theme) {
+                      const icon = document.querySelector('.theme-icon');
+                      const text = document.querySelector('.theme-text');
+                      if (theme === 'dark') {
+                          icon.textContent = '☀️';
+                          text.textContent = 'Light';
+                      } else {
+                          icon.textContent = '🌙';
+                          text.textContent = 'Dark';
+                      }
+                  }
+
+                  function toggleTheme() {
+                      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                      setTheme(newTheme);
+                  }
+
+                  // Initialize theme on page load
+                  setTheme(getTheme());
+
+                  // Listen for system theme changes
+                  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                      if (!localStorage.getItem('theme')) {
+                          setTheme(e.matches ? 'dark' : 'light');
+                      }
+                  });
+              </script>
           </body>
           </html>
           EOF

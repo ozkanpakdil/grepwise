@@ -152,7 +152,7 @@ jobs:
                       <span class="timestamp">Jest test coverage for frontend</span>
                   </a>
 
-                  <a href="./backend/junit/surefire-report.html" class="report-link">
+                  <a href="./backend/junit/" class="report-link">
                       <strong>🔧 Backend JUnit Results</strong><br>
                       <span class="timestamp">Latest backend test results</span>
                   </a>

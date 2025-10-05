@@ -191,14 +191,56 @@ jobs:
         continue-on-error: true
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages -- e2e/ frontend/coverage/ backend/junit/ index.html 2>/dev/null || echo "No existing e2e/ frontend/coverage/ backend/junit or index.html found"
-          if [ -d e2e ] || [ -d frontend/coverage ] || [ -d backend/junit ] || [ -f index.html ]; then
+          git checkout gh-pages -- e2e/ frontend/coverage/ backend/junit/ index.html perf/runs/ 2>/dev/null || echo "No existing e2e/ frontend/coverage/ backend/junit index.html or perf/runs/ found"
+          if [ -d e2e ] || [ -d frontend/coverage ] || [ -d backend/junit ] || [ -d perf/runs ] || [ -f index.html ]; then
             mkdir -p gh-pages-content/
             [ -d e2e ] && mv e2e gh-pages-content/
             [ -d frontend/coverage ] && mkdir -p gh-pages-content/frontend && mv frontend/coverage gh-pages-content/frontend/
             [ -d backend/junit ] && mkdir -p gh-pages-content/backend && mv backend/junit gh-pages-content/backend/
+            [ -d perf/runs ] && mkdir -p gh-pages-content/perf && mv perf/runs gh-pages-content/perf/
             [ -f index.html ] && mv index.html gh-pages-content/
           fi
+          
+          # Generate index.html for perf/runs/ directory
+          mkdir -p gh-pages-content/perf/runs
+          cat > gh-pages-content/perf/runs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Performance Test History - Grepwise</title>
+              <meta charset="utf-8">
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 2rem; }
+                  .container { max-width: 800px; margin: 0 auto; }
+                  h1 { color: #333; }
+                  .report-item { padding: 1rem; margin: 0.5rem 0; background: #f8f9fa; border-radius: 8px; }
+                  a { color: #0066cc; text-decoration: none; }
+                  a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>📈 Performance Test History</h1>
+                  <p><a href="../../">← Back to main reports</a> | <a href="../latest/">Latest Results</a></p>
+                  <div id="runs-list">
+          EOF
+          
+          # List all run directories (sorted in reverse order - newest first)
+          for dir in gh-pages-content/perf/runs/*/; do
+              if [ -d "$dir" ] && [[ "$(basename "$dir")" =~ ^[0-9]+$ ]]; then
+                  dirname=$(basename "$dir")
+                  echo "                      <div class=\"report-item\">" >> gh-pages-content/perf/runs/index.html
+                  echo "                          <a href=\"./$dirname/\"><strong>⚡ Run #$dirname</strong></a>" >> gh-pages-content/perf/runs/index.html
+                  echo "                      </div>" >> gh-pages-content/perf/runs/index.html
+              fi
+          done | tac
+          
+          cat >> gh-pages-content/perf/runs/index.html << 'EOF'
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
 
 
       - name: Deploy perf to gh-pages (root)

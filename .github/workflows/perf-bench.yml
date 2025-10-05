@@ -95,6 +95,7 @@ jobs:
           REPO=${{ github.repository }}
           OWNER=${{ github.repository_owner }}
           RUN=${{ github.run_number }}
+          ATTEMPT=${{ github.run_attempt }}
           PAGES_BASE="https://${OWNER}.github.io/${REPO#*/}/perf"
           cat target/jmeter/perf-summary.md >> $GITHUB_STEP_SUMMARY
           
@@ -107,20 +108,19 @@ jobs:
             mv index.html e2e/ gh-pages-content/ 2>/dev/null || true
           fi
           
-          # Copy performance test results
+          # Copy performance test results (excluding CSV files)
           mkdir -p gh-pages-content/perf/latest/
-          cp -r target/jmeter/* gh-pages-content/perf/latest/
+          rsync -av --exclude='*.csv' target/jmeter/ gh-pages-content/perf/latest/
           
-          # Archive this run
-          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-          mkdir -p gh-pages-content/perf/runs/$TIMESTAMP/
-          cp -r target/jmeter/* gh-pages-content/perf/runs/$TIMESTAMP/
+          # Archive this run (by workflow run number for stable links, excluding CSV files)
+          mkdir -p gh-pages-content/perf/runs/${RUN}/
+          rsync -av --exclude='*.csv' target/jmeter/ gh-pages-content/perf/runs/${RUN}/
           
           echo "## Performance Test Summary" >> $GITHUB_STEP_SUMMARY
           
           echo "\n### Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "- HTML dashboards: target/jmeter/reports/…" >> $GITHUB_STEP_SUMMARY
-          echo "- Raw CSV results: target/jmeter/results/…" >> $GITHUB_STEP_SUMMARY
+          echo "- Raw CSV results: available in workflow artifacts only" >> $GITHUB_STEP_SUMMARY
           echo "\n### GitHub Pages (persistent)" >> $GITHUB_STEP_SUMMARY
           echo "- Latest: ${PAGES_BASE}/latest/" >> $GITHUB_STEP_SUMMARY
           echo "- This run: ${PAGES_BASE}/runs/${RUN}/" >> $GITHUB_STEP_SUMMARY
@@ -135,8 +135,8 @@ jobs:
           LATEST_DIR=${BASE}/perf/latest
           rm -rf "${RUN_DIR}" "${LATEST_DIR}"
           mkdir -p "${RUN_DIR}" "${LATEST_DIR}"
-          # Copy all generated outputs into this run folder
-          cp -r target/jmeter/* "${RUN_DIR}/" || true
+          # Copy generated outputs (excluding CSV files) into this run folder
+          rsync -av --exclude='*.csv' target/jmeter/ "${RUN_DIR}/" || true
           # Copy summaries (keep Markdown and JSON)
           if [ -f target/jmeter/perf-summary.md ]; then
             cp target/jmeter/perf-summary.md "${RUN_DIR}/" || true
@@ -154,7 +154,7 @@ jobs:
             <li><a href="perf-summary.html">HTML summary</a></li>
             <li><a href="perf-summary.md">Markdown summary (raw)</a></li>
             <li><a href="reports/">HTML dashboards</a> (if present)</li>
-            <li><a href="results/">Raw CSV results</a> (if present)</li>
+            <li>Raw CSV results are available in workflow artifacts</li>
           </ul>
           <div id="reports-list"></div>
           <div id="results-list"></div>
@@ -163,7 +163,7 @@ jobs:
           <p><a href="../../latest/">See latest</a></p>
           HTML
 
-          # Create index pages under reports/ and results/ for this run
+          # Create index page under reports/ for this run
           if [ -d "${RUN_DIR}/reports" ]; then
             {
               echo "<!doctype html>";
@@ -179,22 +179,6 @@ jobs:
               echo "</ul>";
               echo "<p><a href=\"../index.html\">Back</a></p>";
             } > "${RUN_DIR}/reports/index.html"
-          fi
-          if [ -d "${RUN_DIR}/results" ]; then
-            {
-              echo "<!doctype html>";
-              echo "<meta charset=\"utf-8\">";
-              echo "<title>CSV Results</title>";
-              echo "<h1>Raw CSV Results</h1>";
-              echo "<ul>";
-              for f in "${RUN_DIR}/results"/*.csv; do
-                [ -f "$f" ] || continue;
-                base=$(basename "$f");
-                echo "<li><a href=\"$base\">$base</a></li>";
-              done;
-              echo "</ul>";
-              echo "<p><a href=\"../index.html\">Back</a></p>";
-            } > "${RUN_DIR}/results/index.html"
           fi
           
           # Update latest pointer
@@ -216,6 +200,7 @@ jobs:
             [ -f index.html ] && mv index.html gh-pages-content/
           fi
 
+
       - name: Deploy perf to gh-pages (root)
         if: always()
         uses: peaceiris/actions-gh-pages@v4
@@ -224,6 +209,9 @@ jobs:
           publish_branch: gh-pages
           publish_dir: gh-pages-content
           keep_files: true
+          force: true
+          exclude_assets: |
+            perf/**/*.csv
 
       - name: Enforce block threshold (>20% regression)
         if: ${{ steps.summarize.outputs.code == '2' }}

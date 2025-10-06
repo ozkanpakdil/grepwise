@@ -436,7 +436,7 @@ jobs:
         continue-on-error: true
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages -- perf/ frontend/coverage/ backend/junit/ index.html 2>/dev/null || echo "No existing perf/ frontend/coverage/ or backend/junit directories found"
+          git checkout gh-pages -- perf/ frontend/coverage/ backend/junit/ 2>/dev/null || echo "No existing perf/ frontend/coverage/ or backend/junit directories found"
           if [ -d perf ]; then
             mkdir -p gh-pages-content/
             mv perf gh-pages-content/
@@ -448,9 +448,6 @@ jobs:
           if [ -d backend/junit ]; then
             mkdir -p gh-pages-content/backend/
             mv backend/junit gh-pages-content/backend/
-          fi
-          if [ -f index.html ]; then
-            mv index.html gh-pages-content/
           fi
           git checkout main
 
